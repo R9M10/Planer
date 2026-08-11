@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#f6f6f3">
+
+    <title>Planer</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- STARTSEITE -->
+<section id="homeScreen" class="screen active">
+    <main class="home">
+        <h1>Planer</h1>
+
+        <button id="plansButton" class="home-button">Pläne</button>
+        <button id="startButton" class="home-button primary">Start</button>
+    </main>
+</section>
+
+
+<!-- START-ÜBERSICHT -->
+<section id="startOverviewScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromStartOverview" class="icon-button" aria-label="Zurück">‹</button>
+        <h2 id="startPlanTitle">Start</h2>
+        <div class="icon-placeholder"></div>
+    </header>
+
+    <main class="page-content start-overview-content">
+        <div id="noActivePlanMessage" class="empty-message">
+            Kein aktiver Plan.
+        </div>
+
+        <div id="activePlanOverview">
+            <div id="startPlanItems"></div>
+
+            <div class="total-row">
+                <span>Gesamtdauer</span>
+                <span id="totalPlanDuration"></span>
+            </div>
+
+            <button id="goButton" class="primary-button wide-button">
+                Los
+            </button>
+        </div>
+    </main>
+</section>
+
+
+<!-- PLANLISTE -->
+<section id="plansScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromPlans" class="icon-button" aria-label="Zurück">‹</button>
+        <h2>Pläne</h2>
+        <button id="addPlanButton" class="icon-button" aria-label="Plan hinzufügen">+</button>
+    </header>
+
+    <main class="page-content">
+        <div id="emptyPlansMessage" class="empty-message">
+            Noch keine Pläne.
+        </div>
+
+        <div id="plansList"></div>
+    </main>
+</section>
+
+
+<!-- NAME FÜR NEUEN PLAN -->
+<section id="newPlanScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromNewPlan" class="icon-button" aria-label="Zurück">‹</button>
+        <h2>Neuer Plan</h2>
+        <div class="icon-placeholder"></div>
+    </header>
+
+    <main class="form-content">
+        <label for="planName">Name</label>
+
+        <input
+            id="planName"
+            type="text"
+            autocomplete="off"
+        >
+
+        <button id="createPlanButton" class="primary-button">
+            Weiter
+        </button>
+    </main>
+</section>
+
+
+<!-- PLANEDITOR -->
+<section id="planEditorScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromEditor" class="icon-button" aria-label="Zurück">‹</button>
+        <h2 id="editorPlanTitle">Plan</h2>
+        <div class="icon-placeholder"></div>
+    </header>
+
+    <main class="page-content editor-content">
+        <div class="field-group editor-name-group">
+            <label for="editorPlanName">Name</label>
+
+            <input
+                id="editorPlanName"
+                type="text"
+                autocomplete="off"
+            >
+        </div>
+
+        <div id="planItems"></div>
+
+        <div id="emptyPlanMessage" class="empty-message">
+            Dieser Plan ist leer.
+        </div>
+
+        <div class="editor-buttons">
+            <button id="addTaskButton" class="secondary-button">
+                + Aufgabe
+            </button>
+
+            <button id="addBreakButton" class="secondary-button">
+                + Pause
+            </button>
+        </div>
+
+        <button id="savePlanButton" class="primary-button wide-button">
+            Speichern
+        </button>
+
+        <button id="deletePlanButton" class="text-danger-button">
+            Plan löschen
+        </button>
+    </main>
+</section>
+
+
+<!-- AUFGABE HINZUFÜGEN -->
+<section id="taskScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromTask" class="icon-button" aria-label="Zurück">‹</button>
+        <h2>Aufgabe</h2>
+        <div class="icon-placeholder"></div>
+    </header>
+
+    <main class="form-content">
+        <label for="taskName">Name</label>
+        <input id="taskName" type="text" autocomplete="off">
+
+        <label for="taskDuration">Minuten</label>
+        <input
+            id="taskDuration"
+            type="number"
+            min="1"
+            step="1"
+            inputmode="numeric"
+        >
+
+        <label for="taskNote">Notiz</label>
+        <textarea id="taskNote"></textarea>
+
+        <button id="saveTaskButton" class="primary-button">
+            Hinzufügen
+        </button>
+    </main>
+</section>
+
+
+<!-- PAUSE HINZUFÜGEN -->
+<section id="breakScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromBreak" class="icon-button" aria-label="Zurück">‹</button>
+        <h2>Pause</h2>
+        <div class="icon-placeholder"></div>
+    </header>
+
+    <main class="form-content">
+        <label for="breakDuration">Minuten</label>
+
+        <input
+            id="breakDuration"
+            type="number"
+            min="1"
+            step="1"
+            inputmode="numeric"
+        >
+
+        <button id="saveBreakButton" class="primary-button">
+            Hinzufügen
+        </button>
+    </main>
+</section>
+
+
+<!-- LAUFENDER PLAN -->
+<section id="sessionScreen" class="screen">
+    <main class="session-content">
+        <div id="sessionType" class="session-type">
+            Aufgabe
+        </div>
+
+        <h1 id="sessionTitle"></h1>
+
+        <div id="sessionProgress" class="session-progress"></div>
+
+        <div id="sessionCard" class="session-card">
+            <div class="session-card-inner">
+
+                <!-- VORDERSEITE -->
+                <div class="session-face session-front">
+                    <svg
+                        class="hourglass-svg"
+                        viewBox="0 0 200 260"
+                        aria-label="Sanduhr"
+                    >
+                        <defs>
+                            <clipPath id="topGlassClip">
+                                <polygon points="35,35 165,35 110,125 90,125"/>
+                            </clipPath>
+
+                            <clipPath id="bottomGlassClip">
+                                <polygon points="90,135 110,135 165,225 35,225"/>
+                            </clipPath>
+                        </defs>
+
+                        <rect
+                            id="topSand"
+                            class="sand"
+                            x="35"
+                            y="35"
+                            width="130"
+                            height="90"
+                            clip-path="url(#topGlassClip)"
+                        />
+
+                        <rect
+                            id="bottomSand"
+                            class="sand"
+                            x="35"
+                            y="225"
+                            width="130"
+                            height="0"
+                            clip-path="url(#bottomGlassClip)"
+                        />
+
+                        <line
+                            id="sandStream"
+                            class="sand-stream"
+                            x1="100"
+                            y1="123"
+                            x2="100"
+                            y2="138"
+                        />
+
+                        <polygon
+                            class="glass-outline"
+                            points="35,35 165,35 110,125 90,125"
+                        />
+
+                        <polygon
+                            class="glass-outline"
+                            points="90,135 110,135 165,225 35,225"
+                        />
+
+                        <line
+                            class="hourglass-frame"
+                            x1="25"
+                            y1="27"
+                            x2="175"
+                            y2="27"
+                        />
+
+                        <line
+                            class="hourglass-frame"
+                            x1="25"
+                            y1="233"
+                            x2="175"
+                            y2="233"
+                        />
+
+                        <line
+                            class="hourglass-frame-side"
+                            x1="35"
+                            y1="30"
+                            x2="35"
+                            y2="230"
+                        />
+
+                        <line
+                            class="hourglass-frame-side"
+                            x1="165"
+                            y1="30"
+                            x2="165"
+                            y2="230"
+                        />
+                    </svg>
+
+                    <div id="sessionTimer" class="session-timer">
+                        00:00
+                    </div>
+
+                    <div id="sessionFlipHint" class="flip-hint">
+                        Notiz
+                    </div>
+                </div>
+
+
+                <!-- RÜCKSEITE -->
+                <div class="session-face session-back">
+                    <div class="note-label">Notiz</div>
+
+                    <div id="sessionNote" class="session-note"></div>
+
+                    <div class="flip-hint">
+                        Zurück
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+</section>
+
+
+<!-- ABSCHLUSS EINER AUFGABE -->
+<section id="sessionReviewScreen" class="screen">
+    <main class="review-content">
+        <div class="review-kicker">Abgeschlossen</div>
+
+        <h1 id="reviewTitle"></h1>
+
+        <div class="review-form">
+            <label for="reviewNote">Notiz</label>
+            <textarea id="reviewNote"></textarea>
+
+            <label for="reviewDuration">Minuten</label>
+            <input
+                id="reviewDuration"
+                type="number"
+                min="1"
+                step="1"
+                inputmode="numeric"
+            >
+
+            <button id="saveReviewButton" class="primary-button wide-button">
+                Speichern & weiter
+            </button>
+        </div>
+    </main>
+</section>
+
+
+<script src="app.js"></script>
+
+</body>
+</html>
