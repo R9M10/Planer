@@ -1,0 +1,21 @@
+THIRD-PARTY COMPONENTS USED BY THE CHESS FEATURE
+
+1. chess.js 1.4.0
+   Project: https://github.com/jhlywa/chess.js
+   License: BSD-2-Clause
+   Used at runtime from:
+   https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm
+
+2. Stockfish.js / Stockfish 18
+   Browser port: https://github.com/nmrugg/stockfish.js
+   Upstream engine: https://github.com/official-stockfish/Stockfish
+   License: GPL-3.0
+   Runtime files are pinned to stockfish npm package 18.0.8:
+   stockfish-18-lite-single.js
+   stockfish-18-lite-single.wasm
+
+The app's stockfish-worker.js is only a small loader/wrapper and does not
+contain the Stockfish engine binary itself.
+
+This first chess version therefore needs internet access when the chess
+libraries/engine are loaded. The rest of the planner app remains local.

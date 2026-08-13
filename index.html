@@ -5,38 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="theme-color" content="#f6f6f3">
-
+    <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=29">
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
+        crossorigin="anonymous"
+    >
+    <script
+        defer
+        src="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.js"
+        crossorigin="anonymous"
+    ></script>
+    <script
+        defer
+        src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
+    ></script>
+    <script src="app.js?v=29" defer></script>
 </head>
-
 <body>
 
-<!-- STARTSEITE -->
-<section id="homeScreen" class="screen active">
-    <main class="home">
-        <h1>Planer</h1>
+<input id="backupFileInput" type="file" accept="application/json,.json" hidden>
 
-        <button id="plansButton" class="home-button">Pläne</button>
-        <button id="startButton" class="home-button primary">Start</button>
-    </main>
+<!-- PERSISTENTE SESSION-LEISTE -->
+<div id="miniSessionBar" class="mini-session hidden">
+    <button id="miniSessionButton" class="mini-session-button" type="button">
+        <span id="miniSessionName" class="mini-session-name"></span>
+        <span id="miniSessionTime" class="mini-session-time"></span>
+    </button>
+</div>
+
+
+<!-- ==================================================
+     START
+================================================== -->
+
+<section id="homeScreen" class="screen active image-home-screen">
+    <div class="image-home-background" aria-hidden="true"></div>
+
+    <button
+        id="openPlannerButton"
+        class="image-home-zone image-home-zone-sky"
+        type="button"
+        aria-label="Planer öffnen"
+    ></button>
+
+    <button
+        id="openTextsButton"
+        class="image-home-zone image-home-zone-water"
+        type="button"
+        aria-label="Texte öffnen"
+    ></button>
 </section>
 
 
-<!-- START-ÜBERSICHT -->
+<!-- ==================================================
+     PLANER HUB
+================================================== -->
+
+<section id="plannerHubScreen" class="screen planner-cosmos-screen">
+    <button
+        id="backFromPlannerHub"
+        class="corner-link corner-left back-only-button planner-cosmos-hidden-back"
+        type="button"
+        aria-label="Zurück"
+    >‹</button>
+
+    <div class="planner-cosmos-background" aria-hidden="true"></div>
+
+    <!-- Freier Weltraum: Pläne -->
+    <button
+        id="plannerPlansButton"
+        class="planner-cosmos-hotspot planner-cosmos-plans"
+        type="button"
+        aria-label="Pläne öffnen"
+    ></button>
+
+    <!-- Schwarzes Loch: aktive/laufende Session -->
+    <button
+        id="plannerBlackHoleHotspot"
+        class="planner-cosmos-hotspot planner-cosmos-blackhole"
+        type="button"
+        aria-label="Aktiven Plan starten"
+    ></button>
+
+    <!-- Galaxie: Startbildschirm -->
+    <button
+        id="plannerGalaxyBackHotspot"
+        class="planner-cosmos-hotspot planner-cosmos-galaxy"
+        type="button"
+        aria-label="Zum Startbildschirm"
+    ></button>
+
+    <!-- Bestehende ID bleibt erhalten, aber unsichtbar. -->
+    <button
+        id="plannerStartButton"
+        class="planner-cosmos-unused-control"
+        type="button"
+        tabindex="-1"
+        aria-hidden="true"
+    ></button>
+</section>
+
+
+<!-- ==================================================
+     START-ÜBERSICHT
+================================================== -->
+
 <section id="startOverviewScreen" class="screen">
     <header class="topbar">
-        <button id="backFromStartOverview" class="icon-button" aria-label="Zurück">‹</button>
-        <h2 id="startPlanTitle">Start</h2>
-        <div class="icon-placeholder"></div>
+        <button id="backFromStartOverview" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1 id="startPlanTitle">Start</h1>
+        <div class="topbar-spacer"></div>
     </header>
 
-    <main class="page-content start-overview-content">
-        <div id="noActivePlanMessage" class="empty-message">
-            Kein aktiver Plan.
-        </div>
+    <main class="page-content">
+        <div id="noActivePlanMessage" class="empty-message">Kein aktiver Plan.</div>
 
         <div id="activePlanOverview">
             <div id="startPlanItems"></div>
@@ -46,108 +131,96 @@
                 <span id="totalPlanDuration"></span>
             </div>
 
-            <button id="goButton" class="primary-button wide-button">
-                Los
-            </button>
+            <button id="goButton" class="primary-button wide-button" type="button">Los</button>
         </div>
     </main>
 </section>
 
 
-<!-- PLANLISTE -->
+<!-- ==================================================
+     PLÄNE
+================================================== -->
+
 <section id="plansScreen" class="screen">
     <header class="topbar">
-        <button id="backFromPlans" class="icon-button" aria-label="Zurück">‹</button>
-        <h2>Pläne</h2>
-        <button id="addPlanButton" class="icon-button" aria-label="Plan hinzufügen">+</button>
+        <button id="backFromPlans" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Pläne</h1>
+        <div class="topbar-spacer"></div>
     </header>
 
     <main class="page-content">
-        <div id="emptyPlansMessage" class="empty-message">
-            Noch keine Pläne.
-        </div>
-
+        <div id="emptyPlansMessage" class="empty-message">Noch keine Pläne.</div>
         <div id="plansList"></div>
     </main>
+
+    <button id="addPlanButton" class="bottom-add-button" type="button" aria-label="Plan hinzufügen">+</button>
 </section>
 
 
-<!-- NAME FÜR NEUEN PLAN -->
+<!-- ==================================================
+     NEUER PLAN
+================================================== -->
+
 <section id="newPlanScreen" class="screen">
     <header class="topbar">
-        <button id="backFromNewPlan" class="icon-button" aria-label="Zurück">‹</button>
-        <h2>Neuer Plan</h2>
-        <div class="icon-placeholder"></div>
+        <button id="backFromNewPlan" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Neuer Plan</h1>
+        <div class="topbar-spacer"></div>
     </header>
 
     <main class="form-content">
         <label for="planName">Name</label>
+        <input id="planName" type="text" autocomplete="off">
 
-        <input
-            id="planName"
-            type="text"
-            autocomplete="off"
-        >
+        <div id="newPlanError" class="form-error"></div>
 
-        <button id="createPlanButton" class="primary-button">
-            Weiter
-        </button>
+        <button id="createPlanButton" class="primary-button" type="button">Weiter</button>
     </main>
 </section>
 
 
-<!-- PLANEDITOR -->
+<!-- ==================================================
+     PLANEDITOR
+================================================== -->
+
 <section id="planEditorScreen" class="screen">
     <header class="topbar">
-        <button id="backFromEditor" class="icon-button" aria-label="Zurück">‹</button>
-        <h2 id="editorPlanTitle">Plan</h2>
-        <div class="icon-placeholder"></div>
+        <button id="backFromEditor" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1 id="editorPlanTitle">Plan</h1>
+        <div class="topbar-spacer"></div>
     </header>
 
-    <main class="page-content editor-content">
+    <main class="page-content">
         <div class="field-group editor-name-group">
             <label for="editorPlanName">Name</label>
-
-            <input
-                id="editorPlanName"
-                type="text"
-                autocomplete="off"
-            >
+            <input id="editorPlanName" type="text" autocomplete="off">
         </div>
 
         <div id="planItems"></div>
+        <div id="emptyPlanMessage" class="empty-message compact">Dieser Plan ist leer.</div>
 
-        <div id="emptyPlanMessage" class="empty-message">
-            Dieser Plan ist leer.
+        <div class="two-buttons">
+            <button id="addTaskButton" class="secondary-button" type="button">+ Aufgabe</button>
+            <button id="addBreakButton" class="secondary-button" type="button">+ Pause</button>
         </div>
 
-        <div class="editor-buttons">
-            <button id="addTaskButton" class="secondary-button">
-                + Aufgabe
-            </button>
+        <div id="editorError" class="form-error"></div>
 
-            <button id="addBreakButton" class="secondary-button">
-                + Pause
-            </button>
-        </div>
-
-        <button id="savePlanButton" class="primary-button wide-button">
-            Speichern
-        </button>
-
-        <button id="deletePlanButton" class="text-danger-button">
-            Plan löschen
-        </button>
+        <button id="savePlanButton" class="primary-button wide-button" type="button">Speichern</button>
+        <button id="deletePlanButton" class="danger-text-button wide-button" type="button">Plan löschen</button>
     </main>
 </section>
 
 
-<!-- AUFGABE HINZUFÜGEN -->
+<!-- ==================================================
+     AUFGABE / PAUSE
+================================================== -->
+
 <section id="taskScreen" class="screen">
     <header class="topbar">
-        <button id="backFromTask" class="icon-button" aria-label="Zurück">‹</button>
-        <h2>Aufgabe</h2>
-        <div class="icon-placeholder"></div>
+        <button id="backFromTask" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Aufgabe</h1>
+        <div class="topbar-spacer"></div>
     </header>
 
     <main class="form-content">
@@ -155,209 +228,732 @@
         <input id="taskName" type="text" autocomplete="off">
 
         <label for="taskDuration">Minuten</label>
-        <input
-            id="taskDuration"
-            type="number"
-            min="1"
-            step="1"
-            inputmode="numeric"
-        >
+        <input id="taskDuration" type="number" min="1" step="1" inputmode="numeric">
 
         <label for="taskNote">Notiz</label>
         <textarea id="taskNote"></textarea>
 
-        <button id="saveTaskButton" class="primary-button">
-            Hinzufügen
-        </button>
+        <div id="taskError" class="form-error"></div>
+
+        <button id="saveTaskButton" class="primary-button" type="button">Hinzufügen</button>
     </main>
 </section>
 
-
-<!-- PAUSE HINZUFÜGEN -->
 <section id="breakScreen" class="screen">
     <header class="topbar">
-        <button id="backFromBreak" class="icon-button" aria-label="Zurück">‹</button>
-        <h2>Pause</h2>
-        <div class="icon-placeholder"></div>
+        <button id="backFromBreak" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Pause</h1>
+        <div class="topbar-spacer"></div>
     </header>
 
     <main class="form-content">
         <label for="breakDuration">Minuten</label>
+        <input id="breakDuration" type="number" min="1" step="1" inputmode="numeric">
 
-        <input
-            id="breakDuration"
-            type="number"
-            min="1"
-            step="1"
-            inputmode="numeric"
-        >
+        <div id="breakError" class="form-error"></div>
 
-        <button id="saveBreakButton" class="primary-button">
-            Hinzufügen
-        </button>
+        <button id="saveBreakButton" class="primary-button" type="button">Hinzufügen</button>
     </main>
 </section>
 
 
-<!-- LAUFENDER PLAN -->
-<section id="sessionScreen" class="screen">
-    <main class="session-content">
-        <div id="sessionType" class="session-type">
-            Aufgabe
+<!-- ==================================================
+     LAUFENDER PLAN — ZEITUMGEKEHRTES UNIVERSUM
+================================================== -->
+
+<section id="sessionScreen" class="screen session-screen">
+    <div id="sessionCard" class="session-stage">
+
+        <!-- VORDERSEITE: NUR UNIVERSUM -->
+        <div id="sessionFront" class="session-layer session-front-layer">
+            <canvas
+                id="universeCanvas"
+                class="universe-canvas"
+                aria-label="Zeitumgekehrtes Universum"
+            ></canvas>
         </div>
 
-        <h1 id="sessionTitle"></h1>
+        <!-- RÜCKSEITE: DIREKT AUF DEM GESAMTEN VIEWPORT -->
+        <div id="sessionBack" class="session-layer session-back-layer">
+            <div id="sessionType" hidden></div>
 
-        <div id="sessionProgress" class="session-progress"></div>
+            <div class="back-top">
+                <h1 id="sessionTitle" class="session-back-title"></h1>
+                <div id="sessionProgress" class="session-progress"></div>
+            </div>
 
-        <div id="sessionCard" class="session-card">
-            <div class="session-card-inner">
+            <div id="sessionTimer" class="session-back-timer">00:00</div>
 
-                <!-- VORDERSEITE -->
-                <div class="session-face session-front">
-                    <svg
-                        class="hourglass-svg"
-                        viewBox="0 0 200 260"
-                        aria-label="Sanduhr"
-                    >
-                        <defs>
-                            <clipPath id="topGlassClip">
-                                <polygon points="35,35 165,35 110,125 90,125"/>
-                            </clipPath>
+            <div id="sessionNoteWrap" class="session-note-wrap">
+                <div id="sessionNote" class="session-note"></div>
+            </div>
 
-                            <clipPath id="bottomGlassClip">
-                                <polygon points="90,135 110,135 165,225 35,225"/>
-                            </clipPath>
-                        </defs>
-
-                        <rect
-                            id="topSand"
-                            class="sand"
-                            x="35"
-                            y="35"
-                            width="130"
-                            height="90"
-                            clip-path="url(#topGlassClip)"
-                        />
-
-                        <rect
-                            id="bottomSand"
-                            class="sand"
-                            x="35"
-                            y="225"
-                            width="130"
-                            height="0"
-                            clip-path="url(#bottomGlassClip)"
-                        />
-
-                        <line
-                            id="sandStream"
-                            class="sand-stream"
-                            x1="100"
-                            y1="123"
-                            x2="100"
-                            y2="138"
-                        />
-
-                        <polygon
-                            class="glass-outline"
-                            points="35,35 165,35 110,125 90,125"
-                        />
-
-                        <polygon
-                            class="glass-outline"
-                            points="90,135 110,135 165,225 35,225"
-                        />
-
-                        <line
-                            class="hourglass-frame"
-                            x1="25"
-                            y1="27"
-                            x2="175"
-                            y2="27"
-                        />
-
-                        <line
-                            class="hourglass-frame"
-                            x1="25"
-                            y1="233"
-                            x2="175"
-                            y2="233"
-                        />
-
-                        <line
-                            class="hourglass-frame-side"
-                            x1="35"
-                            y1="30"
-                            x2="35"
-                            y2="230"
-                        />
-
-                        <line
-                            class="hourglass-frame-side"
-                            x1="165"
-                            y1="30"
-                            x2="165"
-                            y2="230"
-                        />
-                    </svg>
-
-                    <div id="sessionTimer" class="session-timer">
-                        00:00
-                    </div>
-
-                    <div id="sessionFlipHint" class="flip-hint">
-                        Notiz
-                    </div>
-                </div>
-
-
-                <!-- RÜCKSEITE -->
-                <div class="session-face session-back">
-                    <div class="note-label">Notiz</div>
-
-                    <div id="sessionNote" class="session-note"></div>
-
-                    <div class="flip-hint">
-                        Zurück
-                    </div>
-                </div>
-
+            <div class="session-back-actions">
+                <button id="sessionMenuButton" class="session-action-button menu-icon-button session-menu-icon-button" type="button" aria-label="Menü">
+                    <span class="hamburger-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+                </button>
+                <button id="sessionPauseButton" class="session-action-button" type="button">Pause</button>
+                <button id="sessionEndButton" class="session-action-button" type="button">Ende</button>
             </div>
         </div>
-    </main>
+
+        <div id="sessionCurveName" hidden></div>
+        <div id="sessionFlipHint" hidden></div>
+    </div>
 </section>
 
 
-<!-- ABSCHLUSS EINER AUFGABE -->
-<section id="sessionReviewScreen" class="screen">
-    <main class="review-content">
-        <div class="review-kicker">Abgeschlossen</div>
+<!-- ==================================================
+     REVIEW NACH AUFGABE
+================================================== -->
 
-        <h1 id="reviewTitle"></h1>
+<section id="sessionReviewScreen" class="screen">
+    <header class="topbar">
+        <div class="topbar-spacer"></div>
+        <h1>Abgeschlossen</h1>
+        <div class="topbar-spacer"></div>
+    </header>
+
+    <main class="review-content">
+        <h2 id="reviewTitle"></h2>
 
         <div class="review-form">
             <label for="reviewNote">Notiz</label>
             <textarea id="reviewNote"></textarea>
 
             <label for="reviewDuration">Minuten</label>
-            <input
-                id="reviewDuration"
-                type="number"
-                min="1"
-                step="1"
-                inputmode="numeric"
-            >
+            <input id="reviewDuration" type="number" min="1" step="1" inputmode="numeric">
 
-            <button id="saveReviewButton" class="primary-button wide-button">
-                Speichern & weiter
-            </button>
+            <div id="reviewError" class="form-error"></div>
+
+            <button id="saveReviewButton" class="primary-button wide-button" type="button">Speichern & weiter</button>
         </div>
     </main>
 </section>
 
 
-<script src="app.js"></script>
+<!-- ==================================================
+     PLAN ABGESCHLOSSEN
+================================================== -->
+
+<section id="planCompleteScreen" class="screen">
+    <main class="completion-shell">
+        <div class="completion-kicker">Plan abgeschlossen</div>
+
+        <blockquote id="nietzscheQuote" class="completion-quote"></blockquote>
+        <div id="nietzscheSource" class="completion-source"></div>
+
+        <button id="completePlanButton" class="primary-button completion-button" type="button">
+            Abschließen
+        </button>
+    </main>
+</section>
+
+
+
+<!-- ==================================================
+     PHYSIK
+================================================== -->
+
+<section id="physicsListScreen" class="screen">
+    <header class="topbar category-topbar">
+        <button id="backFromPhysicsList" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <button id="physicsCategoryIcon" class="category-center-icon category-sort-trigger" type="button" data-category-icon="physics" aria-label="Physik sortieren"></button>
+        <button id="addPhysicsFolderButton" class="folder-icon-button" type="button" data-folder-icon aria-label="Physik-Ordner hinzufügen"></button>
+    </header>
+
+    <div id="physicsSortPanel" class="category-sort-panel hidden">
+        <select id="physicsSortSelect" aria-label="Physik sortieren">
+            <option value="manual">Manuell</option>
+            <option value="title">Titel</option>
+            <option value="updatedDesc">Zuletzt bearbeitet</option>
+            <option value="updatedAsc">Älteste Bearbeitung</option>
+        </select>
+    </div>
+
+    <main class="page-content category-list-content">
+        <div id="physicsBreadcrumbs" class="breadcrumbs"></div>
+
+        <div id="physicsEmpty" class="empty-message">Noch keine Physiknotizen.</div>
+        <div id="physicsList"></div>
+    </main>
+
+    <button id="addPhysicsNoteButton" class="bottom-add-button" type="button" aria-label="Physiknotiz hinzufügen">+</button>
+</section>
+
+<section id="physicsFolderEditorScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromPhysicsFolderEditor" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Ordner</h1>
+        <div class="topbar-spacer"></div>
+    </header>
+
+    <main class="form-content">
+        <label for="physicsFolderName">Name</label>
+        <input id="physicsFolderName" type="text" autocomplete="off">
+
+        <div id="physicsFolderError" class="form-error"></div>
+
+        <button id="savePhysicsFolderButton" class="primary-button" type="button">Speichern</button>
+        <button id="deletePhysicsFolderButton" class="danger-text-button" type="button">Ordner löschen</button>
+    </main>
+</section>
+
+<section id="physicsEditorScreen" class="screen">
+    <header class="topbar physics-topbar">
+        <button id="backFromPhysicsEditor" class="icon-button physics-back-button" type="button" aria-label="Zurück">‹</button>
+
+        <button id="physicsHeaderTitle" class="physics-formula-insert-title" type="button">Formel</button>
+
+        <div id="physicsFormulaMenu" class="physics-formula-top-actions hidden">
+            <button id="convertPhysicsFormulaButton" class="formula-top-button" type="button">Umwandeln</button>
+            <button id="solvePhysicsFormulaButton" class="formula-top-button" type="button">Lösen</button>
+            <button id="editPhysicsFormulaButton" class="formula-top-button" type="button">Bearbeiten</button>
+
+            <div class="physics-constants-wrap">
+                <button id="physicsConstantsButton" class="formula-top-button" type="button">Konstanten</button>
+
+                <div id="physicsConstantsMenu" class="physics-constants-menu hidden">
+                    <button class="physics-constant-item" type="button" data-latex="2.99792458\times10^{8}">c</button>
+                    <button class="physics-constant-item" type="button" data-latex="6.67430\times10^{-11}">G</button>
+                    <button class="physics-constant-item" type="button" data-latex="6.62607015\times10^{-34}">h</button>
+                    <button class="physics-constant-item" type="button" data-latex="1.380649\times10^{-23}">k_b</button>
+                    <button class="physics-constant-item" type="button" data-latex="1.616255\times10^{-35}">Plancklänge</button>
+                    <button class="physics-constant-item" type="button" data-latex="5.391247\times10^{-44}">Planckzeit</button>
+                    <button class="physics-constant-item" type="button" data-latex="2.176434\times10^{-8}">Planckmasse</button>
+                </div>
+            </div>
+
+            <button id="physicsFormulaAlignLeftButton" class="formula-top-button" type="button">Links</button>
+            <button id="physicsFormulaAlignCenterButton" class="formula-top-button" type="button">Mitte</button>
+        </div>
+
+        <button id="physicsPdfButton" class="physics-header-tool physics-pdf-button" type="button">PDF</button>
+    </header>
+
+    <main class="physics-editor">
+        <input
+            id="physicsTitle"
+            class="document-title-input"
+            type="text"
+            autocomplete="off"
+        >
+
+        <div
+            id="physicsBody"
+            class="physics-body"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+            spellcheck="true"
+        ></div>
+
+        <label class="physics-folder-label" for="physicsFolderSelect">Ordner</label>
+        <select id="physicsFolderSelect"></select>
+
+        <div class="editor-footer">
+            <span id="physicsSaveState">Gespeichert</span>
+            <button id="deletePhysicsNoteButton" class="danger-text-button" type="button">Löschen</button>
+        </div>
+    </main>
+
+    <div id="physicsSolverPanel" class="physics-solver-panel hidden">
+        <div class="solver-panel-top">
+            <div id="physicsSolverHeading" class="solver-heading">Lösung</div>
+
+            <div class="solver-top-actions">
+                <button id="acceptPhysicsSolutionButton" class="solver-accept hidden" type="button">Übernehmen</button>
+                <button id="closePhysicsSolverButton" class="solver-close" type="button">Schließen</button>
+            </div>
+        </div>
+
+        <div id="physicsVariablePicker" class="physics-variable-picker hidden">
+            <div class="solver-caption">Lösen nach</div>
+            <div id="physicsVariableButtons" class="variable-buttons"></div>
+        </div>
+
+        <div id="physicsSolverError" class="solver-error"></div>
+        <div id="physicsSolverSteps" class="solver-steps"></div>
+    </div>
+</section>
+
+
+<!-- ==================================================
+     TEXTE HUB
+================================================== -->
+
+<section id="textsHubScreen" class="screen texts-hub-screen">
+    <!-- Bestehende Controls bleiben für die ursprüngliche Logik erhalten,
+         werden auf diesem Bildschirm aber unsichtbar. -->
+    <button id="backFromTextsHub" class="corner-link corner-left back-only-button texts-study-hidden-control" type="button" aria-label="Zurück">‹</button>
+    <button id="textsMenuButton" class="corner-link corner-right menu-icon-button texts-study-hidden-control" type="button" aria-label="Menü">
+        <span class="hamburger-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+    </button>
+
+    <div id="textsMenuPanel" class="texts-menu-panel texts-study-menu-window hidden">
+        <button id="closeTextsStudyMenuButton" class="texts-study-menu-close" type="button" aria-label="Menü schließen">‹</button>
+
+        <div class="texts-study-menu-content">
+            <button id="timelineButton" class="menu-link" type="button">Zeitstrahl</button>
+            <button id="backupButton" class="menu-link" type="button">Backup</button>
+            <button id="restoreButton" class="menu-link" type="button">Wiederherstellen</button>
+            <button id="themeButton" class="menu-link" type="button">Nacht</button>
+        </div>
+    </div>
+
+    <main class="texts-study-shell">
+        <div class="texts-study-background" aria-hidden="true"></div>
+
+        <button id="openBooksButton" class="texts-study-hotspot texts-hotspot-books" type="button" aria-label="Bücher"></button>
+        <button id="openPhysicsButton" class="texts-study-hotspot texts-hotspot-physics" type="button" aria-label="Physik"></button>
+        <button id="openFilmsButton" class="texts-study-hotspot texts-hotspot-films" type="button" aria-label="Filme"></button>
+        <button id="openNotesButton" class="texts-study-hotspot texts-hotspot-notes" type="button" aria-label="Notizen"></button>
+        <button id="openDaysButton" class="texts-study-hotspot texts-hotspot-days" type="button" aria-label="Tage"></button>
+        <button id="openDreamsButton" class="texts-study-hotspot texts-hotspot-dreams" type="button" aria-label="Träume"></button>
+        <button id="openThoughtsButton" class="texts-study-hotspot texts-hotspot-philosophy" type="button" aria-label="Philosophie"></button>
+
+        <button id="textsSkyBackHotspot" class="texts-study-hotspot texts-hotspot-sky-back" type="button" aria-label="Zum Startbildschirm"></button>
+        <button id="textsDrawerMenuHotspot" class="texts-study-hotspot texts-hotspot-drawer-menu" type="button" aria-label="Menü öffnen"></button>
+
+        <!-- Vorläufig: rechte Wand öffnet direkt Schach.
+             Später kann hier das Bild des seitlichen Raumes eingesetzt werden. -->
+        <button id="openChessButton" class="texts-study-hotspot texts-hotspot-chess" type="button" aria-label="Schach öffnen"></button>
+    </main>
+</section>
+
+
+
+
+
+<!-- ==================================================
+     SCHACH
+================================================== -->
+
+<section id="chessScreen" class="screen chess-screen">
+    <header class="topbar chess-topbar">
+        <button id="backFromChess" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <div class="chess-title-symbol" aria-label="Schach">♞</div>
+        <button id="newChessGameButton" class="small-top-button" type="button">Neu</button>
+    </header>
+
+    <main class="chess-shell">
+        <section class="chess-strength-panel" aria-label="Gegnerstärke">
+            <div class="chess-strength-head">
+                <span>Gegner</span>
+                <strong id="chessEloValue">1500 Elo</strong>
+            </div>
+
+            <input
+                id="chessEloSlider"
+                class="chess-elo-slider"
+                type="range"
+                min="100"
+                max="2500"
+                step="50"
+                value="1500"
+                aria-label="Elo des Gegners"
+            >
+
+            <div class="chess-strength-scale" aria-hidden="true">
+                <span>100</span>
+                <span>2500</span>
+            </div>
+        </section>
+
+        <div id="chessStatus" class="chess-status" aria-live="polite">
+            Schach wird geladen …
+        </div>
+
+        <div class="chess-board-frame">
+            <div id="chessBoard" class="chess-board" role="grid" aria-label="Schachbrett"></div>
+        </div>
+
+        <div class="chess-underboard">
+            <div id="chessEngineState" class="chess-engine-state">Engine wird vorbereitet …</div>
+            <div class="chess-player-note">Du spielst Weiß.</div>
+        </div>
+
+        <div id="chessMoveList" class="chess-move-list" aria-label="Zugliste"></div>
+    </main>
+
+    <div id="chessPromotionPanel" class="chess-promotion-panel hidden" role="dialog" aria-modal="true" aria-label="Bauernumwandlung">
+        <div class="chess-promotion-card">
+            <div class="chess-promotion-title">Umwandeln in</div>
+            <div id="chessPromotionChoices" class="chess-promotion-choices"></div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ==================================================
+     ZEITSTRAHL
+================================================== -->
+
+<section id="timelineScreen" class="screen timeline-screen">
+    <header class="topbar timeline-topbar">
+        <button id="backFromTimeline" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <div class="topbar-title-icon timeline-title-icon" data-ui-icon="clock" aria-label="Zeitstrahl"></div>
+        <div class="topbar-spacer"></div>
+    </header>
+
+    <main class="timeline-shell">
+<div id="timelineEmpty" class="empty-message timeline-empty">
+            Noch keine Einträge.
+        </div>
+
+        <div id="timelineList" class="timeline-list" aria-live="polite"></div>
+    </main>
+</section>
+
+
+<!-- ==================================================
+     GEDANKEN
+================================================== -->
+
+<section id="thoughtListScreen" class="screen">
+    <header class="topbar category-topbar">
+        <button id="backFromThoughtList" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <button id="thoughtCategoryIcon" class="category-center-icon category-sort-trigger" type="button" data-category-icon="thoughts" aria-label="Philosophie sortieren"></button>
+        <button id="addThoughtFolderButton" class="folder-icon-button" type="button" data-folder-icon aria-label="Ordner hinzufügen"></button>
+    </header>
+
+    <div id="thoughtSortPanel" class="category-sort-panel hidden">
+        <select id="thoughtSortSelect" aria-label="Sortierung">
+            <option value="manual">Manuell</option>
+            <option value="title">Titel</option>
+            <option value="updatedDesc">Zuletzt bearbeitet</option>
+            <option value="updatedAsc">Älteste Bearbeitung</option>
+        </select>
+    </div>
+
+    <main class="page-content category-list-content">
+        <div id="thoughtBreadcrumbs" class="breadcrumbs"></div>
+
+        <div id="thoughtEmpty" class="empty-message">Noch keine Philosophie-Einträge.</div>
+        <div id="thoughtList"></div>
+    </main>
+
+    <button id="addThoughtButton" class="bottom-add-button" type="button" aria-label="Eintrag hinzufügen">+</button>
+</section>
+
+<section id="thoughtFolderEditorScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromThoughtFolderEditor" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Ordner</h1>
+        <div class="topbar-spacer"></div>
+    </header>
+
+    <main class="form-content">
+        <label for="thoughtFolderName">Name</label>
+        <input id="thoughtFolderName" type="text" autocomplete="off">
+
+        <div id="thoughtFolderError" class="form-error"></div>
+
+        <button id="saveThoughtFolderButton" class="primary-button" type="button">Speichern</button>
+        <button id="deleteThoughtFolderButton" class="danger-text-button" type="button">Ordner löschen</button>
+    </main>
+</section>
+
+<section id="thoughtEditorScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromThoughtEditor" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1 id="thoughtEditorHeading">Philosophie</h1>
+        <button id="thoughtToolsButton" class="small-top-button tools-button" type="button" aria-label="Werkzeuge">•••</button>
+    </header>
+
+    <div id="thoughtToolsMenu" class="thought-tools-menu hidden">
+        <button id="thoughtPdfButton" class="tool-row" type="button">PDF</button>
+
+        <div class="tool-divider"></div>
+
+        <div class="tool-label">Schrift</div>
+        <div class="tool-grid">
+            <button class="format-button" type="button" data-command="fontName" data-value="Helvetica">System</button>
+            <button class="format-button serif-sample" type="button" data-command="fontName" data-value="Georgia">Serif</button>
+            <button class="format-button mono-sample" type="button" data-command="fontName" data-value="Menlo">Mono</button>
+        </div>
+
+        <div class="tool-label">Größe</div>
+        <div class="tool-grid">
+            <button class="format-button" type="button" data-command="fontSize" data-value="2">Klein</button>
+            <button class="format-button" type="button" data-command="fontSize" data-value="3">Normal</button>
+            <button class="format-button" type="button" data-command="fontSize" data-value="5">Groß</button>
+        </div>
+
+        <div class="tool-label">Stil</div>
+        <div class="tool-grid">
+            <button class="format-button strong-sample" type="button" data-command="bold">Fett</button>
+            <button class="format-button underline-sample" type="button" data-command="underline">Unterstrichen</button>
+        </div>
+
+        <label class="color-tool" for="thoughtColor">
+            Farbe
+            <input id="thoughtColor" type="color" value="#111111">
+        </label>
+    </div>
+
+    <main class="document-editor">
+        <input id="thoughtTitle" class="document-title-input" type="text" autocomplete="off">
+
+        <div
+            id="thoughtBody"
+            class="rich-document-body"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+        ></div>
+
+        <label class="thought-folder-label" for="thoughtFolderSelect">Ordner</label>
+        <select id="thoughtFolderSelect"></select>
+
+        <div class="editor-footer">
+            <span id="thoughtSaveState">Gespeichert</span>
+            <button id="deleteThoughtButton" class="danger-text-button" type="button">Löschen</button>
+        </div>
+    </main>
+</section>
+
+
+<!-- ==================================================
+     TAGE
+================================================== -->
+
+<section id="dayListScreen" class="screen">
+    <header class="topbar category-topbar">
+        <button id="backFromDayList" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <div class="category-center-icon category-static-icon" data-category-icon="days" aria-label="Tage"></div>
+        <div class="topbar-spacer"></div>
+    </header>
+
+    <main class="page-content category-list-content">
+        <div id="dayEmpty" class="empty-message">Noch keine Tage.</div>
+        <div id="dayList"></div>
+    </main>
+
+    <button id="addDayButton" class="bottom-add-button" type="button" aria-label="Tagebucheintrag hinzufügen">+</button>
+</section>
+
+<section id="dayEditorScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromDayEditor" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Tag</h1>
+        <button id="dayPdfButton" class="small-top-button" type="button">PDF</button>
+    </header>
+
+    <main class="form-content journal-editor">
+        <label for="dayDate">Datum</label>
+        <input id="dayDate" type="date">
+
+        <label for="dayTitle">Titel</label>
+        <input id="dayTitle" type="text" autocomplete="off">
+
+        <label for="dayMood">Stimmung</label>
+        <select id="dayMood">
+            <option value=""></option>
+            <option value="1">1 — schwer</option>
+            <option value="2">2</option>
+            <option value="3">3 — ruhig</option>
+            <option value="4">4</option>
+            <option value="5">5 — leicht</option>
+        </select>
+
+        <label for="dayBody">Der Tag</label>
+        <textarea id="dayBody" class="long-textarea"></textarea>
+
+        <label for="dayReflection">Was bleibt</label>
+        <textarea id="dayReflection"></textarea>
+
+        <div class="editor-footer">
+            <span id="daySaveState">Gespeichert</span>
+            <button id="deleteDayButton" class="danger-text-button" type="button">Löschen</button>
+        </div>
+    </main>
+</section>
+
+
+<!-- ==================================================
+     TRÄUME
+================================================== -->
+
+<section id="dreamListScreen" class="screen">
+    <header class="topbar category-topbar">
+        <button id="backFromDreamList" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <div class="category-center-icon category-static-icon" data-category-icon="dreams" aria-label="Träume"></div>
+        <div class="topbar-spacer"></div>
+    </header>
+
+    <main class="page-content category-list-content">
+        <div id="dreamEmpty" class="empty-message">Noch keine Träume.</div>
+        <div id="dreamList"></div>
+    </main>
+
+    <button id="addDreamButton" class="bottom-add-button" type="button" aria-label="Traum hinzufügen">+</button>
+</section>
+
+<section id="dreamEditorScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromDreamEditor" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Traum</h1>
+        <button id="dreamPdfButton" class="small-top-button" type="button">PDF</button>
+    </header>
+
+    <main class="form-content dream-editor">
+        <label for="dreamDate">Datum</label>
+        <input id="dreamDate" type="date">
+
+        <label for="dreamTitle">Titel</label>
+        <input id="dreamTitle" type="text" autocomplete="off">
+
+        <div class="section-marker">Manifester Traum</div>
+
+        <label for="dreamManifest">Traum</label>
+        <textarea id="dreamManifest" class="long-textarea"></textarea>
+
+        <label for="dreamAffect">Affekte</label>
+        <textarea id="dreamAffect"></textarea>
+
+        <label for="dreamDayResidue">Tagesreste</label>
+        <textarea id="dreamDayResidue"></textarea>
+
+        <div class="section-marker">Freie Assoziation</div>
+
+        <label for="dreamAssociations">Assoziationen</label>
+        <textarea id="dreamAssociations" class="long-textarea"></textarea>
+
+        <div class="section-marker">Traumarbeit</div>
+
+        <label for="dreamCondensation">Verdichtung</label>
+        <textarea id="dreamCondensation"></textarea>
+
+        <label for="dreamDisplacement">Verschiebung</label>
+        <textarea id="dreamDisplacement"></textarea>
+
+        <label for="dreamWishConflict">Wunsch / Konflikt</label>
+        <textarea id="dreamWishConflict"></textarea>
+
+        <div class="section-marker">Deutung</div>
+
+        <label for="dreamInterpretation">Hypothese</label>
+        <textarea id="dreamInterpretation" class="long-textarea"></textarea>
+
+        <div class="editor-footer">
+            <span id="dreamSaveState">Gespeichert</span>
+            <button id="deleteDreamButton" class="danger-text-button" type="button">Löschen</button>
+        </div>
+    </main>
+</section>
+
+
+<!-- ==================================================
+     FILM / LITERATUR
+================================================== -->
+
+<section id="reviewLibraryScreen" class="screen">
+    <header class="topbar category-topbar">
+        <button id="backFromReviewLibrary" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <button id="reviewLibraryIcon" class="category-center-icon category-sort-trigger" type="button" data-category-icon="films" aria-label="Sortieren"></button>
+        <button id="addFolderButton" class="folder-icon-button" type="button" data-folder-icon aria-label="Ordner hinzufügen"></button>
+    </header>
+
+    <div id="reviewSortPanel" class="category-sort-panel hidden">
+        <select id="reviewSortSelect" aria-label="Sortierung">
+            <option value="manual">Manuell</option>
+            <option value="title">Titel</option>
+            <option value="ratingDesc">Bewertung ↓</option>
+            <option value="ratingAsc">Bewertung ↑</option>
+        </select>
+    </div>
+
+    <main class="page-content category-list-content">
+        <div id="reviewBreadcrumbs" class="breadcrumbs"></div>
+
+        <div id="reviewLibraryEmpty" class="empty-message compact">Noch keine Einträge.</div>
+        <div id="reviewLibraryList"></div>
+    </main>
+
+    <button id="addReviewEntryButton" class="bottom-add-button" type="button" aria-label="Eintrag hinzufügen">+</button>
+</section>
+
+<section id="folderEditorScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromFolderEditor" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Ordner</h1>
+        <div class="topbar-spacer"></div>
+    </header>
+
+    <main class="form-content">
+        <label for="folderName">Name</label>
+        <input id="folderName" type="text" autocomplete="off">
+
+        <div id="folderError" class="form-error"></div>
+
+        <button id="saveFolderButton" class="primary-button" type="button">Speichern</button>
+        <button id="deleteFolderButton" class="danger-text-button" type="button">Ordner löschen</button>
+    </main>
+</section>
+
+<section id="reviewEditorScreen" class="screen">
+    <header class="topbar">
+        <button id="backFromReviewEditor" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1 id="reviewEditorHeading">Rezension</h1>
+        <button id="reviewPdfButton" class="small-top-button" type="button">PDF</button>
+    </header>
+
+    <main class="form-content review-editor-form">
+        <label for="reviewEntryTitle">Titel</label>
+        <input id="reviewEntryTitle" type="text" autocomplete="off">
+
+        <label for="reviewEntryRating">Bewertung</label>
+        <select id="reviewEntryRating">
+            <option value=""></option>
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+            <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+        </select>
+
+        <label for="reviewEntrySummary">Zusammenfassung</label>
+        <textarea id="reviewEntrySummary"></textarea>
+
+        <label for="reviewEntryInterpretation">Deutung</label>
+        <textarea id="reviewEntryInterpretation"></textarea>
+
+        <label for="reviewEntryReview">Bewertung</label>
+        <textarea id="reviewEntryReview"></textarea>
+
+        <label for="reviewEntryFolder">Ordner</label>
+        <select id="reviewEntryFolder"></select>
+
+        <div id="reviewEntryError" class="form-error"></div>
+
+        <button id="saveReviewEntryButton" class="primary-button" type="button">Speichern</button>
+        <button id="deleteReviewEntryButton" class="danger-text-button" type="button">Löschen</button>
+    </main>
+</section>
+
+
+
+<!-- ==================================================
+     VOLLBILD-TEXTFELD
+================================================== -->
+
+<section id="fullTextEditorScreen" class="screen full-text-editor-screen">
+    <header class="topbar">
+        <button id="cancelFullTextEditorButton" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1 id="fullTextEditorTitle">Text</h1>
+        <button id="finishFullTextEditorButton" class="small-top-button" type="button">Fertig</button>
+    </header>
+
+    <main class="full-text-editor-main">
+        <textarea id="fullTextEditorArea" class="full-text-editor-area" spellcheck="true"></textarea>
+    </main>
+</section>
+
+
+
+<div
+    id="screenTransitionOverlay"
+    class="screen-transition-overlay"
+    aria-hidden="true"
+></div>
 
 </body>
 </html>
