@@ -7139,3 +7139,129 @@ html[data-theme="dark"] #chessRoomScreen .chess-room-background {
         line-height: 1.61;
     }
 }
+
+
+/* ==================================================
+   V39 — FILMRAUM
+================================================== */
+
+#filmRoomScreen.film-room-screen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #15110b !important;
+}
+
+#filmRoomScreen .film-room-background {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("./film-room-day.png");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 100% 100%;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+html[data-theme="dark"] #filmRoomScreen .film-room-background {
+    background-image: url("./film-room-night.png");
+}
+
+#filmRoomScreen .film-room-hotspot {
+    position: absolute;
+    z-index: 8;
+    margin: 0;
+    padding: 0;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Filmkamera + Rollen links unten. */
+#filmRoomScreen .film-room-camera-hotspot {
+    left: 0;
+    top: 37%;
+    width: 43%;
+    height: 48%;
+}
+
+/* Genug freie Wand links oben, ohne die Kamera zu überdecken. */
+#filmRoomScreen .film-room-back-hotspot {
+    left: 0;
+    top: 0;
+    width: 26%;
+    height: 36%;
+}
+
+
+/* ==================================================
+   V39 — FILME SORTIERUNG
+================================================== */
+
+.youtube-title-button {
+    justify-self: center;
+    padding: 10px 9px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.youtube-sort-menu {
+    position: fixed;
+    top: calc(59px + env(safe-area-inset-top));
+    left: 50%;
+    z-index: 70000;
+    width: min(290px, calc(100vw - 36px));
+    transform: translateX(-50%);
+    padding: 7px;
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--surface) 97%, var(--bg));
+    box-shadow: 0 16px 44px rgba(0, 0, 0, .16);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.youtube-sort-option {
+    position: relative;
+    width: 100%;
+    min-height: 43px;
+    padding: 8px 34px 8px 11px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.youtube-sort-option:active {
+    background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.youtube-sort-option.active::after {
+    content: "✓";
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 12px;
+}
+

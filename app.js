@@ -21,6 +21,7 @@
         planComplete: $("planCompleteScreen"),
         textsHub: $("textsHubScreen"),
         chessRoom: $("chessRoomScreen"),
+        filmRoom: $("filmRoomScreen"),
         wikipedia: $("wikipediaScreen"),
         youtube: $("youtubeScreen"),
         chessSetup: $("chessSetupScreen"),
@@ -59,6 +60,8 @@
         chessRoomBoardHotspot: $("chessRoomBoardHotspot"),
         chessRoomAcademyHotspot: $("chessRoomAcademyHotspot"),
         chessRoomYoutubeHotspot: $("chessRoomYoutubeHotspot"),
+        filmRoomCameraHotspot: $("filmRoomCameraHotspot"),
+        filmRoomBackHotspot: $("filmRoomBackHotspot"),
         chessRoomBackHotspot: $("chessRoomBackHotspot"),
 
         backFromWikipedia: $("backFromWikipedia"),
@@ -86,6 +89,11 @@
         wikipediaFolderPickerNew: $("wikipediaFolderPickerNew"),
         wikipediaFolderPickerCancel: $("wikipediaFolderPickerCancel"),
         backFromYoutube: $("backFromYoutube"),
+        youtubeTitleButton: $("youtubeTitleButton"),
+        youtubeSortMenu: $("youtubeSortMenu"),
+        youtubeSortNormal: $("youtubeSortNormal"),
+        youtubeSortViews: $("youtubeSortViews"),
+        youtubeSortDate: $("youtubeSortDate"),
         youtubeSearchForm: $("youtubeSearchForm"),
         youtubeSearchInput: $("youtubeSearchInput"),
         youtubeSearchButton: $("youtubeSearchButton"),
@@ -470,6 +478,7 @@
     let youtubeSearchVideos = [];
     let youtubeSearchChannels = [];
     let youtubeActiveTab = "videos";
+    let youtubeSortOrder = "relevance";
     let youtubeOpenFolderId = null;
     let youtubeRequestToken = 0;
     let youtubeCurrentChannel = null;
@@ -483,7 +492,9 @@
     */
     [
         "./chess-room-day.png",
-        "./chess-room-night.png"
+        "./chess-room-night.png",
+        "./film-room-day.png",
+        "./film-room-night.png"
     ].forEach(
         source => {
             const image =
@@ -827,6 +838,10 @@
             screen.querySelector(
                 ".chess-room-background"
             )
+            ||
+            screen.querySelector(
+                ".film-room-background"
+            )
         );
     }
 
@@ -1162,6 +1177,17 @@
                     null;
             };
 
+        const finishOnPaintedTarget =
+            () => {
+                requestAnimationFrame(
+                    () => {
+                        requestAnimationFrame(
+                            cleanup
+                        );
+                    }
+                );
+            };
+
         stage.addEventListener(
             "transitionend",
             event => {
@@ -1174,15 +1200,15 @@
                     ===
                     "transform"
                 ) {
-                    cleanup();
+                    finishOnPaintedTarget();
                 }
             }
         );
 
         roomTurnTimer =
             window.setTimeout(
-                cleanup,
-                760
+                finishOnPaintedTarget,
+                790
             );
     }
 
@@ -8594,11 +8620,23 @@
         const folders =
             state.wikipedia.folders;
 
+        const landingVisible =
+            !el.wikipediaLanding.classList.contains(
+                "hidden"
+            );
+
         el.wikipediaFolders.classList.toggle(
             "hidden",
+            !landingVisible
+            ||
             folders.length
             ===
             0
+        );
+
+        el.wikipediaFolderButton.classList.toggle(
+            "hidden",
+            !landingVisible
         );
 
         folders.forEach(
@@ -10306,11 +10344,23 @@
         const folders =
             state.youtube.folders;
 
+        const landingVisible =
+            !el.youtubeLanding.classList.contains(
+                "hidden"
+            );
+
         el.youtubeFolders.classList.toggle(
             "hidden",
+            !landingVisible
+            ||
             folders.length
             ===
             0
+        );
+
+        el.youtubeFolderButton.classList.toggle(
+            "hidden",
+            !landingVisible
         );
 
         folders.forEach(
@@ -10713,6 +10763,10 @@
         const requestToken =
             ++youtubeRequestToken;
 
+        hideYoutubeFolderComposer();
+
+        hideYoutubeSortMenu();
+
         hideYoutubeContentViews();
 
         el.youtubeResults.classList.remove(
@@ -10733,22 +10787,47 @@
         );
 
         try {
-            const data =
-                await fetchYoutubeJson(
-                    "search",
-                    {
-                        part:
-                            "snippet",
-                        q:
-                            query,
-                        type:
-                            "video,channel",
-                        maxResults:
-                            50,
-                        order:
-                            "relevance"
-                    }
-                );
+            /*
+               Videos use the selected official search.list order.
+               Channels remain relevance-sorted so the film sorting
+               has predictable semantics.
+            */
+            const [
+                videoData,
+                channelData
+            ] =
+                await Promise.all([
+                    fetchYoutubeJson(
+                        "search",
+                        {
+                            part:
+                                "snippet",
+                            q:
+                                query,
+                            type:
+                                "video",
+                            maxResults:
+                                50,
+                            order:
+                                youtubeSortOrder
+                        }
+                    ),
+                    fetchYoutubeJson(
+                        "search",
+                        {
+                            part:
+                                "snippet",
+                            q:
+                                query,
+                            type:
+                                "channel",
+                            maxResults:
+                                50,
+                            order:
+                                "relevance"
+                        }
+                    )
+                ]);
 
             if (
                 requestToken
@@ -10759,30 +10838,33 @@
             }
 
             youtubeSearchVideos =
-                [];
-
-            youtubeSearchChannels =
-                [];
-
-            (
-                Array.isArray(
-                    data.items
+                (
+                    Array.isArray(
+                        videoData.items
+                    )
+                        ? videoData.items
+                        : []
                 )
-                    ? data.items
-                    : []
-            ).forEach(
-                item => {
-                    const snippet =
-                        item?.snippet
-                        ??
-                        {};
+                .map(
+                    item => {
+                        const snippet =
+                            item?.snippet
+                            ??
+                            {};
 
-                    if (
-                        item?.id?.videoId
-                    ) {
-                        youtubeSearchVideos.push({
-                            videoId:
-                                item.id.videoId,
+                        const videoId =
+                            item?.id?.videoId
+                            ??
+                            "";
+
+                        if (
+                            !videoId
+                        ) {
+                            return null;
+                        }
+
+                        return {
+                            videoId,
                             title:
                                 decodeYoutubeText(
                                     snippet.title
@@ -10799,17 +10881,41 @@
                                     ??
                                     ""
                                 )
-                        });
-
-                        return;
+                        };
                     }
+                )
+                .filter(
+                    Boolean
+                );
 
-                    if (
-                        item?.id?.channelId
-                    ) {
-                        youtubeSearchChannels.push({
-                            channelId:
-                                item.id.channelId,
+            youtubeSearchChannels =
+                (
+                    Array.isArray(
+                        channelData.items
+                    )
+                        ? channelData.items
+                        : []
+                )
+                .map(
+                    item => {
+                        const snippet =
+                            item?.snippet
+                            ??
+                            {};
+
+                        const channelId =
+                            item?.id?.channelId
+                            ??
+                            "";
+
+                        if (
+                            !channelId
+                        ) {
+                            return null;
+                        }
+
+                        return {
+                            channelId,
                             title:
                                 decodeYoutubeText(
                                     snippet.title
@@ -10818,10 +10924,12 @@
                                     ??
                                     ""
                                 )
-                        });
+                        };
                     }
-                }
-            );
+                )
+                .filter(
+                    Boolean
+                );
 
             el.youtubeTabs.classList.remove(
                 "hidden"
@@ -10853,12 +10961,11 @@
                 ===
                 403
                     ? "YouTube-API nicht verfügbar. Prüfe Schlüssel und Website-Beschränkung."
-                    : "YouTube konnte gerade nicht erreicht werden.",
+                    : "Die Filmsuche konnte gerade nicht erreicht werden.",
                 true
             );
         }
     }
-
 
     function showYoutubeSearchResults() {
         youtubeOpenFolderId =
@@ -11585,6 +11692,97 @@
     }
 
 
+    function renderYoutubeSortState() {
+        [
+            el.youtubeSortNormal,
+            el.youtubeSortViews,
+            el.youtubeSortDate
+        ].forEach(
+            button => {
+                button.classList.toggle(
+                    "active",
+                    button.dataset.youtubeOrder
+                    ===
+                    youtubeSortOrder
+                );
+            }
+        );
+    }
+
+
+    function hideYoutubeSortMenu() {
+        el.youtubeSortMenu.classList.add(
+            "hidden"
+        );
+
+        el.youtubeTitleButton.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+    }
+
+
+    function toggleYoutubeSortMenu() {
+        const willOpen =
+            el.youtubeSortMenu.classList.contains(
+                "hidden"
+            );
+
+        el.youtubeSortMenu.classList.toggle(
+            "hidden",
+            !willOpen
+        );
+
+        el.youtubeTitleButton.setAttribute(
+            "aria-expanded",
+            willOpen
+                ? "true"
+                : "false"
+        );
+
+        if (
+            willOpen
+        ) {
+            renderYoutubeSortState();
+        }
+    }
+
+
+    function setYoutubeSortOrder(
+        order
+    ) {
+        const allowed =
+            new Set([
+                "relevance",
+                "viewCount",
+                "date"
+            ]);
+
+        if (
+            !allowed.has(
+                order
+            )
+        ) {
+            return;
+        }
+
+        youtubeSortOrder =
+            order;
+
+        renderYoutubeSortState();
+
+        hideYoutubeSortMenu();
+
+        if (
+            youtubeLastQuery
+        ) {
+            searchYoutube(
+                youtubeLastQuery
+            );
+        }
+    }
+
+
     function openYoutubePortal() {
         youtubeRequestToken +=
             1;
@@ -11618,6 +11816,8 @@
 
         hideYoutubeFolderComposer();
 
+        hideYoutubeSortMenu();
+
         closeYoutubeFolderPicker();
 
         closeYoutubePlayer();
@@ -11632,7 +11832,81 @@
 
     el.chessRoomYoutubeHotspot.addEventListener(
         "click",
+        () => {
+            turnBetweenStudyRooms(
+                screens.chessRoom,
+                screens.filmRoom,
+                "right"
+            );
+        }
+    );
+
+
+    el.filmRoomBackHotspot.addEventListener(
+        "click",
+        () => {
+            turnBetweenStudyRooms(
+                screens.filmRoom,
+                screens.chessRoom,
+                "left"
+            );
+        }
+    );
+
+
+    el.filmRoomCameraHotspot.addEventListener(
+        "click",
         openYoutubePortal
+    );
+
+
+    el.youtubeTitleButton.addEventListener(
+        "click",
+        event => {
+            event.stopPropagation();
+
+            toggleYoutubeSortMenu();
+        }
+    );
+
+
+    [
+        el.youtubeSortNormal,
+        el.youtubeSortViews,
+        el.youtubeSortDate
+    ].forEach(
+        button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    setYoutubeSortOrder(
+                        button.dataset.youtubeOrder
+                    );
+                }
+            );
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        event => {
+            if (
+                !el.youtubeSortMenu.classList.contains(
+                    "hidden"
+                )
+                &&
+                !el.youtubeSortMenu.contains(
+                    event.target
+                )
+                &&
+                event.target
+                !==
+                el.youtubeTitleButton
+            ) {
+                hideYoutubeSortMenu();
+            }
+        }
     );
 
 
@@ -11802,6 +12076,15 @@
         "click",
         () => {
             if (
+                !el.youtubeSortMenu.classList.contains(
+                    "hidden"
+                )
+            ) {
+                hideYoutubeSortMenu();
+                return;
+            }
+
+            if (
                 !el.youtubePlayer.classList.contains(
                     "hidden"
                 )
@@ -11866,7 +12149,7 @@
             }
 
             showScreen(
-                screens.chessRoom
+                screens.filmRoom
             );
         }
     );

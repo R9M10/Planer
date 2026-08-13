@@ -1,21 +1,63 @@
-PLANER v38 — YOUTUBE
+PLANER v39 — FILMRAUM + FILME-SORTIERUNG
 
-Neu:
+NEU
 
-- Klick auf die rechte Wand neben der Schiebetür im Schachraum öffnet YouTube.
-- Gleiches reduziertes Layout wie die Bibliothek.
-- Keine Suchvorschläge und keine API-Anfrage während der Eingabe.
-- Erst nach Absenden erscheinen die Reiter „Videos“ und „Kanäle“.
-- Videolisten enthalten ausschließlich Titel und Kanalname, keine Thumbnails.
-- Kanal anklicken -> Uploads des Kanals.
-- Video anklicken -> sofortiger viewportfüllender Player; nativer Vollbildmodus wird zusätzlich versucht.
-- Videos können mit „+“ in lokale Videoordner gespeichert werden.
-- Ordner sind Teil des normalen App-State und damit Teil von Backup/Wiederherstellung.
+1. SCHACHRAUM -> FILMRAUM
+   Klick auf die rechte Wand des Schachraums:
+   -> flüssige 90°-Drehung in den Filmraum.
 
-Wichtig:
-Bei einer statischen GitHub-Pages-App ist ein Browser-API-Key im ausgelieferten Clientcode sichtbar.
-Beschränke ihn in Google Cloud auf:
-- YouTube Data API v3
-- HTTP-Referrer deiner GitHub-Pages-Seite, z. B. https://r9m10.github.io/Planer/*
+   Filmraum:
+   - Tag: film-room-day.png
+   - Nacht: film-room-night.png
 
-Der Schlüssel wird in dieser README absichtlich nicht wiederholt.
+   Klick auf die alte Filmkamera:
+   -> Filme-Suche (YouTube Data API)
+
+   Klick auf die freie linke obere Wand:
+   -> Drehung zurück zum Schachraum.
+
+2. DREHANIMATION OHNE ZOOM-SPRUNG
+   Der temporäre Compositor endet jetzt exakt bei:
+   - 100 % Viewportgröße
+   - scale(1)
+   - translate(0)
+   - rotateY(0)
+
+   Zuvor war die letzte Animationsansicht noch vergrößert
+   (105 % Layer + scale ~1.02), weshalb das Bild beim Entfernen
+   des Animationslayers sichtbar zurücksprang.
+
+   Zusätzlich wird der Layer erst zwei Render-Frames nach dem
+   transitionend entfernt, wenn der echte Zielscreen bereits
+   gezeichnet ist.
+
+3. ORDNER
+   Bibliothek und Filme:
+   Ordnerchips und Ordner-Erstellen-Icon sind nur auf der jeweiligen
+   Startansicht sichtbar. Bei Suche, Artikel, Kanal, Ordneransicht
+   usw. verschwinden sie.
+
+4. YOUTUBE -> FILME
+   Der obere Schriftzug heißt nun "Filme".
+   Ein Klick auf "Filme" öffnet die Sortierung:
+   - Normal
+   - Aufrufzahl
+   - Uploaddatum (Neu nach Alt)
+
+   Video-Suchergebnisse nutzen entsprechend:
+   - relevance
+   - viewCount
+   - date
+
+   Kanalsuchergebnisse bleiben nach Relevanz sortiert.
+
+5. BESTEHENDE FUNKTIONEN
+   - Videos/Kanäle Tabs
+   - Kanal -> Uploads
+   - Video -> Vollbildplayer
+   - Videos in lokale Ordner speichern
+   - Wikipedia/Bibliothek
+   - Schach / Stockfish
+   - Backup/Wiederherstellung
+
+bleiben erhalten.

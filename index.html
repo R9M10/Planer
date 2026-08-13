@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=38">
+    <link rel="stylesheet" href="style.css?v=39">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=38" defer></script>
+    <script src="app.js?v=39" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -49,9 +49,9 @@ body.room-turning {
 
 .room-turn-panel {
     position: absolute;
-    inset: -2.5%;
-    width: 105%;
-    height: 105%;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     background-color: #0b0c0a;
     background-repeat: no-repeat;
     background-size: 100% 100%;
@@ -65,44 +65,44 @@ body.room-turning {
 .room-turn-stage-source {
     z-index: 2;
     opacity: 1;
-    transform: translate3d(0, 0, 0) rotateY(0deg) scale(1.02);
+    transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
     transition:
-        transform 680ms cubic-bezier(.22,.72,.22,1),
-        opacity 680ms cubic-bezier(.22,.72,.22,1);
+        transform 700ms cubic-bezier(.2,.72,.2,1),
+        opacity 700ms cubic-bezier(.2,.72,.2,1);
 }
 
 .room-turn-stage-target {
     z-index: 3;
     opacity: 0;
     transition:
-        transform 680ms cubic-bezier(.22,.72,.22,1),
-        opacity 680ms cubic-bezier(.22,.72,.22,1);
+        transform 700ms cubic-bezier(.2,.72,.2,1),
+        opacity 700ms cubic-bezier(.2,.72,.2,1);
 }
 
 .room-turn-stage-right .room-turn-stage-target {
     transform-origin: left center;
-    transform: translate3d(27%, 0, 0) rotateY(-10deg) scale(1.035);
+    transform: translate3d(31%, 0, 0) rotateY(-12deg) scale(1);
 }
 
 .room-turn-stage-left .room-turn-stage-target {
     transform-origin: right center;
-    transform: translate3d(-27%, 0, 0) rotateY(10deg) scale(1.035);
+    transform: translate3d(-31%, 0, 0) rotateY(12deg) scale(1);
 }
 
 .room-turn-stage-right.room-turn-stage-go .room-turn-stage-source {
     transform-origin: right center;
-    transform: translate3d(-18%, 0, 0) rotateY(7deg) scale(1.01);
+    transform: translate3d(-22%, 0, 0) rotateY(8deg) scale(1);
     opacity: .18;
 }
 
 .room-turn-stage-left.room-turn-stage-go .room-turn-stage-source {
     transform-origin: left center;
-    transform: translate3d(18%, 0, 0) rotateY(-7deg) scale(1.01);
+    transform: translate3d(22%, 0, 0) rotateY(-8deg) scale(1);
     opacity: .18;
 }
 
 .room-turn-stage.room-turn-stage-go .room-turn-stage-target {
-    transform: translate3d(0, 0, 0) rotateY(0deg) scale(1.02);
+    transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
     opacity: 1;
 }
 
@@ -1185,7 +1185,7 @@ body.youtube-player-open {
         id="chessRoomYoutubeHotspot"
         class="chess-room-hotspot chess-room-youtube-hotspot"
         type="button"
-        aria-label="YouTube öffnen"
+        aria-label="Zum Filmraum drehen"
     ></button>
 
     <button
@@ -1197,6 +1197,32 @@ body.youtube-player-open {
 </section>
 
 
+
+
+
+<!-- ==================================================
+     FILMRAUM
+================================================== -->
+
+<section id="filmRoomScreen" class="screen film-room-screen">
+    <div class="film-room-background" aria-hidden="true"></div>
+
+    <!-- Alte Filmkamera öffnet die Filme-/YouTube-Anwendung. -->
+    <button
+        id="filmRoomCameraHotspot"
+        class="film-room-hotspot film-room-camera-hotspot"
+        type="button"
+        aria-label="Filme öffnen"
+    ></button>
+
+    <!-- Linke obere Wand: zurück zum Schachraum drehen. -->
+    <button
+        id="filmRoomBackHotspot"
+        class="film-room-hotspot film-room-back-hotspot"
+        type="button"
+        aria-label="Zum Schachraum zurück"
+    ></button>
+</section>
 
 <!-- ==================================================
      BIBLIOTHEK
@@ -1292,7 +1318,13 @@ body.youtube-player-open {
 <section id="youtubeScreen" class="screen wikipedia-screen youtube-screen">
     <header class="wiki-topbar">
         <button id="backFromYoutube" class="wiki-back-button" type="button" aria-label="Zurück">‹</button>
-        <div class="wiki-room-title">YouTube</div>
+        <button
+            id="youtubeTitleButton"
+            class="wiki-room-title youtube-title-button"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+        >Filme</button>
         <button
             id="youtubeFolderButton"
             class="folder-icon-button wiki-folder-button"
@@ -1301,6 +1333,12 @@ body.youtube-player-open {
             aria-label="Ordner erstellen"
         ></button>
     </header>
+
+    <div id="youtubeSortMenu" class="youtube-sort-menu hidden" role="menu" aria-label="Sortierung">
+        <button id="youtubeSortNormal" class="youtube-sort-option active" type="button" data-youtube-order="relevance">Normal</button>
+        <button id="youtubeSortViews" class="youtube-sort-option" type="button" data-youtube-order="viewCount">Aufrufzahl</button>
+        <button id="youtubeSortDate" class="youtube-sort-option" type="button" data-youtube-order="date">Uploaddatum (Neu nach Alt)</button>
+    </div>
 
     <main class="wiki-shell">
         <form id="youtubeSearchForm" class="wiki-search-form" role="search">
@@ -1313,7 +1351,7 @@ body.youtube-player-open {
                 autocapitalize="sentences"
                 spellcheck="true"
                 placeholder="Suchen"
-                aria-label="YouTube durchsuchen"
+                aria-label="Filme auf YouTube durchsuchen"
             >
             <button id="youtubeSearchButton" class="wiki-search-button" type="submit" aria-label="Suchen">⌕</button>
         </form>
@@ -1348,7 +1386,7 @@ body.youtube-player-open {
             <div id="youtubeFolderVideos" class="youtube-list"></div>
         </section>
 
-        <section id="youtubeResults" class="youtube-results hidden" aria-label="YouTube Suchergebnisse">
+        <section id="youtubeResults" class="youtube-results hidden" aria-label="Film-Suchergebnisse">
             <div id="youtubeResultsList" class="youtube-list"></div>
         </section>
 
