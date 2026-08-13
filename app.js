@@ -8065,13 +8065,14 @@
     function initChessEngine() {
         if (
             chessEngine
+            &&
+            !chessEngineFailed
         ) {
             return;
         }
 
         /*
-           A previous deployment may have cached a broken worker. v30 uses
-           a new network URL and allows a fresh initialization attempt.
+           v31 uses a corrected worker hash and a fresh network URL.
         */
         chessEngineFailed =
             false;
@@ -8079,20 +8080,33 @@
         chessEngineErrorMessage =
             "";
 
+        if (
+            chessEngine
+        ) {
+            try {
+                chessEngine.terminate();
+            } catch (
+                error
+            ) {
+                // Ignore stale worker termination failures.
+            }
+
+            chessEngine =
+                null;
+        }
+
         try {
             const stockfishWasmUrl =
                 "https://unpkg.com/stockfish@18.0.8/bin/stockfish-18-lite-single.wasm";
 
             const workerUrl =
-                "./stockfish-worker.js?v=30"
+                "./stockfish-worker.js?v=31"
                 +
                 "#"
                 +
                 encodeURIComponent(
                     stockfishWasmUrl
-                )
-                +
-                ",worker";
+                );
 
             chessEngine =
                 new Worker(
@@ -8183,6 +8197,10 @@
                 "uciok"
             )
         ) {
+            console.info(
+                "Stockfish UCI initialized."
+            );
+
             chessEngine.postMessage(
                 "isready"
             );
@@ -8195,6 +8213,10 @@
                 "readyok"
             )
         ) {
+            console.info(
+                "Stockfish ready."
+            );
+
             chessEngineReady =
                 true;
 
@@ -9153,7 +9175,7 @@
             &&
             piece.color
             ===
-            "w"
+            chessHumanColor
         ) {
             chessSelectedSquare =
                 square;

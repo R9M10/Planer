@@ -1,6 +1,6 @@
-PLANER v30 — SCHACH-LOADER-FIX
+PLANER v31 — DEFINITIVER STOCKFISH-WORKER-FIX
 
-Bitte ALLE folgenden Dateien ersetzen:
+Bitte ALLE Dateien ersetzen:
 
 - index.html
 - style.css
@@ -9,51 +9,50 @@ Bitte ALLE folgenden Dateien ersetzen:
 - THIRD_PARTY_LICENSES.txt
 - README_DEPLOY.txt
 
-WARUM v29 BEI "WEITER" SCHEITERN KONNTE
+URSACHE DES v30-FEHLERS
 
-Die Fehlermeldung bedeutete nicht automatisch, dass der Rechner kein
-Internet hatte.
+Der Stockfish-18-Loader liest:
 
-1. Der Stockfish-Worker hatte über mehrere Versionen denselben HTTP-Pfad:
-   ./stockfish-worker.js
+    self.location.hash.substr(1).split(",")
 
-   Ein #fragment ändert den HTTP-Cache-Key nicht. Safari/Home-Screen-Apps
-   und normale Browser konnten daher weiterhin eine ältere, fehlerhafte
-   Worker-Datei aus dem Cache benutzen.
+Der erste Wert ist die WASM-URL.
 
-2. v29 wartete beim Klick auf "Weiter" maximal 10 Sekunden auf:
-   - Download der ca. 7.3 MB WASM-Datei
-   - WebAssembly-Kompilierung
-   - UCI-Initialisierung
+ABER:
+Wenn der zweite Wert exakt "worker" lautet, läuft eine besondere interne
+Stockfish-Verzweigung. Unsere v29/v30-URL endete auf:
 
-   War das beim ersten Start langsamer, wurde die gesamte Schachseite
-   abgebrochen.
+    #<WASM-URL>,worker
 
-WAS v30 ÄNDERT
+Dadurch wurde in unserem Wrapper die normale UCI-Engine nicht initialisiert.
 
-- Worker-Netzwerk-URL:
-  stockfish-worker.js?v=30#<WASM>,worker
+Die Folgen passen exakt zum beobachteten Verhalten:
 
-  Der Query-Teil erzwingt einen frischen Worker.
-  Der Hash-Teil wird weiterhin vom offiziellen Stockfish.js-Loader benutzt.
+- Bei Schwarz blieb Weiß am Zug, weil Stockfish keinen ersten Zug machte.
+- Schwarze Figuren waren deshalb nicht legal anklickbar.
+- Nach Ablauf des Engine-Timeouts ging die App zurück zur Elo-Auswahl.
 
-- chess.js wird vom echten ESM-Pfad geladen:
-  /dist/esm/chess.js
-  statt über den +esm-Transform-Endpunkt.
+v31 benutzt jetzt:
 
-- Nach "Weiter" öffnet sich das Brett SOFORT.
-  Stockfish darf im Hintergrund bis zu 30 Sekunden für den allerersten
-  Download/Compile benötigen.
+    stockfish-worker.js?v=31#<WASM-URL>
 
-- Nach erfolgreichem ersten Laden bleiben die eigentlichen Engine-Züge
-  weiterhin kurz (ca. 180–480 ms Suchzeit abhängig von der Elo).
+OHNE ",worker".
 
-WENN ES TROTZDEM NICHT GEHT
+Zusätzlich:
+- ein verbliebener hardcodierter Weiß-Check beim Figurwechsel wurde auf
+  die tatsächlich gewählte Spielerfarbe umgestellt.
+- UCI- und readyok-Status werden nur in der Browser-Konsole protokolliert,
+  nicht auf dem Spielbildschirm.
 
-Einmal nach dem GitHub-Pages-Deployment:
-1. Seite im normalen Browser komplett neu laden.
-2. Bei iPhone Home-Screen-App diese einmal vollständig schließen und neu öffnen.
-3. Danach Schach erneut öffnen.
+ERWARTETES VERHALTEN
 
-Die neue ?v=30 Worker-URL sollte verhindern, dass die alte Engine-Datei
-erneut aus dem Cache kommt.
+Weiß gewählt:
+- Brett öffnet sich.
+- Du kannst sofort Weiß ziehen.
+- Danach antwortet Stockfish.
+
+Schwarz gewählt:
+- Brett öffnet sich.
+- Stockfish macht automatisch den ersten weißen Zug.
+- Danach kannst du Schwarz ziehen.
+
+Nach erfolgreichem erstmaligem WASM-Laden sollten Folgezüge schnell sein.
