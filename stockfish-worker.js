@@ -1,13 +1,17 @@
 /*
- * Stockfish 18.0.8 lite single-threaded worker loader.
+ * Planer v30 — Stockfish 18.0.8 lite single-threaded worker.
  *
- * app.js launches this worker as:
+ * IMPORTANT:
+ * app.js creates this worker as
  *
- *   stockfish-worker.js#<encoded WASM URL>,worker
+ *   stockfish-worker.js?v=30#<encoded WASM URL>,worker
  *
- * Stockfish.js itself reads that hash and loads the supplied WASM URL.
- * This is the engine's own worker loading mechanism and avoids the old
- * broken inference of "stockfish-worker.wasm".
+ * The QUERY (?v=30) is intentional cache-busting.
+ * The HASH is intentionally preserved because Stockfish.js itself reads:
+ *
+ *   self.location.hash.substr(1).split(",")
+ *
+ * and uses the first value as the WASM URL when the second value is "worker".
  *
  * Stockfish.js / Stockfish: GPL-3.0
  */

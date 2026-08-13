@@ -407,6 +407,7 @@
     let chessEngine = null;
     let chessEngineReady = false;
     let chessEngineFailed = false;
+    let chessEngineErrorMessage = "";
     let chessEngineReadyWaiters = [];
     let chessEngineTask = null;
 
@@ -8038,7 +8039,7 @@
 
         chessLibraryPromise =
             import(
-                "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm"
+                "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/dist/esm/chess.js"
             )
             .then(
                 module => {
@@ -8064,18 +8065,26 @@
     function initChessEngine() {
         if (
             chessEngine
-            ||
-            chessEngineFailed
         ) {
             return;
         }
+
+        /*
+           A previous deployment may have cached a broken worker. v30 uses
+           a new network URL and allows a fresh initialization attempt.
+        */
+        chessEngineFailed =
+            false;
+
+        chessEngineErrorMessage =
+            "";
 
         try {
             const stockfishWasmUrl =
                 "https://unpkg.com/stockfish@18.0.8/bin/stockfish-18-lite-single.wasm";
 
             const workerUrl =
-                "./stockfish-worker.js"
+                "./stockfish-worker.js?v=30"
                 +
                 "#"
                 +
@@ -8105,7 +8114,7 @@
 
             chessEngine.addEventListener(
                 "error",
-                () => {
+                event => {
                     chessEngineFailed =
                         true;
 
@@ -8114,6 +8123,20 @@
 
                     chessEngineThinking =
                         false;
+
+                    chessEngineErrorMessage =
+                        String(
+                            event
+                            &&
+                            event.message
+                            ||
+                            "Stockfish-Worker konnte nicht geladen werden."
+                        );
+
+                    console.error(
+                        "Stockfish worker error:",
+                        event
+                    );
 
                     chessEngineReadyWaiters
                         .splice(
@@ -8247,7 +8270,7 @@
 
 
     function waitForChessEngine(
-        timeout = 8000
+        timeout = 30000
     ) {
         initChessEngine();
 
@@ -8809,7 +8832,7 @@
                choosing Elo and color, so the first engine move is fast.
             */
             waitForChessEngine(
-                8000
+                30000
             );
         } catch (
             error
@@ -8933,51 +8956,106 @@
                 chessEngineRequestToken +=
                     1;
 
-                const ready =
-                    await waitForChessEngine(
-                        10000
-                    );
-
-                if (
-                    !ready
-                ) {
-                    throw new Error(
-                        "Stockfish konnte nicht geladen werden."
-                    );
-                }
-
-                chessEngine.postMessage(
-                    "ucinewgame"
-                );
-
-                chessEngine.postMessage(
-                    "setoption name Hash value 32"
-                );
-
+                /*
+                   Enter the game immediately. The first Stockfish WASM load
+                   can take noticeably longer on Safari/Home Screen apps and
+                   must never prevent the board from opening.
+                */
                 showScreen(
                     screens.chessPlay
                 );
 
                 renderChessPlayBoard();
 
+                initChessEngine();
+
+                const prepareEngine =
+                    async () => {
+                        const ready =
+                            await waitForChessEngine(
+                                30000
+                            );
+
+                        if (
+                            !ready
+                        ) {
+                            const detail =
+                                chessEngineErrorMessage
+                                ||
+                                "Die Stockfish-Engine hat innerhalb von 30 Sekunden nicht geantwortet.";
+
+                            console.error(
+                                detail
+                            );
+
+                            return false;
+                        }
+
+                        chessEngine.postMessage(
+                            "ucinewgame"
+                        );
+
+                        /*
+                           16 MB is enough for this mobile/single-thread build
+                           and avoids unnecessary setup latency.
+                        */
+                        chessEngine.postMessage(
+                            "setoption name Hash value 16"
+                        );
+
+                        return true;
+                    };
+
                 if (
                     chessHumanColor
                     ===
                     "b"
                 ) {
-                    window.setTimeout(
-                        () => {
-                            playChessEngineTurn();
-                        },
-                        80
+                    prepareEngine().then(
+                        ready => {
+                            if (
+                                ready
+                                &&
+                                chessGame
+                                &&
+                                !chessGame.isGameOver()
+                                &&
+                                chessGame.turn()
+                                ===
+                                "w"
+                            ) {
+                                playChessEngineTurn();
+                            } else if (
+                                !ready
+                            ) {
+                                window.alert(
+                                    "Stockfish konnte nicht geladen werden. Bitte lade die Seite einmal vollständig neu; deine Internetverbindung ist dabei nicht zwingend das Problem."
+                                );
+
+                                showScreen(
+                                    screens.chessSetup
+                                );
+                            }
+                        }
                     );
+                } else {
+                    /*
+                       White can make the first move while the engine finishes
+                       loading. playChessEngineTurn() will wait if necessary.
+                    */
+                    prepareEngine();
                 }
 
             } catch (
                 error
             ) {
+                console.error(
+                    "Chess startup error:",
+                    error
+                );
+
                 window.alert(
-                    "Schach konnte nicht geladen werden. Für das erste Laden ist eine Internetverbindung nötig."
+                    "Die Schachregeln konnten nicht geladen werden. Bitte lade die Seite einmal neu. Wenn der Fehler bleibt, sag mir bitte, welchen Browser du verwendest."
                 );
             }
         }
@@ -9652,7 +9730,7 @@
                         `go movetime ${moveTime}`
                     ],
                     timeout:
-                        3500
+                        8000
                 });
 
             if (
@@ -10572,7 +10650,7 @@
                     "go movetime 220"
                 ],
                 timeout:
-                    3200
+                    8000
             });
 
         if (
