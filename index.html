@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=36">
+    <link rel="stylesheet" href="style.css?v=38">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=37" defer></script>
+    <script src="app.js?v=38" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -449,7 +449,215 @@ body.room-turning {
     }
 }
 
-    </style>
+    
+/* ==================================================
+   V38 — YOUTUBE
+================================================== */
+
+#chessRoomScreen .chess-room-youtube-hotspot {
+    left: 76%;
+    top: 8%;
+    width: 24%;
+    height: 57%;
+    z-index: 9;
+}
+
+.youtube-screen {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.youtube-tabs {
+    width: min(100%, 650px);
+    margin: 16px auto 1px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.youtube-tab {
+    position: relative;
+    min-height: 39px;
+    padding: 0 1px 10px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.youtube-tab.active {
+    color: var(--text);
+}
+
+.youtube-tab.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: color-mix(in srgb, var(--text) 68%, transparent);
+}
+
+.youtube-results,
+.youtube-channel-view {
+    width: min(100%, 650px);
+    margin: 18px auto 0;
+}
+
+.youtube-list {
+    border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.youtube-list-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 42px;
+    align-items: stretch;
+    min-height: 62px;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.youtube-list-row.channel-row {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.youtube-list-open {
+    min-width: 0;
+    padding: 12px 4px 12px 0;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.youtube-list-title {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: 17px;
+    line-height: 1.28;
+}
+
+.youtube-list-meta {
+    display: block;
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.3;
+}
+
+.youtube-save-video-button {
+    align-self: stretch;
+    width: 42px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 25px;
+    font-weight: 260;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.youtube-save-video-button:active {
+    background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.youtube-empty {
+    padding: 28px 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.youtube-channel-heading {
+    margin: 4px 0 16px;
+    color: var(--text);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: clamp(24px, 7vw, 34px);
+    font-weight: 400;
+    line-height: 1.08;
+    letter-spacing: -.025em;
+}
+
+.youtube-more-button {
+    display: block;
+    margin: 18px auto 4px;
+    padding: 8px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.youtube-player {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background: #000;
+}
+
+.youtube-player-stage {
+    position: absolute;
+    inset: 0;
+    background: #000;
+}
+
+.youtube-player-stage iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #000;
+}
+
+.youtube-player-close {
+    position: absolute;
+    top: calc(10px + env(safe-area-inset-top));
+    left: calc(10px + env(safe-area-inset-left));
+    z-index: 4;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, .42);
+    color: rgba(255, 255, 255, .92);
+    font-size: 27px;
+    line-height: 1;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    cursor: pointer;
+}
+
+body.youtube-player-open {
+    overflow: hidden !important;
+}
+
+@media (max-width: 430px) {
+    .youtube-list-row {
+        min-height: 58px;
+    }
+
+    .youtube-list-title {
+        font-size: 16px;
+    }
+}
+
+</style>
 </head>
 <body>
 
@@ -974,6 +1182,13 @@ body.room-turning {
     ></button>
 
     <button
+        id="chessRoomYoutubeHotspot"
+        class="chess-room-hotspot chess-room-youtube-hotspot"
+        type="button"
+        aria-label="YouTube öffnen"
+    ></button>
+
+    <button
         id="chessRoomBackHotspot"
         class="chess-room-hotspot chess-room-back-hotspot"
         type="button"
@@ -1067,6 +1282,96 @@ body.room-turning {
             <button id="wikipediaFolderPickerNew" class="wiki-folder-picker-new" type="button">Neuer Ordner</button>
             <button id="wikipediaFolderPickerCancel" class="wiki-folder-picker-cancel" type="button">Abbrechen</button>
         </div>
+    </div>
+</section>
+
+<!-- ==================================================
+     YOUTUBE
+================================================== -->
+
+<section id="youtubeScreen" class="screen wikipedia-screen youtube-screen">
+    <header class="wiki-topbar">
+        <button id="backFromYoutube" class="wiki-back-button" type="button" aria-label="Zurück">‹</button>
+        <div class="wiki-room-title">YouTube</div>
+        <button
+            id="youtubeFolderButton"
+            class="folder-icon-button wiki-folder-button"
+            type="button"
+            data-folder-icon
+            aria-label="Ordner erstellen"
+        ></button>
+    </header>
+
+    <main class="wiki-shell">
+        <form id="youtubeSearchForm" class="wiki-search-form" role="search">
+            <input
+                id="youtubeSearchInput"
+                class="wiki-search-input"
+                type="search"
+                inputmode="search"
+                autocomplete="off"
+                autocapitalize="sentences"
+                spellcheck="true"
+                placeholder="Suchen"
+                aria-label="YouTube durchsuchen"
+            >
+            <button id="youtubeSearchButton" class="wiki-search-button" type="submit" aria-label="Suchen">⌕</button>
+        </form>
+
+        <form id="youtubeFolderComposer" class="wiki-folder-composer hidden">
+            <input
+                id="youtubeFolderNameInput"
+                class="wiki-folder-name-input"
+                type="text"
+                autocomplete="off"
+                maxlength="48"
+                placeholder="Ordnername"
+                aria-label="Ordnername"
+            >
+            <button class="wiki-folder-create-confirm" type="submit">Erstellen</button>
+            <button id="youtubeFolderCreateCancel" class="wiki-folder-create-cancel" type="button">Abbrechen</button>
+        </form>
+
+        <nav id="youtubeFolders" class="wiki-folders" aria-label="Videoordner"></nav>
+
+        <div id="youtubeStatus" class="wiki-status" aria-live="polite"></div>
+
+        <nav id="youtubeTabs" class="youtube-tabs hidden" aria-label="Suchergebnisse filtern">
+            <button id="youtubeTabVideos" class="youtube-tab active" type="button">Videos</button>
+            <button id="youtubeTabChannels" class="youtube-tab" type="button">Kanäle</button>
+        </nav>
+
+        <section id="youtubeLanding" class="wiki-landing"></section>
+
+        <section id="youtubeFolderView" class="wiki-folder-view hidden">
+            <div id="youtubeFolderViewTitle" class="wiki-folder-view-title"></div>
+            <div id="youtubeFolderVideos" class="youtube-list"></div>
+        </section>
+
+        <section id="youtubeResults" class="youtube-results hidden" aria-label="YouTube Suchergebnisse">
+            <div id="youtubeResultsList" class="youtube-list"></div>
+        </section>
+
+        <section id="youtubeChannelView" class="youtube-channel-view hidden">
+            <h1 id="youtubeChannelTitle" class="youtube-channel-heading"></h1>
+            <div id="youtubeChannelVideos" class="youtube-list"></div>
+            <button id="youtubeChannelMore" class="youtube-more-button hidden" type="button">Mehr laden</button>
+        </section>
+    </main>
+
+    <div id="youtubeFolderPicker" class="wiki-folder-picker hidden" role="dialog" aria-modal="true" aria-labelledby="youtubeFolderPickerTitle">
+        <div class="wiki-folder-picker-sheet">
+            <div class="wiki-folder-picker-handle" aria-hidden="true"></div>
+            <div id="youtubeFolderPickerTitle" class="wiki-folder-picker-title">In Ordner ablegen</div>
+            <div id="youtubeFolderPickerList" class="wiki-folder-picker-list"></div>
+            <button id="youtubeFolderPickerNew" class="wiki-folder-picker-new" type="button">Neuer Ordner</button>
+            <button id="youtubeFolderPickerCancel" class="wiki-folder-picker-cancel" type="button">Abbrechen</button>
+        </div>
+    </div>
+
+    <div id="youtubePlayer" class="youtube-player hidden" role="dialog" aria-modal="true" aria-label="Videoplayer">
+        <button id="youtubePlayerClose" class="youtube-player-close" type="button" aria-label="Video schließen">×</button>
+        <div id="youtubePlayerStage" class="youtube-player-stage"></div>
     </div>
 </section>
 

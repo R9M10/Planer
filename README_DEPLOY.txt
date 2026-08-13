@@ -1,19 +1,21 @@
-PLANER v37 — FLÜSSIGE RAUMDREHUNG + BIBLIOTHEK
+PLANER v38 — YOUTUBE
 
-Änderungen:
-- Raumdrehung Schreibtisch <-> Schachraum läuft jetzt über eine vollflächige
-  GPU-Compositor-Ebene. Dadurch kann kein weißer Hintergrund zwischen den
-  beiden Raumansichten sichtbar werden.
-- Tag- und Nachtbild des Schachraums werden beim Start vorgeladen.
-- „Akademie“ heißt jetzt „Bibliothek“.
-- Bibliothek ohne Alpha/A, „Wissen suchen.“ und ohne „Wikipedia durchsuchen“.
-  Das Suchfeld heißt nur noch „Suchen“.
-- Oben rechts steht das bekannte Ordner-/Bücherregal-Icon.
-- Neue Ordner erscheinen direkt unter der Suche.
-- Wikipedia-Artikel haben oben rechts ein +.
-- Über + lässt sich ein Artikel in einen bestehenden Ordner speichern oder
-  direkt ein neuer Ordner erzeugen.
-- Ordner und gespeicherte Artikel liegen im normalen App-State und werden
-  damit von Speichern/Backup/Wiederherstellen mit erfasst.
+Neu:
 
-Basis: aktueller Stand von R9M10/Planer (main) zum Zeitpunkt der Änderung.
+- Klick auf die rechte Wand neben der Schiebetür im Schachraum öffnet YouTube.
+- Gleiches reduziertes Layout wie die Bibliothek.
+- Keine Suchvorschläge und keine API-Anfrage während der Eingabe.
+- Erst nach Absenden erscheinen die Reiter „Videos“ und „Kanäle“.
+- Videolisten enthalten ausschließlich Titel und Kanalname, keine Thumbnails.
+- Kanal anklicken -> Uploads des Kanals.
+- Video anklicken -> sofortiger viewportfüllender Player; nativer Vollbildmodus wird zusätzlich versucht.
+- Videos können mit „+“ in lokale Videoordner gespeichert werden.
+- Ordner sind Teil des normalen App-State und damit Teil von Backup/Wiederherstellung.
+
+Wichtig:
+Bei einer statischen GitHub-Pages-App ist ein Browser-API-Key im ausgelieferten Clientcode sichtbar.
+Beschränke ihn in Google Cloud auf:
+- YouTube Data API v3
+- HTTP-Referrer deiner GitHub-Pages-Seite, z. B. https://r9m10.github.io/Planer/*
+
+Der Schlüssel wird in dieser README absichtlich nicht wiederholt.

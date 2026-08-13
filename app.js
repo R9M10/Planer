@@ -22,6 +22,7 @@
         textsHub: $("textsHubScreen"),
         chessRoom: $("chessRoomScreen"),
         wikipedia: $("wikipediaScreen"),
+        youtube: $("youtubeScreen"),
         chessSetup: $("chessSetupScreen"),
         chessPlay: $("chessPlayScreen"),
         chessAnalysis: $("chessAnalysisScreen"),
@@ -57,6 +58,7 @@
         openChessButton: $("openChessButton"),
         chessRoomBoardHotspot: $("chessRoomBoardHotspot"),
         chessRoomAcademyHotspot: $("chessRoomAcademyHotspot"),
+        chessRoomYoutubeHotspot: $("chessRoomYoutubeHotspot"),
         chessRoomBackHotspot: $("chessRoomBackHotspot"),
 
         backFromWikipedia: $("backFromWikipedia"),
@@ -83,6 +85,36 @@
         wikipediaFolderPickerList: $("wikipediaFolderPickerList"),
         wikipediaFolderPickerNew: $("wikipediaFolderPickerNew"),
         wikipediaFolderPickerCancel: $("wikipediaFolderPickerCancel"),
+        backFromYoutube: $("backFromYoutube"),
+        youtubeSearchForm: $("youtubeSearchForm"),
+        youtubeSearchInput: $("youtubeSearchInput"),
+        youtubeSearchButton: $("youtubeSearchButton"),
+        youtubeFolderButton: $("youtubeFolderButton"),
+        youtubeFolderComposer: $("youtubeFolderComposer"),
+        youtubeFolderNameInput: $("youtubeFolderNameInput"),
+        youtubeFolderCreateCancel: $("youtubeFolderCreateCancel"),
+        youtubeFolders: $("youtubeFolders"),
+        youtubeStatus: $("youtubeStatus"),
+        youtubeTabs: $("youtubeTabs"),
+        youtubeTabVideos: $("youtubeTabVideos"),
+        youtubeTabChannels: $("youtubeTabChannels"),
+        youtubeLanding: $("youtubeLanding"),
+        youtubeFolderView: $("youtubeFolderView"),
+        youtubeFolderViewTitle: $("youtubeFolderViewTitle"),
+        youtubeFolderVideos: $("youtubeFolderVideos"),
+        youtubeResults: $("youtubeResults"),
+        youtubeResultsList: $("youtubeResultsList"),
+        youtubeChannelView: $("youtubeChannelView"),
+        youtubeChannelTitle: $("youtubeChannelTitle"),
+        youtubeChannelVideos: $("youtubeChannelVideos"),
+        youtubeChannelMore: $("youtubeChannelMore"),
+        youtubeFolderPicker: $("youtubeFolderPicker"),
+        youtubeFolderPickerList: $("youtubeFolderPickerList"),
+        youtubeFolderPickerNew: $("youtubeFolderPickerNew"),
+        youtubeFolderPickerCancel: $("youtubeFolderPickerCancel"),
+        youtubePlayer: $("youtubePlayer"),
+        youtubePlayerClose: $("youtubePlayerClose"),
+        youtubePlayerStage: $("youtubePlayerStage"),
         timelineButton: $("timelineButton"),
         backupButton: $("backupButton"),
         restoreButton: $("restoreButton"),
@@ -430,6 +462,20 @@
     let wikipediaOpenFolderId = null;
     let wikipediaReturnFolderId = null;
     let wikipediaFolderComposerSaveArticle = false;
+
+    const YOUTUBE_API_KEY = "AIzaSyAz9U2UkGHBuQr-sagektBlN5WxsoR_HAI";
+    const YOUTUBE_API_ROOT = "https://www.googleapis.com/youtube/v3";
+
+    let youtubeLastQuery = "";
+    let youtubeSearchVideos = [];
+    let youtubeSearchChannels = [];
+    let youtubeActiveTab = "videos";
+    let youtubeOpenFolderId = null;
+    let youtubeRequestToken = 0;
+    let youtubeCurrentChannel = null;
+    let youtubeChannelNextPageToken = "";
+    let youtubePendingSaveVideo = null;
+    let youtubeFolderComposerSaveVideo = false;
 
     /*
        Request the side-room images immediately. Safari may otherwise defer
@@ -1518,6 +1564,9 @@
             wikipedia: {
                 folders: []
             },
+            youtube: {
+                folders: []
+            },
             settings: {
                 theme: "dark"
             }
@@ -2250,6 +2299,114 @@
     }
 
 
+    function normalizeYoutubeFolder(
+        folder
+    ) {
+        const createdAt =
+            folder?.createdAt
+            ??
+            nowIso();
+
+        const videos =
+            Array.isArray(
+                folder?.videos
+            )
+                ? folder.videos
+                    .map(
+                        video => {
+                            const videoId =
+                                String(
+                                    video?.videoId
+                                    ??
+                                    ""
+                                )
+                                .trim();
+
+                            const title =
+                                String(
+                                    video?.title
+                                    ??
+                                    ""
+                                )
+                                .trim();
+
+                            if (
+                                !videoId
+                                ||
+                                !title
+                            ) {
+                                return null;
+                            }
+
+                            return {
+                                videoId,
+                                title,
+                                channelId:
+                                    String(
+                                        video?.channelId
+                                        ??
+                                        ""
+                                    )
+                                    .trim(),
+                                channelTitle:
+                                    String(
+                                        video?.channelTitle
+                                        ??
+                                        ""
+                                    )
+                                    .trim(),
+                                addedAt:
+                                    video?.addedAt
+                                    ??
+                                    createdAt
+                            };
+                        }
+                    )
+                    .filter(
+                        Boolean
+                    )
+                : [];
+
+        const seen =
+            new Set();
+
+        return {
+            id:
+                folder?.id
+                ??
+                createId(),
+            name:
+                String(
+                    folder?.name
+                    ??
+                    "Ordner"
+                )
+                .trim()
+                ||
+                "Ordner",
+            videos:
+                videos.filter(
+                    video => {
+                        if (
+                            seen.has(
+                                video.videoId
+                            )
+                        ) {
+                            return false;
+                        }
+
+                        seen.add(
+                            video.videoId
+                        );
+
+                        return true;
+                    }
+                ),
+            createdAt
+        };
+    }
+
+
     function dedupeById(items) {
         const seen = new Set();
 
@@ -2338,6 +2495,15 @@
             )
                 ? raw.wikipedia.folders.map(
                     normalizeWikipediaFolder
+                )
+                : [];
+
+        clean.youtube.folders =
+            Array.isArray(
+                raw.youtube?.folders
+            )
+                ? raw.youtube.folders.map(
+                    normalizeYoutubeFolder
                 )
                 : [];
 
@@ -9874,6 +10040,1828 @@
                 wikipediaOpenFolderId
             ) {
                 showWikipediaLanding();
+                return;
+            }
+
+            showScreen(
+                screens.chessRoom
+            );
+        }
+    );
+
+
+
+    // ==================================================
+    // YOUTUBE
+    // ==================================================
+
+    function decodeYoutubeText(
+        value
+    ) {
+        const textarea =
+            document.createElement(
+                "textarea"
+            );
+
+        textarea.innerHTML =
+            String(
+                value
+                ??
+                ""
+            );
+
+        return textarea.value;
+    }
+
+
+    function youtubeApiUrl(
+        resource,
+        params = {}
+    ) {
+        const url =
+            new URL(
+                `${YOUTUBE_API_ROOT}/${resource}`
+            );
+
+        Object.entries({
+            ...params,
+            key:
+                YOUTUBE_API_KEY
+        }).forEach(
+            ([key, value]) => {
+                if (
+                    value
+                    ===
+                    undefined
+                    ||
+                    value
+                    ===
+                    null
+                    ||
+                    value
+                    ===
+                    ""
+                ) {
+                    return;
+                }
+
+                url.searchParams.set(
+                    key,
+                    String(
+                        value
+                    )
+                );
+            }
+        );
+
+        return url.toString();
+    }
+
+
+    async function fetchYoutubeJson(
+        resource,
+        params
+    ) {
+        const response =
+            await fetch(
+                youtubeApiUrl(
+                    resource,
+                    params
+                ),
+                {
+                    method:
+                        "GET",
+                    mode:
+                        "cors",
+                    cache:
+                        "no-store"
+                }
+            );
+
+        let data =
+            null;
+
+        try {
+            data =
+                await response.json();
+        } catch (
+            error
+        ) {
+            data =
+                null;
+        }
+
+        if (
+            !response.ok
+        ) {
+            const apiError =
+                new Error(
+                    data?.error?.message
+                    ??
+                    `YouTube HTTP ${response.status}`
+                );
+
+            apiError.status =
+                response.status;
+
+            throw apiError;
+        }
+
+        return (
+            data
+            ??
+            {}
+        );
+    }
+
+
+    function setYoutubeStatus(
+        text = "",
+        isError = false
+    ) {
+        el.youtubeStatus.textContent =
+            text;
+
+        el.youtubeStatus.classList.toggle(
+            "error",
+            Boolean(
+                isError
+            )
+        );
+    }
+
+
+    function youtubeFolderById(
+        folderId
+    ) {
+        return (
+            state.youtube.folders.find(
+                folder =>
+                    folder.id
+                    ===
+                    folderId
+            )
+            ??
+            null
+        );
+    }
+
+
+    function hideYoutubeFolderComposer() {
+        el.youtubeFolderComposer.classList.add(
+            "hidden"
+        );
+
+        el.youtubeFolderNameInput.value =
+            "";
+
+        youtubeFolderComposerSaveVideo =
+            false;
+    }
+
+
+    function showYoutubeFolderComposer(
+        saveCurrentVideo = false
+    ) {
+        youtubeFolderComposerSaveVideo =
+            Boolean(
+                saveCurrentVideo
+                &&
+                youtubePendingSaveVideo
+            );
+
+        el.youtubeFolderComposer.classList.remove(
+            "hidden"
+        );
+
+        requestAnimationFrame(
+            () => {
+                el.youtubeFolderNameInput.focus();
+            }
+        );
+    }
+
+
+    function createYoutubeFolder(
+        rawName
+    ) {
+        const name =
+            String(
+                rawName
+                ??
+                ""
+            )
+            .trim();
+
+        if (
+            !name
+        ) {
+            return null;
+        }
+
+        const existing =
+            state.youtube.folders.find(
+                folder =>
+                    folder.name.toLocaleLowerCase(
+                        "de-DE"
+                    )
+                    ===
+                    name.toLocaleLowerCase(
+                        "de-DE"
+                    )
+            );
+
+        if (
+            existing
+        ) {
+            return existing;
+        }
+
+        const folder = {
+            id:
+                createId(),
+            name,
+            videos:
+                [],
+            createdAt:
+                nowIso()
+        };
+
+        state.youtube.folders.push(
+            folder
+        );
+
+        saveState();
+
+        renderYoutubeFolders();
+
+        return folder;
+    }
+
+
+    function renderYoutubeFolders() {
+        el.youtubeFolders.innerHTML =
+            "";
+
+        const folders =
+            state.youtube.folders;
+
+        el.youtubeFolders.classList.toggle(
+            "hidden",
+            folders.length
+            ===
+            0
+        );
+
+        folders.forEach(
+            folder => {
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "wiki-folder-chip";
+
+                if (
+                    youtubeOpenFolderId
+                    ===
+                    folder.id
+                ) {
+                    button.classList.add(
+                        "active"
+                    );
+                }
+
+                const icon =
+                    document.createElement(
+                        "span"
+                    );
+
+                icon.className =
+                    "wiki-folder-chip-icon";
+
+                icon.innerHTML =
+                    bookshelfIconSvg();
+
+                const label =
+                    document.createElement(
+                        "span"
+                    );
+
+                label.className =
+                    "wiki-folder-chip-label";
+
+                label.textContent =
+                    folder.name;
+
+                const count =
+                    document.createElement(
+                        "span"
+                    );
+
+                count.className =
+                    "wiki-folder-chip-count";
+
+                count.textContent =
+                    String(
+                        folder.videos.length
+                    );
+
+                button.append(
+                    icon,
+                    label,
+                    count
+                );
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        showYoutubeFolder(
+                            folder.id
+                        );
+                    }
+                );
+
+                el.youtubeFolders.appendChild(
+                    button
+                );
+            }
+        );
+    }
+
+
+    function hideYoutubeContentViews() {
+        el.youtubeLanding.classList.add(
+            "hidden"
+        );
+
+        el.youtubeFolderView.classList.add(
+            "hidden"
+        );
+
+        el.youtubeResults.classList.add(
+            "hidden"
+        );
+
+        el.youtubeChannelView.classList.add(
+            "hidden"
+        );
+    }
+
+
+    function showYoutubeLanding() {
+        youtubeOpenFolderId =
+            null;
+
+        youtubeCurrentChannel =
+            null;
+
+        youtubeChannelNextPageToken =
+            "";
+
+        el.youtubeTabs.classList.add(
+            "hidden"
+        );
+
+        hideYoutubeContentViews();
+
+        el.youtubeLanding.classList.remove(
+            "hidden"
+        );
+
+        el.youtubeResultsList.innerHTML =
+            "";
+
+        renderYoutubeFolders();
+
+        setYoutubeStatus(
+            ""
+        );
+    }
+
+
+    function makeYoutubeVideoRow(
+        video
+    ) {
+        const row =
+            document.createElement(
+                "div"
+            );
+
+        row.className =
+            "youtube-list-row";
+
+        const openButton =
+            document.createElement(
+                "button"
+            );
+
+        openButton.type =
+            "button";
+
+        openButton.className =
+            "youtube-list-open";
+
+        const title =
+            document.createElement(
+                "span"
+            );
+
+        title.className =
+            "youtube-list-title";
+
+        title.textContent =
+            video.title;
+
+        const meta =
+            document.createElement(
+                "span"
+            );
+
+        meta.className =
+            "youtube-list-meta";
+
+        meta.textContent =
+            video.channelTitle
+            ||
+            "YouTube";
+
+        openButton.append(
+            title,
+            meta
+        );
+
+        openButton.addEventListener(
+            "click",
+            () => {
+                openYoutubePlayer(
+                    video
+                );
+            }
+        );
+
+        const saveButton =
+            document.createElement(
+                "button"
+            );
+
+        saveButton.type =
+            "button";
+
+        saveButton.className =
+            "youtube-save-video-button";
+
+        saveButton.textContent =
+            "+";
+
+        saveButton.setAttribute(
+            "aria-label",
+            "Video in Ordner ablegen"
+        );
+
+        saveButton.addEventListener(
+            "click",
+            event => {
+                event.stopPropagation();
+
+                youtubePendingSaveVideo =
+                    {
+                        ...video
+                    };
+
+                openYoutubeFolderPicker();
+            }
+        );
+
+        row.append(
+            openButton,
+            saveButton
+        );
+
+        return row;
+    }
+
+
+    function makeYoutubeChannelRow(
+        channel
+    ) {
+        const row =
+            document.createElement(
+                "div"
+            );
+
+        row.className =
+            "youtube-list-row channel-row";
+
+        const openButton =
+            document.createElement(
+                "button"
+            );
+
+        openButton.type =
+            "button";
+
+        openButton.className =
+            "youtube-list-open";
+
+        const title =
+            document.createElement(
+                "span"
+            );
+
+        title.className =
+            "youtube-list-title";
+
+        title.textContent =
+            channel.title;
+
+        const meta =
+            document.createElement(
+                "span"
+            );
+
+        meta.className =
+            "youtube-list-meta";
+
+        meta.textContent =
+            "Kanal";
+
+        openButton.append(
+            title,
+            meta
+        );
+
+        openButton.addEventListener(
+            "click",
+            () => {
+                openYoutubeChannel(
+                    channel
+                );
+            }
+        );
+
+        row.appendChild(
+            openButton
+        );
+
+        return row;
+    }
+
+
+    function renderYoutubeResults() {
+        el.youtubeResultsList.innerHTML =
+            "";
+
+        const isVideos =
+            youtubeActiveTab
+            ===
+            "videos";
+
+        el.youtubeTabVideos.classList.toggle(
+            "active",
+            isVideos
+        );
+
+        el.youtubeTabChannels.classList.toggle(
+            "active",
+            !isVideos
+        );
+
+        const items =
+            isVideos
+                ? youtubeSearchVideos
+                : youtubeSearchChannels;
+
+        if (
+            items.length
+            ===
+            0
+        ) {
+            const empty =
+                document.createElement(
+                    "div"
+                );
+
+            empty.className =
+                "youtube-empty";
+
+            empty.textContent =
+                isVideos
+                    ? "Keine Videos gefunden."
+                    : "Keine Kanäle gefunden.";
+
+            el.youtubeResultsList.appendChild(
+                empty
+            );
+
+            return;
+        }
+
+        items.forEach(
+            item => {
+                el.youtubeResultsList.appendChild(
+                    isVideos
+                        ? makeYoutubeVideoRow(
+                            item
+                        )
+                        : makeYoutubeChannelRow(
+                            item
+                        )
+                );
+            }
+        );
+    }
+
+
+    async function searchYoutube(
+        rawQuery
+    ) {
+        const query =
+            String(
+                rawQuery
+                ??
+                ""
+            )
+            .trim();
+
+        if (
+            !query
+        ) {
+            showYoutubeLanding();
+            return;
+        }
+
+        youtubeLastQuery =
+            query;
+
+        youtubeOpenFolderId =
+            null;
+
+        youtubeCurrentChannel =
+            null;
+
+        youtubeChannelNextPageToken =
+            "";
+
+        youtubeActiveTab =
+            "videos";
+
+        const requestToken =
+            ++youtubeRequestToken;
+
+        hideYoutubeContentViews();
+
+        el.youtubeResults.classList.remove(
+            "hidden"
+        );
+
+        el.youtubeTabs.classList.add(
+            "hidden"
+        );
+
+        el.youtubeResultsList.innerHTML =
+            "";
+
+        renderYoutubeFolders();
+
+        setYoutubeStatus(
+            "Suche …"
+        );
+
+        try {
+            const data =
+                await fetchYoutubeJson(
+                    "search",
+                    {
+                        part:
+                            "snippet",
+                        q:
+                            query,
+                        type:
+                            "video,channel",
+                        maxResults:
+                            50,
+                        order:
+                            "relevance"
+                    }
+                );
+
+            if (
+                requestToken
+                !==
+                youtubeRequestToken
+            ) {
+                return;
+            }
+
+            youtubeSearchVideos =
+                [];
+
+            youtubeSearchChannels =
+                [];
+
+            (
+                Array.isArray(
+                    data.items
+                )
+                    ? data.items
+                    : []
+            ).forEach(
+                item => {
+                    const snippet =
+                        item?.snippet
+                        ??
+                        {};
+
+                    if (
+                        item?.id?.videoId
+                    ) {
+                        youtubeSearchVideos.push({
+                            videoId:
+                                item.id.videoId,
+                            title:
+                                decodeYoutubeText(
+                                    snippet.title
+                                ),
+                            channelId:
+                                String(
+                                    snippet.channelId
+                                    ??
+                                    ""
+                                ),
+                            channelTitle:
+                                decodeYoutubeText(
+                                    snippet.channelTitle
+                                    ??
+                                    ""
+                                )
+                        });
+
+                        return;
+                    }
+
+                    if (
+                        item?.id?.channelId
+                    ) {
+                        youtubeSearchChannels.push({
+                            channelId:
+                                item.id.channelId,
+                            title:
+                                decodeYoutubeText(
+                                    snippet.title
+                                    ??
+                                    snippet.channelTitle
+                                    ??
+                                    ""
+                                )
+                        });
+                    }
+                }
+            );
+
+            el.youtubeTabs.classList.remove(
+                "hidden"
+            );
+
+            renderYoutubeResults();
+
+            setYoutubeStatus(
+                ""
+            );
+        } catch (
+            error
+        ) {
+            console.error(
+                "YouTube search failed:",
+                error
+            );
+
+            if (
+                requestToken
+                !==
+                youtubeRequestToken
+            ) {
+                return;
+            }
+
+            setYoutubeStatus(
+                error?.status
+                ===
+                403
+                    ? "YouTube-API nicht verfügbar. Prüfe Schlüssel und Website-Beschränkung."
+                    : "YouTube konnte gerade nicht erreicht werden.",
+                true
+            );
+        }
+    }
+
+
+    function showYoutubeSearchResults() {
+        youtubeOpenFolderId =
+            null;
+
+        youtubeCurrentChannel =
+            null;
+
+        youtubeChannelNextPageToken =
+            "";
+
+        hideYoutubeContentViews();
+
+        el.youtubeResults.classList.remove(
+            "hidden"
+        );
+
+        el.youtubeTabs.classList.remove(
+            "hidden"
+        );
+
+        renderYoutubeFolders();
+
+        renderYoutubeResults();
+
+        setYoutubeStatus(
+            ""
+        );
+    }
+
+
+    function showYoutubeFolder(
+        folderId
+    ) {
+        const folder =
+            youtubeFolderById(
+                folderId
+            );
+
+        if (
+            !folder
+        ) {
+            showYoutubeLanding();
+            return;
+        }
+
+        youtubeRequestToken +=
+            1;
+
+        youtubeOpenFolderId =
+            folder.id;
+
+        youtubeCurrentChannel =
+            null;
+
+        youtubeChannelNextPageToken =
+            "";
+
+        el.youtubeTabs.classList.add(
+            "hidden"
+        );
+
+        hideYoutubeContentViews();
+
+        el.youtubeFolderView.classList.remove(
+            "hidden"
+        );
+
+        el.youtubeFolderViewTitle.textContent =
+            folder.name;
+
+        el.youtubeFolderVideos.innerHTML =
+            "";
+
+        if (
+            folder.videos.length
+            ===
+            0
+        ) {
+            const empty =
+                document.createElement(
+                    "div"
+                );
+
+            empty.className =
+                "youtube-empty";
+
+            empty.textContent =
+                "Noch keine Videos.";
+
+            el.youtubeFolderVideos.appendChild(
+                empty
+            );
+        } else {
+            folder.videos.forEach(
+                video => {
+                    el.youtubeFolderVideos.appendChild(
+                        makeYoutubeVideoRow(
+                            video
+                        )
+                    );
+                }
+            );
+        }
+
+        renderYoutubeFolders();
+
+        setYoutubeStatus(
+            ""
+        );
+    }
+
+
+    async function openYoutubeChannel(
+        channel
+    ) {
+        const requestToken =
+            ++youtubeRequestToken;
+
+        youtubeOpenFolderId =
+            null;
+
+        youtubeCurrentChannel = {
+            channelId:
+                channel.channelId,
+            title:
+                channel.title,
+            uploadsPlaylistId:
+                ""
+        };
+
+        youtubeChannelNextPageToken =
+            "";
+
+        el.youtubeTabs.classList.add(
+            "hidden"
+        );
+
+        hideYoutubeContentViews();
+
+        el.youtubeChannelView.classList.remove(
+            "hidden"
+        );
+
+        el.youtubeChannelTitle.textContent =
+            channel.title;
+
+        el.youtubeChannelVideos.innerHTML =
+            "";
+
+        el.youtubeChannelMore.classList.add(
+            "hidden"
+        );
+
+        renderYoutubeFolders();
+
+        setYoutubeStatus(
+            "Kanal wird geladen …"
+        );
+
+        try {
+            const data =
+                await fetchYoutubeJson(
+                    "channels",
+                    {
+                        part:
+                            "snippet,contentDetails",
+                        id:
+                            channel.channelId,
+                        maxResults:
+                            1
+                    }
+                );
+
+            if (
+                requestToken
+                !==
+                youtubeRequestToken
+            ) {
+                return;
+            }
+
+            const channelData =
+                Array.isArray(
+                    data.items
+                )
+                    ? data.items[0]
+                    : null;
+
+            const uploadsPlaylistId =
+                channelData?.contentDetails?.relatedPlaylists?.uploads
+                ??
+                "";
+
+            const officialTitle =
+                decodeYoutubeText(
+                    channelData?.snippet?.title
+                    ??
+                    channel.title
+                );
+
+            if (
+                !uploadsPlaylistId
+            ) {
+                throw new Error(
+                    "Keine Upload-Playlist gefunden."
+                );
+            }
+
+            youtubeCurrentChannel = {
+                channelId:
+                    channel.channelId,
+                title:
+                    officialTitle,
+                uploadsPlaylistId
+            };
+
+            el.youtubeChannelTitle.textContent =
+                officialTitle;
+
+            await loadMoreYoutubeChannelVideos(
+                true,
+                requestToken
+            );
+        } catch (
+            error
+        ) {
+            console.error(
+                "YouTube channel failed:",
+                error
+            );
+
+            if (
+                requestToken
+                !==
+                youtubeRequestToken
+            ) {
+                return;
+            }
+
+            setYoutubeStatus(
+                "Der Kanal konnte gerade nicht geladen werden.",
+                true
+            );
+        }
+    }
+
+
+    async function loadMoreYoutubeChannelVideos(
+        replace = false,
+        expectedToken = youtubeRequestToken
+    ) {
+        const channel =
+            youtubeCurrentChannel;
+
+        if (
+            !channel?.uploadsPlaylistId
+        ) {
+            return;
+        }
+
+        el.youtubeChannelMore.classList.add(
+            "hidden"
+        );
+
+        if (
+            !replace
+        ) {
+            setYoutubeStatus(
+                "Weitere Videos …"
+            );
+        }
+
+        try {
+            const data =
+                await fetchYoutubeJson(
+                    "playlistItems",
+                    {
+                        part:
+                            "snippet,contentDetails",
+                        playlistId:
+                            channel.uploadsPlaylistId,
+                        maxResults:
+                            50,
+                        pageToken:
+                            replace
+                                ? ""
+                                : youtubeChannelNextPageToken
+                    }
+                );
+
+            if (
+                expectedToken
+                !==
+                youtubeRequestToken
+            ) {
+                return;
+            }
+
+            if (
+                replace
+            ) {
+                el.youtubeChannelVideos.innerHTML =
+                    "";
+            }
+
+            const videos =
+                (
+                    Array.isArray(
+                        data.items
+                    )
+                        ? data.items
+                        : []
+                )
+                .map(
+                    item => {
+                        const snippet =
+                            item?.snippet
+                            ??
+                            {};
+
+                        const videoId =
+                            item?.contentDetails?.videoId
+                            ??
+                            snippet?.resourceId?.videoId
+                            ??
+                            "";
+
+                        const title =
+                            decodeYoutubeText(
+                                snippet.title
+                                ??
+                                ""
+                            );
+
+                        if (
+                            !videoId
+                            ||
+                            !title
+                            ||
+                            title
+                            ===
+                            "Private video"
+                            ||
+                            title
+                            ===
+                            "Deleted video"
+                        ) {
+                            return null;
+                        }
+
+                        return {
+                            videoId,
+                            title,
+                            channelId:
+                                channel.channelId,
+                            channelTitle:
+                                channel.title
+                        };
+                    }
+                )
+                .filter(
+                    Boolean
+                );
+
+            if (
+                replace
+                &&
+                videos.length
+                ===
+                0
+            ) {
+                const empty =
+                    document.createElement(
+                        "div"
+                    );
+
+                empty.className =
+                    "youtube-empty";
+
+                empty.textContent =
+                    "Keine öffentlichen Videos gefunden.";
+
+                el.youtubeChannelVideos.appendChild(
+                    empty
+                );
+            } else {
+                videos.forEach(
+                    video => {
+                        el.youtubeChannelVideos.appendChild(
+                            makeYoutubeVideoRow(
+                                video
+                            )
+                        );
+                    }
+                );
+            }
+
+            youtubeChannelNextPageToken =
+                String(
+                    data.nextPageToken
+                    ??
+                    ""
+                );
+
+            el.youtubeChannelMore.classList.toggle(
+                "hidden",
+                !youtubeChannelNextPageToken
+            );
+
+            setYoutubeStatus(
+                ""
+            );
+        } catch (
+            error
+        ) {
+            console.error(
+                "YouTube channel videos failed:",
+                error
+            );
+
+            if (
+                expectedToken
+                !==
+                youtubeRequestToken
+            ) {
+                return;
+            }
+
+            setYoutubeStatus(
+                "Die Videos konnten gerade nicht geladen werden.",
+                true
+            );
+        }
+    }
+
+
+    function closeYoutubeFolderPicker() {
+        el.youtubeFolderPicker.classList.add(
+            "hidden"
+        );
+    }
+
+
+    function addYoutubeVideoToFolder(
+        folderId
+    ) {
+        const folder =
+            youtubeFolderById(
+                folderId
+            );
+
+        const video =
+            youtubePendingSaveVideo;
+
+        if (
+            !folder
+            ||
+            !video?.videoId
+        ) {
+            return;
+        }
+
+        const alreadySaved =
+            folder.videos.some(
+                saved =>
+                    saved.videoId
+                    ===
+                    video.videoId
+            );
+
+        if (
+            !alreadySaved
+        ) {
+            folder.videos.push({
+                videoId:
+                    video.videoId,
+                title:
+                    video.title,
+                channelId:
+                    video.channelId
+                    ??
+                    "",
+                channelTitle:
+                    video.channelTitle
+                    ??
+                    "",
+                addedAt:
+                    nowIso()
+            });
+
+            saveState();
+        }
+
+        closeYoutubeFolderPicker();
+
+        renderYoutubeFolders();
+
+        setYoutubeStatus(
+            `In „${folder.name}“ abgelegt.`
+        );
+
+        window.setTimeout(
+            () => {
+                if (
+                    el.youtubeStatus.textContent
+                    ===
+                    `In „${folder.name}“ abgelegt.`
+                ) {
+                    setYoutubeStatus(
+                        ""
+                    );
+                }
+            },
+            1500
+        );
+    }
+
+
+    function openYoutubeFolderPicker() {
+        if (
+            !youtubePendingSaveVideo?.videoId
+        ) {
+            return;
+        }
+
+        el.youtubeFolderPickerList.innerHTML =
+            "";
+
+        state.youtube.folders.forEach(
+            folder => {
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "wiki-folder-picker-option";
+
+                const name =
+                    document.createElement(
+                        "span"
+                    );
+
+                name.textContent =
+                    folder.name;
+
+                const count =
+                    document.createElement(
+                        "span"
+                    );
+
+                count.className =
+                    "wiki-folder-picker-option-count";
+
+                count.textContent =
+                    String(
+                        folder.videos.length
+                    );
+
+                button.append(
+                    name,
+                    count
+                );
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        addYoutubeVideoToFolder(
+                            folder.id
+                        );
+                    }
+                );
+
+                el.youtubeFolderPickerList.appendChild(
+                    button
+                );
+            }
+        );
+
+        el.youtubeFolderPicker.classList.remove(
+            "hidden"
+        );
+    }
+
+
+    function closeYoutubePlayer() {
+        el.youtubePlayerStage.innerHTML =
+            "";
+
+        el.youtubePlayer.classList.add(
+            "hidden"
+        );
+
+        document.body.classList.remove(
+            "youtube-player-open"
+        );
+
+        const fullscreenElement =
+            document.fullscreenElement
+            ??
+            document.webkitFullscreenElement;
+
+        if (
+            fullscreenElement
+            ===
+            el.youtubePlayer
+        ) {
+            const exitFullscreen =
+                document.exitFullscreen
+                ??
+                document.webkitExitFullscreen;
+
+            if (
+                exitFullscreen
+            ) {
+                try {
+                    const result =
+                        exitFullscreen.call(
+                            document
+                        );
+
+                    if (
+                        result?.catch
+                    ) {
+                        result.catch(
+                            () => {}
+                        );
+                    }
+                } catch (
+                    error
+                ) {
+                    // Vollbild ist optional.
+                }
+            }
+        }
+    }
+
+
+    function openYoutubePlayer(
+        video
+    ) {
+        if (
+            !video?.videoId
+        ) {
+            return;
+        }
+
+        el.youtubePlayerStage.innerHTML =
+            "";
+
+        const iframe =
+            document.createElement(
+                "iframe"
+            );
+
+        iframe.src =
+            `https://www.youtube.com/embed/${encodeURIComponent(
+                video.videoId
+            )}?autoplay=1&playsinline=0&rel=0&fs=1&origin=${encodeURIComponent(
+                window.location.origin
+            )}`;
+
+        iframe.title =
+            video.title
+            ??
+            "YouTube Video";
+
+        iframe.allow =
+            "autoplay; encrypted-media; picture-in-picture; fullscreen";
+
+        iframe.setAttribute(
+            "allowfullscreen",
+            ""
+        );
+
+        iframe.setAttribute(
+            "referrerpolicy",
+            "strict-origin-when-cross-origin"
+        );
+
+        el.youtubePlayerStage.appendChild(
+            iframe
+        );
+
+        el.youtubePlayer.classList.remove(
+            "hidden"
+        );
+
+        document.body.classList.add(
+            "youtube-player-open"
+        );
+
+        const requestFullscreen =
+            el.youtubePlayer.requestFullscreen
+            ??
+            el.youtubePlayer.webkitRequestFullscreen;
+
+        if (
+            requestFullscreen
+        ) {
+            try {
+                const result =
+                    requestFullscreen.call(
+                        el.youtubePlayer
+                    );
+
+                if (
+                    result?.catch
+                ) {
+                    result.catch(
+                        () => {}
+                    );
+                }
+            } catch (
+                error
+            ) {
+                // Viewportfüllender Player bleibt als Fallback.
+            }
+        }
+    }
+
+
+    function openYoutubePortal() {
+        youtubeRequestToken +=
+            1;
+
+        youtubeLastQuery =
+            "";
+
+        youtubeSearchVideos =
+            [];
+
+        youtubeSearchChannels =
+            [];
+
+        youtubeActiveTab =
+            "videos";
+
+        youtubeOpenFolderId =
+            null;
+
+        youtubeCurrentChannel =
+            null;
+
+        youtubeChannelNextPageToken =
+            "";
+
+        youtubePendingSaveVideo =
+            null;
+
+        el.youtubeSearchInput.value =
+            "";
+
+        hideYoutubeFolderComposer();
+
+        closeYoutubeFolderPicker();
+
+        closeYoutubePlayer();
+
+        showYoutubeLanding();
+
+        showScreen(
+            screens.youtube
+        );
+    }
+
+
+    el.chessRoomYoutubeHotspot.addEventListener(
+        "click",
+        openYoutubePortal
+    );
+
+
+    el.youtubeSearchForm.addEventListener(
+        "submit",
+        event => {
+            event.preventDefault();
+
+            /*
+               Bewusst nur beim Absenden:
+               keine Suchvorschläge, keine API-Anfrage während der Eingabe.
+            */
+            searchYoutube(
+                el.youtubeSearchInput.value
+            );
+        }
+    );
+
+
+    el.youtubeTabVideos.addEventListener(
+        "click",
+        () => {
+            youtubeActiveTab =
+                "videos";
+
+            renderYoutubeResults();
+        }
+    );
+
+
+    el.youtubeTabChannels.addEventListener(
+        "click",
+        () => {
+            youtubeActiveTab =
+                "channels";
+
+            renderYoutubeResults();
+        }
+    );
+
+
+    el.youtubeFolderButton.addEventListener(
+        "click",
+        () => {
+            if (
+                el.youtubeFolderComposer.classList.contains(
+                    "hidden"
+                )
+            ) {
+                showYoutubeFolderComposer();
+            } else {
+                hideYoutubeFolderComposer();
+            }
+        }
+    );
+
+
+    el.youtubeFolderComposer.addEventListener(
+        "submit",
+        event => {
+            event.preventDefault();
+
+            const shouldSaveVideo =
+                youtubeFolderComposerSaveVideo
+                &&
+                Boolean(
+                    youtubePendingSaveVideo?.videoId
+                );
+
+            const folder =
+                createYoutubeFolder(
+                    el.youtubeFolderNameInput.value
+                );
+
+            if (
+                folder
+            ) {
+                hideYoutubeFolderComposer();
+
+                if (
+                    shouldSaveVideo
+                ) {
+                    addYoutubeVideoToFolder(
+                        folder.id
+                    );
+                } else {
+                    showYoutubeFolder(
+                        folder.id
+                    );
+                }
+            }
+        }
+    );
+
+
+    el.youtubeFolderCreateCancel.addEventListener(
+        "click",
+        hideYoutubeFolderComposer
+    );
+
+
+    el.youtubeFolderPickerCancel.addEventListener(
+        "click",
+        closeYoutubeFolderPicker
+    );
+
+
+    el.youtubeFolderPicker.addEventListener(
+        "click",
+        event => {
+            if (
+                event.target
+                ===
+                el.youtubeFolderPicker
+            ) {
+                closeYoutubeFolderPicker();
+            }
+        }
+    );
+
+
+    el.youtubeFolderPickerNew.addEventListener(
+        "click",
+        () => {
+            closeYoutubeFolderPicker();
+
+            showYoutubeFolderComposer(
+                true
+            );
+        }
+    );
+
+
+    el.youtubeChannelMore.addEventListener(
+        "click",
+        () => {
+            loadMoreYoutubeChannelVideos();
+        }
+    );
+
+
+    el.youtubePlayerClose.addEventListener(
+        "click",
+        closeYoutubePlayer
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        event => {
+            if (
+                event.key
+                ===
+                "Escape"
+                &&
+                !el.youtubePlayer.classList.contains(
+                    "hidden"
+                )
+            ) {
+                closeYoutubePlayer();
+            }
+        }
+    );
+
+
+    el.backFromYoutube.addEventListener(
+        "click",
+        () => {
+            if (
+                !el.youtubePlayer.classList.contains(
+                    "hidden"
+                )
+            ) {
+                closeYoutubePlayer();
+                return;
+            }
+
+            youtubeRequestToken +=
+                1;
+
+            closeYoutubeFolderPicker();
+
+            if (
+                youtubeCurrentChannel
+            ) {
+                youtubeCurrentChannel =
+                    null;
+
+                youtubeChannelNextPageToken =
+                    "";
+
+                if (
+                    youtubeLastQuery
+                ) {
+                    showYoutubeSearchResults();
+                } else {
+                    showYoutubeLanding();
+                }
+
+                return;
+            }
+
+            if (
+                youtubeOpenFolderId
+            ) {
+                showYoutubeLanding();
+                return;
+            }
+
+            if (
+                !el.youtubeResults.classList.contains(
+                    "hidden"
+                )
+                &&
+                youtubeLastQuery
+            ) {
+                youtubeLastQuery =
+                    "";
+
+                youtubeSearchVideos =
+                    [];
+
+                youtubeSearchChannels =
+                    [];
+
+                el.youtubeSearchInput.value =
+                    "";
+
+                showYoutubeLanding();
                 return;
             }
 
