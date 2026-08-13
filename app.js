@@ -20,6 +20,7 @@
         sessionReview: $("sessionReviewScreen"),
         planComplete: $("planCompleteScreen"),
         textsHub: $("textsHubScreen"),
+        chessRoom: $("chessRoomScreen"),
         chessSetup: $("chessSetupScreen"),
         chessPlay: $("chessPlayScreen"),
         chessAnalysis: $("chessAnalysisScreen"),
@@ -53,6 +54,8 @@
         openTextsButton: $("openTextsButton"),
         openPhysicsButton: $("openPhysicsButton"),
         openChessButton: $("openChessButton"),
+        chessRoomBoardHotspot: $("chessRoomBoardHotspot"),
+        chessRoomBackHotspot: $("chessRoomBackHotspot"),
         timelineButton: $("timelineButton"),
         backupButton: $("backupButton"),
         restoreButton: $("restoreButton"),
@@ -389,6 +392,9 @@
     let screenTransitionToken = 0;
     let screenTransitionCleanupTimer = null;
 
+    let roomTurnBusy = false;
+    let roomTurnTimer = null;
+
     const CHESS_STORAGE_KEY = "personalPlannerSuite_chess_v2";
 
     let ChessConstructor = null;
@@ -715,6 +721,10 @@
             screen.querySelector(
                 ".planner-cosmos-background"
             )
+            ||
+            screen.querySelector(
+                ".chess-room-background"
+            )
         );
     }
 
@@ -816,6 +826,134 @@
         );
 
         renderMiniSession();
+    }
+
+
+    function turnBetweenStudyRooms(
+        fromScreen,
+        toScreen,
+        direction = "right"
+    ) {
+        if (
+            roomTurnBusy
+            ||
+            !fromScreen
+            ||
+            !toScreen
+        ) {
+            return;
+        }
+
+        roomTurnBusy =
+            true;
+
+        ++screenTransitionToken;
+
+        clearScreenTransitionOverlay();
+
+        if (
+            roomTurnTimer
+        ) {
+            clearTimeout(
+                roomTurnTimer
+            );
+        }
+
+        const directionClass =
+            direction
+            ===
+            "left"
+                ? "room-turn-left"
+                : "room-turn-right";
+
+        fromScreen.classList.remove(
+            "screen-soft-enter"
+        );
+
+        toScreen.classList.remove(
+            "active",
+            "screen-soft-enter"
+        );
+
+        fromScreen.classList.add(
+            "room-turn-source",
+            directionClass
+        );
+
+        toScreen.classList.add(
+            "room-turn-target",
+            directionClass
+        );
+
+        void toScreen.offsetWidth;
+
+        requestAnimationFrame(
+            () => {
+                fromScreen.classList.add(
+                    "room-turn-go"
+                );
+
+                toScreen.classList.add(
+                    "room-turn-go"
+                );
+            }
+        );
+
+        roomTurnTimer =
+            window.setTimeout(
+                () => {
+                    fromScreen.classList.remove(
+                        "active",
+                        "room-turn-source",
+                        "room-turn-target",
+                        "room-turn-right",
+                        "room-turn-left",
+                        "room-turn-go"
+                    );
+
+                    toScreen.classList.remove(
+                        "room-turn-source",
+                        "room-turn-target",
+                        "room-turn-right",
+                        "room-turn-left",
+                        "room-turn-go"
+                    );
+
+                    Object.values(
+                        screens
+                    ).forEach(
+                        item => {
+                            if (
+                                item
+                                !==
+                                toScreen
+                            ) {
+                                item.classList.remove(
+                                    "active"
+                                );
+                            }
+                        }
+                    );
+
+                    toScreen.classList.add(
+                        "active"
+                    );
+
+                    window.scrollTo(
+                        0,
+                        0
+                    );
+
+                    renderMiniSession();
+
+                    roomTurnBusy =
+                        false;
+
+                    roomTurnTimer =
+                        null;
+                },
+                620
+            );
     }
 
 
@@ -2279,7 +2417,7 @@
                 applyTheme();
 
                 resetTransientState();
-                showScreen(screens.home);
+                showScreen(screens.textsHub);
 
                 alert(
                     "Backup wiederhergestellt."
@@ -2976,7 +3114,7 @@
         "click",
         () => {
             showScreen(
-                screens.home
+                screens.textsHub
             );
         }
     );
@@ -2985,7 +3123,7 @@
         "click",
         () => {
             showScreen(
-                screens.home
+                screens.textsHub
             );
         }
     );
@@ -3063,7 +3201,9 @@
                 "hidden"
             );
 
-            el.backFromTextsHub.click();
+            showScreen(
+                screens.plannerHub
+            );
         }
     );
 
@@ -7812,7 +7952,7 @@
             persistSessionRuntime();
 
             showScreen(
-                screens.home
+                screens.textsHub
             );
         }
     );
@@ -8866,6 +9006,34 @@
 
     el.openChessButton.addEventListener(
         "click",
+        () => {
+            el.textsMenuPanel.classList.add(
+                "hidden"
+            );
+
+            turnBetweenStudyRooms(
+                screens.textsHub,
+                screens.chessRoom,
+                "right"
+            );
+        }
+    );
+
+
+    el.chessRoomBackHotspot.addEventListener(
+        "click",
+        () => {
+            turnBetweenStudyRooms(
+                screens.chessRoom,
+                screens.textsHub,
+                "left"
+            );
+        }
+    );
+
+
+    el.chessRoomBoardHotspot.addEventListener(
+        "click",
         openChessSetup
     );
 
@@ -9324,12 +9492,44 @@
                 button.className =
                     "chess-promotion-choice";
 
-                button.textContent =
-                    CHESS_PIECES[
+                const pieceNames = {
+                    q: "Dame",
+                    r: "Turm",
+                    b: "Läufer",
+                    n: "Springer"
+                };
+
+                button.setAttribute(
+                    "aria-label",
+                    pieceNames[
+                        type
+                    ]
+                );
+
+                const image =
+                    document.createElement(
+                        "img"
+                    );
+
+                image.className =
+                    "chess-promotion-piece-image";
+
+                image.src =
+                    CHESS_PIECE_IMAGES[
                         color
                     ][
                         type
                     ];
+
+                image.alt =
+                    "";
+
+                image.draggable =
+                    false;
+
+                button.appendChild(
+                    image
+                );
 
                 button.addEventListener(
                     "click",

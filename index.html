@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=34">
+    <link rel="stylesheet" href="style.css?v=35">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=34" defer></script>
+    <script src="app.js?v=35" defer></script>
 </head>
 <body>
 
@@ -41,7 +41,7 @@
      START
 ================================================== -->
 
-<section id="homeScreen" class="screen active image-home-screen">
+<section id="homeScreen" class="screen image-home-screen">
     <div class="image-home-background" aria-hidden="true"></div>
 
     <button
@@ -482,7 +482,7 @@
      TEXTE HUB
 ================================================== -->
 
-<section id="textsHubScreen" class="screen texts-hub-screen">
+<section id="textsHubScreen" class="screen active texts-hub-screen">
     <!-- Bestehende Controls bleiben für die ursprüngliche Logik erhalten,
          werden auf diesem Bildschirm aber unsichtbar. -->
     <button id="backFromTextsHub" class="corner-link corner-left back-only-button texts-study-hidden-control" type="button" aria-label="Zurück">‹</button>
@@ -512,17 +512,40 @@
         <button id="openDreamsButton" class="texts-study-hotspot texts-hotspot-dreams" type="button" aria-label="Träume"></button>
         <button id="openThoughtsButton" class="texts-study-hotspot texts-hotspot-philosophy" type="button" aria-label="Philosophie"></button>
 
-        <button id="textsSkyBackHotspot" class="texts-study-hotspot texts-hotspot-sky-back" type="button" aria-label="Zum Startbildschirm"></button>
+        <button id="textsSkyBackHotspot" class="texts-study-hotspot texts-hotspot-sky-back" type="button" aria-label="Planer öffnen"></button>
         <button id="textsDrawerMenuHotspot" class="texts-study-hotspot texts-hotspot-drawer-menu" type="button" aria-label="Menü öffnen"></button>
 
-        <!-- Vorläufig: rechte Wand öffnet direkt Schach.
-             Später kann hier das Bild des seitlichen Raumes eingesetzt werden. -->
-        <button id="openChessButton" class="texts-study-hotspot texts-hotspot-chess" type="button" aria-label="Schach öffnen"></button>
+        <!-- Rechte Wand: Kamera dreht in den Schachraum. -->
+        <button id="openChessButton" class="texts-study-hotspot texts-hotspot-chess" type="button" aria-label="Zum Schachraum drehen"></button>
     </main>
 </section>
 
 
 
+
+
+
+<!-- ==================================================
+     SCHACHRAUM
+================================================== -->
+
+<section id="chessRoomScreen" class="screen chess-room-screen">
+    <div class="chess-room-background" aria-hidden="true"></div>
+
+    <button
+        id="chessRoomBoardHotspot"
+        class="chess-room-hotspot chess-room-board-hotspot"
+        type="button"
+        aria-label="Schach spielen"
+    ></button>
+
+    <button
+        id="chessRoomBackHotspot"
+        class="chess-room-hotspot chess-room-back-hotspot"
+        type="button"
+        aria-label="Zum Schreibtisch zurück"
+    ></button>
+</section>
 
 
 <!-- ==================================================

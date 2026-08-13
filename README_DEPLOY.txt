@@ -1,6 +1,6 @@
-PLANER v31 — DEFINITIVER STOCKFISH-WORKER-FIX
+PLANER v32 — SCHREIBTISCH ALS START + SCHACHRAUM + PROMOTION
 
-Bitte ALLE Dateien ersetzen:
+Bitte ersetzen:
 
 - index.html
 - style.css
@@ -9,50 +9,49 @@ Bitte ALLE Dateien ersetzen:
 - THIRD_PARTY_LICENSES.txt
 - README_DEPLOY.txt
 
-URSACHE DES v30-FEHLERS
+1. START
+Beim Öffnen ist direkt der Schreibtisch / das Studierzimmer aktiv.
+Der alte Meer-Startbildschirm wird funktional nicht mehr benutzt.
 
-Der Stockfish-18-Loader liest:
+Himmel im Schreibtisch:
+-> Planer
 
-    self.location.hash.substr(1).split(",")
+Galaxie im Planer:
+-> zurück zum Schreibtisch
 
-Der erste Wert ist die WASM-URL.
+Backup-Wiederherstellung und Session-Menü:
+-> ebenfalls zurück zum Schreibtisch
 
-ABER:
-Wenn der zweite Wert exakt "worker" lautet, läuft eine besondere interne
-Stockfish-Verzweigung. Unsere v29/v30-URL endete auf:
+2. SCHACHRAUM
+Rechte Wand am Schreibtisch:
+-> 3D-Kameradrehung nach rechts
+-> neues Schachraumbild
 
-    #<WASM-URL>,worker
+Schachbrett / niedriger Tisch:
+-> Elo- und Farbauswahl
+-> Schachspiel
 
-Dadurch wurde in unserem Wrapper die normale UCI-Engine nicht initialisiert.
+Äußerste linke Wand im Schachraumbild:
+-> Drehanimation zurück zum Schreibtisch
 
-Die Folgen passen exakt zum beobachteten Verhalten:
+Das neue Bild ist direkt in style.css eingebettet.
+Keine zusätzliche Bilddatei muss ins Repository.
 
-- Bei Schwarz blieb Weiß am Zug, weil Stockfish keinen ersten Zug machte.
-- Schwarze Figuren waren deshalb nicht legal anklickbar.
-- Nach Ablauf des Engine-Timeouts ging die App zurück zur Elo-Auswahl.
+3. BAUERNUMWANDLUNG
+Der Fehler lag in fillPromotionChoices():
 
-v31 benutzt jetzt:
+Seit der Umstellung auf Cburnett-SVG-Figuren existiert die alte Variable
+CHESS_PIECES nicht mehr. Die Promotion-Auswahl versuchte sie aber weiterhin
+zu lesen. Beim Erreichen der letzten Reihe entstand daher ein ReferenceError.
 
-    stockfish-worker.js?v=31#<WASM-URL>
+v32 zeigt für die Auswahl nun direkt die echten SVG-Figuren:
 
-OHNE ",worker".
+- Dame
+- Turm
+- Läufer
+- Springer
 
-Zusätzlich:
-- ein verbliebener hardcodierter Weiß-Check beim Figurwechsel wurde auf
-  die tatsächlich gewählte Spielerfarbe umgestellt.
-- UCI- und readyok-Status werden nur in der Browser-Konsole protokolliert,
-  nicht auf dem Spielbildschirm.
+Der Fix gilt im normalen Spiel und im Analysebrett.
 
-ERWARTETES VERHALTEN
-
-Weiß gewählt:
-- Brett öffnet sich.
-- Du kannst sofort Weiß ziehen.
-- Danach antwortet Stockfish.
-
-Schwarz gewählt:
-- Brett öffnet sich.
-- Stockfish macht automatisch den ersten weißen Zug.
-- Danach kannst du Schwarz ziehen.
-
-Nach erfolgreichem erstmaligem WASM-Laden sollten Folgezüge schnell sein.
+4. STOCKFISH
+Der funktionierende Stockfish-v31-Worker-Fix wurde unverändert übernommen.

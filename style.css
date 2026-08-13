@@ -6543,3 +6543,251 @@ html[data-theme="dark"] #textsHubScreen .texts-study-background {
         160ms
         cubic-bezier(.22, .61, .36, 1) !important;
 }
+
+
+/* ==================================================
+   V32 — SCHACHRAUM
+================================================== */
+
+#chessRoomScreen.chess-room-screen {
+    position: fixed !important;
+    inset: 0 !important;
+
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+
+    background: #15110b !important;
+}
+
+#chessRoomScreen .chess-room-background {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background-image: url("./chess-room-day.png");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 100% 100%;
+
+    pointer-events: none;
+
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+html[data-theme="dark"] #chessRoomScreen .chess-room-background {
+    background-image: url("./chess-room-night.png");
+}
+
+#chessRoomScreen .chess-room-hotspot {
+    position: absolute;
+
+    z-index: 8;
+
+    margin: 0;
+    padding: 0;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    background: transparent !important;
+    color: transparent !important;
+
+    box-shadow: none !important;
+    outline: none !important;
+
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Schachbrett / Tisch */
+#chessRoomScreen .chess-room-board-hotspot {
+    left: 31%;
+    top: 65%;
+
+    width: 38%;
+    height: 15%;
+}
+
+/* Unsichtbare linke Wand zum Zurückdrehen */
+#chessRoomScreen .chess-room-back-hotspot {
+    left: 0;
+    top: 0;
+
+    width: 17%;
+    height: 100%;
+}
+
+
+/* ==================================================
+   V32 — 3D DREHUNG ZWISCHEN SCHREIBTISCH UND SCHACHRAUM
+================================================== */
+
+#textsHubScreen.room-turn-source,
+#textsHubScreen.room-turn-target,
+#chessRoomScreen.room-turn-source,
+#chessRoomScreen.room-turn-target {
+    display: block !important;
+
+    position: fixed !important;
+    inset: 0 !important;
+
+    width: 100vw !important;
+    height: 100dvh !important;
+
+    overflow: hidden !important;
+
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+
+    will-change:
+        transform,
+        opacity,
+        filter;
+}
+
+.room-turn-source {
+    z-index: 21000 !important;
+
+    opacity: 1;
+
+    transform:
+        perspective(1200px)
+        translateX(0)
+        rotateY(0deg)
+        scale(1);
+
+    filter: brightness(1);
+
+    transition:
+        transform 600ms cubic-bezier(.22,.61,.36,1),
+        opacity 600ms cubic-bezier(.22,.61,.36,1),
+        filter 600ms cubic-bezier(.22,.61,.36,1);
+}
+
+.room-turn-target {
+    z-index: 21001 !important;
+
+    opacity: .08;
+
+    transition:
+        transform 600ms cubic-bezier(.22,.61,.36,1),
+        opacity 600ms cubic-bezier(.22,.61,.36,1),
+        filter 600ms cubic-bezier(.22,.61,.36,1);
+}
+
+.room-turn-right.room-turn-target {
+    transform-origin: left center;
+
+    transform:
+        perspective(1200px)
+        translateX(42%)
+        rotateY(-32deg)
+        scale(.985);
+
+    filter: brightness(.56);
+}
+
+.room-turn-left.room-turn-target {
+    transform-origin: right center;
+
+    transform:
+        perspective(1200px)
+        translateX(-42%)
+        rotateY(32deg)
+        scale(.985);
+
+    filter: brightness(.56);
+}
+
+.room-turn-right.room-turn-source.room-turn-go {
+    transform-origin: right center;
+
+    transform:
+        perspective(1200px)
+        translateX(-38%)
+        rotateY(25deg)
+        scale(.985);
+
+    opacity: .12;
+
+    filter: brightness(.54);
+}
+
+.room-turn-left.room-turn-source.room-turn-go {
+    transform-origin: left center;
+
+    transform:
+        perspective(1200px)
+        translateX(38%)
+        rotateY(-25deg)
+        scale(.985);
+
+    opacity: .12;
+
+    filter: brightness(.54);
+}
+
+.room-turn-target.room-turn-go {
+    transform:
+        perspective(1200px)
+        translateX(0)
+        rotateY(0deg)
+        scale(1) !important;
+
+    opacity: 1;
+
+    filter: brightness(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .room-turn-source,
+    .room-turn-target {
+        transition: opacity 120ms ease !important;
+        transform: none !important;
+        filter: none !important;
+    }
+}
+
+
+/* ==================================================
+   V32 — PROMOTION MIT DEN SVG-FIGUREN DES BRETTES
+================================================== */
+
+.chess-promotion-choice {
+    position: relative;
+
+    width: 68px !important;
+    height: 68px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding: 5px !important;
+
+    overflow: hidden;
+}
+
+.chess-promotion-piece-image {
+    width: 88%;
+    height: 88%;
+
+    display: block;
+
+    object-fit: contain;
+    object-position: center;
+
+    pointer-events: none;
+
+    user-select: none;
+    -webkit-user-select: none;
+}
