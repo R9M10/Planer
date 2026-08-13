@@ -183,6 +183,8 @@
 
         chessSetupEloValue: $("chessSetupEloValue"),
         chessSetupEloSlider: $("chessSetupEloSlider"),
+        chooseChessWhite: $("chooseChessWhite"),
+        chooseChessBlack: $("chooseChessBlack"),
         startChessGameButton: $("startChessGameButton"),
 
         backFromChessPlay: $("backFromChessPlay"),
@@ -394,6 +396,7 @@
 
     let chessGame = null;
     let chessElo = 1500;
+    let chessHumanColor = "w";
     let chessSelectedSquare = null;
     let chessLegalMoves = [];
     let chessLastMove = null;
@@ -7886,24 +7889,45 @@
     // KI + Analyse: Stockfish 18 lite single-threaded
     // ==================================================
 
-    const CHESS_PIECES = {
+    const CHESS_PIECE_IMAGES = {
         w: {
-            k: "♔",
-            q: "♕",
-            r: "♖",
-            b: "♗",
-            n: "♘",
-            p: "♙"
+            k: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_klt45.svg",
+            q: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_qlt45.svg",
+            r: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_rlt45.svg",
+            b: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_blt45.svg",
+            n: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_nlt45.svg",
+            p: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_plt45.svg"
         },
         b: {
-            k: "♚",
-            q: "♛",
-            r: "♜",
-            b: "♝",
-            n: "♞",
-            p: "♟"
+            k: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_kdt45.svg",
+            q: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_qdt45.svg",
+            r: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_rdt45.svg",
+            b: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_bdt45.svg",
+            n: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_ndt45.svg",
+            p: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess_pdt45.svg"
         }
     };
+
+
+    function preloadChessPieces() {
+        Object.values(
+            CHESS_PIECE_IMAGES
+        ).forEach(
+            colorPieces => {
+                Object.values(
+                    colorPieces
+                ).forEach(
+                    source => {
+                        const image =
+                            new Image();
+
+                        image.src =
+                            source;
+                    }
+                );
+            }
+        );
+    }
 
 
     function loadStoredChessSettings() {
@@ -7950,6 +7974,19 @@
             }
 
             if (
+                parsed.color
+                ===
+                "w"
+                ||
+                parsed.color
+                ===
+                "b"
+            ) {
+                chessHumanColor =
+                    parsed.color;
+            }
+
+            if (
                 typeof parsed.lastPgn
                 ===
                 "string"
@@ -7972,6 +8009,8 @@
                 JSON.stringify({
                     elo:
                         chessElo,
+                    color:
+                        chessHumanColor,
                     lastPgn:
                         chessFinalPgn
                 })
@@ -8032,9 +8071,23 @@
         }
 
         try {
+            const stockfishWasmUrl =
+                "https://unpkg.com/stockfish@18.0.8/bin/stockfish-18-lite-single.wasm";
+
+            const workerUrl =
+                "./stockfish-worker.js"
+                +
+                "#"
+                +
+                encodeURIComponent(
+                    stockfishWasmUrl
+                )
+                +
+                ",worker";
+
             chessEngine =
                 new Worker(
-                    "./stockfish-worker.js?v=3"
+                    workerUrl
                 );
 
             chessEngine.addEventListener(
@@ -8194,7 +8247,7 @@
 
 
     function waitForChessEngine(
-        timeout = 3200
+        timeout = 8000
     ) {
         initChessEngine();
 
@@ -8255,7 +8308,7 @@
     async function runChessEngineTask({
         fen,
         commands,
-        timeout = 4200
+        timeout = 5000
     }) {
         const ready =
             await waitForChessEngine(
@@ -8474,7 +8527,8 @@
             selectedSquare = null,
             legalMoves = [],
             lastMove = null,
-            clickHandler = null
+            clickHandler = null,
+            orientation = "w"
         } = {}
     ) {
         target.innerHTML =
@@ -8482,6 +8536,40 @@
 
         const board =
             game.board();
+
+        const squares =
+            [];
+
+        board.forEach(
+            (
+                row,
+                rowIndex
+            ) => {
+                row.forEach(
+                    (
+                        piece,
+                        columnIndex
+                    ) => {
+                        squares.push({
+                            square:
+                                squareFromRowColumn(
+                                    rowIndex,
+                                    columnIndex
+                                ),
+                            piece
+                        });
+                    }
+                );
+            }
+        );
+
+        if (
+            orientation
+            ===
+            "b"
+        ) {
+            squares.reverse();
+        }
 
         const legalTargets =
             new Map();
@@ -8509,158 +8597,166 @@
             }
         );
 
-        board.forEach(
-            (
-                row,
-                rowIndex
-            ) => {
-                row.forEach(
-                    (
-                        piece,
-                        columnIndex
-                    ) => {
-                        const square =
-                            squareFromRowColumn(
-                                rowIndex,
-                                columnIndex
-                            );
+        squares.forEach(
+            entry => {
+                const square =
+                    entry.square;
 
-                        const button =
-                            document.createElement(
-                                "button"
-                            );
+                const piece =
+                    entry.piece;
 
-                        button.type =
-                            "button";
-
-                        button.className =
-                            "chess-square";
-
-                        button.dataset.square =
-                            square;
-
-                        const light =
-                            (
-                                rowIndex
-                                +
-                                columnIndex
-                            )
-                            %
-                            2
-                            ===
-                            0;
-
-                        button.classList.add(
-                            light
-                                ? "chess-square-light"
-                                : "chess-square-dark"
-                        );
-
-                        /*
-                           Force the classical board colors directly on the
-                           square. This prevents global app button styles from
-                           making the board transparent/black.
-                        */
-                        button.style.setProperty(
-                            "background-color",
-                            light
-                                ? "#f2f2ee"
-                                : "#111211",
-                            "important"
-                        );
-
-                        if (
-                            selectedSquare
-                            ===
-                            square
-                        ) {
-                            button.classList.add(
-                                "selected"
-                            );
-                        }
-
-                        if (
-                            lastMove
-                            &&
-                            (
-                                lastMove.from
-                                ===
-                                square
-                                ||
-                                lastMove.to
-                                ===
-                                square
-                            )
-                        ) {
-                            button.classList.add(
-                                "last-move"
-                            );
-                        }
-
-                        const targets =
-                            legalTargets.get(
-                                square
-                            )
-                            ??
-                            [];
-
-                        if (
-                            targets.length
-                            >
+                const fileIndex =
+                    "abcdefgh".indexOf(
+                        square[
                             0
-                        ) {
-                            button.classList.add(
-                                piece
-                                    ? "legal-capture"
-                                    : "legal-target"
-                            );
-                        }
+                        ]
+                    );
 
-                        if (
-                            piece
-                        ) {
-                            const span =
-                                document.createElement(
-                                    "span"
-                                );
+                const rank =
+                    Number(
+                        square[
+                            1
+                        ]
+                    );
 
-                            span.className =
-                                `chess-piece chess-piece-${piece.color}`;
+                /*
+                   a8 is light and a1 is dark, exactly as in the
+                   supplied Chess board blank.svg reference.
+                */
+                const light =
+                    (
+                        fileIndex
+                        +
+                        rank
+                    )
+                    %
+                    2
+                    ===
+                    0;
 
-                            span.textContent =
-                                CHESS_PIECES[
-                                    piece.color
-                                ][
-                                    piece.type
-                                ];
+                const button =
+                    document.createElement(
+                        "button"
+                    );
 
-                            button.appendChild(
-                                span
-                            );
-                        }
+                button.type =
+                    "button";
 
-                        if (
-                            clickHandler
-                        ) {
-                            button.addEventListener(
-                                "click",
-                                () => {
-                                    clickHandler(
-                                        square
-                                    );
-                                }
-                            );
-                        }
+                button.className =
+                    "chess-square";
 
-                        target.appendChild(
-                            button
+                button.dataset.square =
+                    square;
+
+                button.classList.add(
+                    light
+                        ? "chess-square-light"
+                        : "chess-square-dark"
+                );
+
+                button.style.setProperty(
+                    "background-color",
+                    light
+                        ? "#FFCE9E"
+                        : "#D18B47",
+                    "important"
+                );
+
+                if (
+                    selectedSquare
+                    ===
+                    square
+                ) {
+                    button.classList.add(
+                        "selected"
+                    );
+                }
+
+                if (
+                    lastMove
+                    &&
+                    (
+                        lastMove.from
+                        ===
+                        square
+                        ||
+                        lastMove.to
+                        ===
+                        square
+                    )
+                ) {
+                    button.classList.add(
+                        "last-move"
+                    );
+                }
+
+                const targets =
+                    legalTargets.get(
+                        square
+                    )
+                    ??
+                    [];
+
+                if (
+                    targets.length
+                    >
+                    0
+                ) {
+                    button.classList.add(
+                        piece
+                            ? "legal-capture"
+                            : "legal-target"
+                    );
+                }
+
+                if (
+                    piece
+                ) {
+                    const image =
+                        document.createElement(
+                            "img"
                         );
-                    }
+
+                    image.className =
+                        "chess-piece-image";
+
+                    image.src =
+                        CHESS_PIECE_IMAGES[
+                            piece.color
+                        ][
+                            piece.type
+                        ];
+
+                    image.alt =
+                        "";
+
+                    image.draggable =
+                        false;
+
+                    button.appendChild(
+                        image
+                    );
+                }
+
+                if (
+                    clickHandler
+                ) {
+                    button.addEventListener(
+                        "click",
+                        () => {
+                            clickHandler(
+                                square
+                            );
+                        }
+                    );
+                }
+
+                target.appendChild(
+                    button
                 );
             }
         );
     }
-
 
     function movesFromSquare(
         game,
@@ -8695,6 +8791,10 @@
         el.chessSetupEloValue.textContent =
             `${chessElo} Elo`;
 
+        updateChessColorChoice();
+
+        preloadChessPieces();
+
         showScreen(
             screens.chessSetup
         );
@@ -8703,6 +8803,14 @@
             await loadChessLibrary();
 
             initChessEngine();
+
+            /*
+               Start loading the ~7 MB WASM engine while the user is still
+               choosing Elo and color, so the first engine move is fast.
+            */
+            waitForChessEngine(
+                8000
+            );
         } catch (
             error
         ) {
@@ -8727,6 +8835,64 @@
 
             el.chessSetupEloValue.textContent =
                 `${chessElo} Elo`;
+
+            saveChessSettings();
+        }
+    );
+
+
+    function updateChessColorChoice() {
+        const white =
+            chessHumanColor
+            ===
+            "w";
+
+        el.chooseChessWhite.classList.toggle(
+            "selected",
+            white
+        );
+
+        el.chooseChessBlack.classList.toggle(
+            "selected",
+            !white
+        );
+
+        el.chooseChessWhite.setAttribute(
+            "aria-pressed",
+            white
+                ? "true"
+                : "false"
+        );
+
+        el.chooseChessBlack.setAttribute(
+            "aria-pressed",
+            white
+                ? "false"
+                : "true"
+        );
+    }
+
+
+    el.chooseChessWhite.addEventListener(
+        "click",
+        () => {
+            chessHumanColor =
+                "w";
+
+            updateChessColorChoice();
+
+            saveChessSettings();
+        }
+    );
+
+
+    el.chooseChessBlack.addEventListener(
+        "click",
+        () => {
+            chessHumanColor =
+                "b";
+
+            updateChessColorChoice();
 
             saveChessSettings();
         }
@@ -8767,37 +8933,45 @@
                 chessEngineRequestToken +=
                     1;
 
+                const ready =
+                    await waitForChessEngine(
+                        10000
+                    );
+
+                if (
+                    !ready
+                ) {
+                    throw new Error(
+                        "Stockfish konnte nicht geladen werden."
+                    );
+                }
+
+                chessEngine.postMessage(
+                    "ucinewgame"
+                );
+
+                chessEngine.postMessage(
+                    "setoption name Hash value 32"
+                );
+
                 showScreen(
                     screens.chessPlay
                 );
 
                 renderChessPlayBoard();
 
-                initChessEngine();
-
-                /*
-                   Warm the engine while White is considering the first move.
-                   This removes most first-response latency.
-                */
-                waitForChessEngine(
-                    3200
-                ).then(
-                    ready => {
-                        if (
-                            ready
-                            &&
-                            chessEngine
-                        ) {
-                            chessEngine.postMessage(
-                                "ucinewgame"
-                            );
-
-                            chessEngine.postMessage(
-                                "isready"
-                            );
-                        }
-                    }
-                );
+                if (
+                    chessHumanColor
+                    ===
+                    "b"
+                ) {
+                    window.setTimeout(
+                        () => {
+                            playChessEngineTurn();
+                        },
+                        80
+                    );
+                }
 
             } catch (
                 error
@@ -8832,7 +9006,9 @@
                 lastMove:
                     chessLastMove,
                 clickHandler:
-                    handleChessPlaySquare
+                    handleChessPlaySquare,
+                orientation:
+                    chessHumanColor
             }
         );
     }
@@ -8859,7 +9035,7 @@
             ||
             chessGame.turn()
             !==
-            "w"
+            chessHumanColor
         ) {
             return;
         }
@@ -8877,7 +9053,7 @@
                 &&
                 piece.color
                 ===
-                "w"
+                chessHumanColor
             ) {
                 chessSelectedSquare =
                     square;
@@ -8977,7 +9153,7 @@
         fillPromotionChoices(
             el.chessPlayPromotionChoices,
             moves,
-            "w",
+            chessHumanColor,
             promotion => {
                 el.chessPlayPromotionPanel.classList.add(
                     "hidden"
@@ -9372,10 +9548,21 @@
             !chessGame
             ||
             chessGame.isGameOver()
-            ||
+        ) {
+            return;
+        }
+
+        const engineColor =
+            chessHumanColor
+            ===
+            "w"
+                ? "b"
+                : "w";
+
+        if (
             chessGame.turn()
             !==
-            "b"
+            engineColor
         ) {
             return;
         }
@@ -9389,6 +9576,10 @@
         let moveData =
             null;
 
+        /*
+           Stockfish's native UCI_Elo range begins at 1320. Below that,
+           deliberate legal weak moves are injected progressively.
+        */
         if (
             chessElo
             <
@@ -9402,11 +9593,11 @@
                 resolve =>
                     window.setTimeout(
                         resolve,
-                        220
+                        70
                         +
                         Math.random()
                         *
-                        360
+                        90
                     )
             );
 
@@ -9432,13 +9623,13 @@
                 );
 
             /*
-               Stockfish 18 lite is extremely strong even with short searches.
-               The strength limiter chooses the playing strength; the short
-               movetime keeps the UI responsive.
+               Strength is controlled by UCI_Elo. The search itself is kept
+               short enough to feel immediate, but long enough for the lite
+               engine to remain very strong at the top end.
             */
             const moveTime =
                 Math.round(
-                    110
+                    180
                     +
                     (
                         targetElo
@@ -9448,10 +9639,10 @@
                     /
                     1180
                     *
-                    210
+                    300
                 );
 
-            const result =
+            let result =
                 await runChessEngineTask({
                     fen:
                         chessGame.fen(),
@@ -9461,8 +9652,43 @@
                         `go movetime ${moveTime}`
                     ],
                     timeout:
-                        3000
+                        3500
                 });
+
+            if (
+                request
+                !==
+                chessEngineRequestToken
+            ) {
+                return;
+            }
+
+            /*
+               One real-engine retry is preferable to silently replacing a
+               2500-Elo opponent with a random move.
+            */
+            if (
+                !result
+                ||
+                !result.bestmove
+                ||
+                !/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(
+                    result.bestmove
+                )
+            ) {
+                result =
+                    await runChessEngineTask({
+                        fen:
+                            chessGame.fen(),
+                        commands: [
+                            "setoption name UCI_LimitStrength value true",
+                            `setoption name UCI_Elo value ${targetElo}`,
+                            "go movetime 700"
+                        ],
+                        timeout:
+                            4200
+                    });
+            }
 
             if (
                 request
@@ -9499,21 +9725,26 @@
                         ??
                         undefined
                 };
-            } else {
-                /*
-                   If the engine ever fails, do not silently turn a 2000+
-                   opponent into a random mover.
-                */
+            } else if (
+                chessElo
+                <
+                1320
+            ) {
                 moveData =
-                    chessElo
-                    >=
-                    1320
-                        ? heuristicEmergencyChessMove()
-                        : randomWeakChessMove();
+                    randomWeakChessMove();
+            } else {
+                chessEngineThinking =
+                    false;
 
-                console.warn(
-                    "Stockfish move unavailable; emergency chess fallback used."
+                window.alert(
+                    "Stockfish konnte keinen Zug berechnen. Bitte prüfe kurz die Internetverbindung und starte die Partie erneut."
                 );
+
+                showScreen(
+                    screens.chessSetup
+                );
+
+                return;
             }
         }
 
@@ -9555,12 +9786,27 @@
         } catch (
             error
         ) {
-            const fallback =
+            chessEngineThinking =
+                false;
+
+            if (
                 chessElo
                 >=
                 1320
-                    ? heuristicEmergencyChessMove()
-                    : randomWeakChessMove();
+            ) {
+                window.alert(
+                    "Die Engine-Antwort war ungültig. Bitte starte die Partie erneut."
+                );
+
+                showScreen(
+                    screens.chessSetup
+                );
+
+                return;
+            }
+
+            const fallback =
+                randomWeakChessMove();
 
             if (
                 fallback
@@ -9597,7 +9843,6 @@
             finishChessGame();
         }
     }
-
 
     function chessGameResultText(
         game
@@ -9894,7 +10139,9 @@
                 lastMove:
                     chessAnalysisLastMove,
                 clickHandler:
-                    handleChessAnalysisSquare
+                    handleChessAnalysisSquare,
+                orientation:
+                    chessHumanColor
             }
         );
 
@@ -10322,10 +10569,10 @@
                 fen,
                 commands: [
                     "setoption name UCI_LimitStrength value false",
-                    "go movetime 170"
+                    "go movetime 220"
                 ],
                 timeout:
-                    2600
+                    3200
             });
 
         if (
@@ -10354,6 +10601,12 @@
             el.chessEvalWhite.style.height =
                 "50%";
 
+            el.chessEvalWhite.style.top =
+                "auto";
+
+            el.chessEvalWhite.style.bottom =
+                "0";
+
             el.chessEvalLabel.textContent =
                 "–";
 
@@ -10378,8 +10631,8 @@
                 score.value
                 >
                 0
-                    ? 98
-                    : 2;
+                    ? 99
+                    : 1;
 
             label =
                 score.value
@@ -10394,10 +10647,10 @@
                 Math.tanh(
                     score.pawns
                     /
-                    5
+                    4.4
                 )
                 *
-                47;
+                48;
 
             label =
                 score.pawns
@@ -10409,14 +10662,39 @@
                     );
         }
 
-        el.chessEvalWhite.style.height =
-            `${Math.max(
-                2,
+        whitePercent =
+            Math.max(
+                1,
                 Math.min(
-                    98,
+                    99,
                     whitePercent
                 )
-            )}%`;
+            );
+
+        /*
+           White is at the bottom when the human plays White, and at the top
+           when the board is rotated for a human Black player.
+        */
+        if (
+            chessHumanColor
+            ===
+            "w"
+        ) {
+            el.chessEvalWhite.style.top =
+                "auto";
+
+            el.chessEvalWhite.style.bottom =
+                "0";
+        } else {
+            el.chessEvalWhite.style.bottom =
+                "auto";
+
+            el.chessEvalWhite.style.top =
+                "0";
+        }
+
+        el.chessEvalWhite.style.height =
+            `${whitePercent}%`;
 
         el.chessEvalLabel.textContent =
             label;
@@ -10424,7 +10702,6 @@
         el.chessEvalBar.dataset.eval =
             label;
     }
-
 
     async function updateChessAnalysisEvaluation() {
         if (

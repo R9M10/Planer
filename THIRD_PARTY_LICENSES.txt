@@ -19,3 +19,17 @@ contain the Stockfish engine binary itself.
 
 This first chess version therefore needs internet access when the chess
 libraries/engine are loaded. The rest of the planner app remains local.
+
+
+3. Cburnett standard SVG chess pieces
+   Source: Wikimedia Commons, files Chess_*t45.svg
+   Author: Cburnett
+   The supplied reference image "Chess board blank.svg" identifies these
+   pieces as its source. The individual Cburnett files are available under
+   multiple free licenses on Wikimedia Commons, including the 3-clause BSD
+   license and CC BY-SA 3.0. This app loads the original SVG files via
+   Wikimedia Commons rather than redistributing modified artwork.
+
+Board colors are reproduced from the user-supplied reference:
+- Light: #FFCE9E
+- Dark:  #D18B47
