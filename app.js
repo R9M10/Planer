@@ -63,13 +63,26 @@
         wikipediaSearchForm: $("wikipediaSearchForm"),
         wikipediaSearchInput: $("wikipediaSearchInput"),
         wikipediaSearchButton: $("wikipediaSearchButton"),
+        wikipediaFolderButton: $("wikipediaFolderButton"),
+        wikipediaFolderComposer: $("wikipediaFolderComposer"),
+        wikipediaFolderNameInput: $("wikipediaFolderNameInput"),
+        wikipediaFolderCreateCancel: $("wikipediaFolderCreateCancel"),
+        wikipediaFolders: $("wikipediaFolders"),
         wikipediaStatus: $("wikipediaStatus"),
         wikipediaLanding: $("wikipediaLanding"),
+        wikipediaFolderView: $("wikipediaFolderView"),
+        wikipediaFolderViewTitle: $("wikipediaFolderViewTitle"),
+        wikipediaFolderArticles: $("wikipediaFolderArticles"),
         wikipediaResults: $("wikipediaResults"),
         wikipediaArticle: $("wikipediaArticle"),
         wikipediaArticleTitle: $("wikipediaArticleTitle"),
+        wikipediaSaveArticleButton: $("wikipediaSaveArticleButton"),
         wikipediaArticleBody: $("wikipediaArticleBody"),
         wikipediaArticleFooter: $("wikipediaArticleFooter"),
+        wikipediaFolderPicker: $("wikipediaFolderPicker"),
+        wikipediaFolderPickerList: $("wikipediaFolderPickerList"),
+        wikipediaFolderPickerNew: $("wikipediaFolderPickerNew"),
+        wikipediaFolderPickerCancel: $("wikipediaFolderPickerCancel"),
         timelineButton: $("timelineButton"),
         backupButton: $("backupButton"),
         restoreButton: $("restoreButton"),
@@ -414,6 +427,29 @@
     let wikipediaArticleHistory = [];
     let wikipediaSearchTimer = null;
     let wikipediaRequestToken = 0;
+    let wikipediaOpenFolderId = null;
+    let wikipediaReturnFolderId = null;
+    let wikipediaFolderComposerSaveArticle = false;
+
+    /*
+       Request the side-room images immediately. Safari may otherwise defer
+       CSS background images on display:none screens until the first turn.
+    */
+    [
+        "./chess-room-day.png",
+        "./chess-room-night.png"
+    ].forEach(
+        source => {
+            const image =
+                new Image();
+
+            image.decoding =
+                "async";
+
+            image.src =
+                source;
+        }
+    );
 
     const CHESS_STORAGE_KEY = "personalPlannerSuite_chess_v2";
 
@@ -864,6 +900,45 @@
             return;
         }
 
+        const reducedMotion =
+            window.matchMedia(
+                "(prefers-reduced-motion: reduce)"
+            ).matches;
+
+        if (
+            reducedMotion
+        ) {
+            activateScreenImmediately(
+                toScreen,
+                false
+            );
+
+            return;
+        }
+
+        const fromVisual =
+            screenVisualElement(
+                fromScreen
+            );
+
+        const toVisual =
+            screenVisualElement(
+                toScreen
+            );
+
+        if (
+            !fromVisual
+            ||
+            !toVisual
+        ) {
+            activateScreenImmediately(
+                toScreen,
+                true
+            );
+
+            return;
+        }
+
         roomTurnBusy =
             true;
 
@@ -879,100 +954,189 @@
             );
         }
 
-        const directionClass =
-            direction
-            ===
-            "left"
-                ? "room-turn-left"
-                : "room-turn-right";
+        const readVisual =
+            visual => {
+                const style =
+                    window.getComputedStyle(
+                        visual
+                    );
 
-        fromScreen.classList.remove(
-            "screen-soft-enter"
+                return {
+                    image:
+                        style.backgroundImage,
+                    size:
+                        style.backgroundSize,
+                    position:
+                        style.backgroundPosition,
+                    repeat:
+                        style.backgroundRepeat
+                };
+            };
+
+        const fromStyle =
+            readVisual(
+                fromVisual
+            );
+
+        const toStyle =
+            readVisual(
+                toVisual
+            );
+
+        const stage =
+            document.createElement(
+                "div"
+            );
+
+        stage.className =
+            `room-turn-stage ${
+                direction
+                ===
+                "left"
+                    ? "room-turn-stage-left"
+                    : "room-turn-stage-right"
+            }`;
+
+        const makePanel =
+            (
+                className,
+                visualStyle
+            ) => {
+                const panel =
+                    document.createElement(
+                        "div"
+                    );
+
+                panel.className =
+                    `room-turn-panel ${className}`;
+
+                panel.style.backgroundImage =
+                    visualStyle.image;
+
+                panel.style.backgroundSize =
+                    visualStyle.size;
+
+                panel.style.backgroundPosition =
+                    visualStyle.position;
+
+                panel.style.backgroundRepeat =
+                    visualStyle.repeat;
+
+                return panel;
+            };
+
+        stage.append(
+            makePanel(
+                "room-turn-stage-source",
+                fromStyle
+            ),
+            makePanel(
+                "room-turn-stage-target",
+                toStyle
+            )
         );
 
-        toScreen.classList.remove(
-            "active",
-            "screen-soft-enter"
+        document.body.classList.add(
+            "room-turning"
         );
 
-        fromScreen.classList.add(
-            "room-turn-source",
-            directionClass
+        document.body.appendChild(
+            stage
+        );
+
+        /*
+           The real target is switched underneath the compositor before
+           the animation starts. The temporary stage remains fully opaque,
+           so there is never a frame where the page background can flash.
+        */
+        Object.values(
+            screens
+        ).forEach(
+            item => {
+                item.classList.remove(
+                    "active",
+                    "screen-soft-enter"
+                );
+            }
         );
 
         toScreen.classList.add(
-            "room-turn-target",
-            directionClass
+            "active"
         );
 
-        void toScreen.offsetWidth;
+        window.scrollTo(
+            0,
+            0
+        );
+
+        renderMiniSession();
+
+        void stage.offsetWidth;
 
         requestAnimationFrame(
             () => {
-                fromScreen.classList.add(
-                    "room-turn-go"
+                stage.classList.add(
+                    "room-turn-stage-go"
+                );
+            }
+        );
+
+        let cleaned =
+            false;
+
+        const cleanup =
+            () => {
+                if (
+                    cleaned
+                ) {
+                    return;
+                }
+
+                cleaned =
+                    true;
+
+                stage.remove();
+
+                document.body.classList.remove(
+                    "room-turning"
                 );
 
-                toScreen.classList.add(
-                    "room-turn-go"
-                );
+                roomTurnBusy =
+                    false;
+
+                if (
+                    roomTurnTimer
+                ) {
+                    clearTimeout(
+                        roomTurnTimer
+                    );
+                }
+
+                roomTurnTimer =
+                    null;
+            };
+
+        stage.addEventListener(
+            "transitionend",
+            event => {
+                if (
+                    event.target.classList.contains(
+                        "room-turn-stage-target"
+                    )
+                    &&
+                    event.propertyName
+                    ===
+                    "transform"
+                ) {
+                    cleanup();
+                }
             }
         );
 
         roomTurnTimer =
             window.setTimeout(
-                () => {
-                    fromScreen.classList.remove(
-                        "active",
-                        "room-turn-source",
-                        "room-turn-target",
-                        "room-turn-right",
-                        "room-turn-left",
-                        "room-turn-go"
-                    );
-
-                    toScreen.classList.remove(
-                        "room-turn-source",
-                        "room-turn-target",
-                        "room-turn-right",
-                        "room-turn-left",
-                        "room-turn-go"
-                    );
-
-                    Object.values(
-                        screens
-                    ).forEach(
-                        item => {
-                            if (
-                                item
-                                !==
-                                toScreen
-                            ) {
-                                item.classList.remove(
-                                    "active"
-                                );
-                            }
-                        }
-                    );
-
-                    toScreen.classList.add(
-                        "active"
-                    );
-
-                    window.scrollTo(
-                        0,
-                        0
-                    );
-
-                    renderMiniSession();
-
-                    roomTurnBusy =
-                        false;
-
-                    roomTurnTimer =
-                        null;
-                },
-                620
+                cleanup,
+                760
             );
     }
 
@@ -1350,6 +1514,9 @@
             },
             books: {
                 entries: []
+            },
+            wikipedia: {
+                folders: []
             },
             settings: {
                 theme: "dark"
@@ -1994,6 +2161,95 @@
     }
 
 
+    function normalizeWikipediaFolder(
+        folder
+    ) {
+        const createdAt =
+            folder?.createdAt
+            ??
+            nowIso();
+
+        const articles =
+            Array.isArray(
+                folder?.articles
+            )
+                ? folder.articles
+                    .map(
+                        article => {
+                            const title =
+                                String(
+                                    article?.title
+                                    ??
+                                    ""
+                                )
+                                .trim();
+
+                            if (
+                                !title
+                            ) {
+                                return null;
+                            }
+
+                            return {
+                                title,
+                                addedAt:
+                                    article?.addedAt
+                                    ??
+                                    createdAt
+                            };
+                        }
+                    )
+                    .filter(
+                        Boolean
+                    )
+                : [];
+
+        const seen =
+            new Set();
+
+        return {
+            id:
+                folder?.id
+                ??
+                createId(),
+            name:
+                String(
+                    folder?.name
+                    ??
+                    "Ordner"
+                )
+                .trim()
+                ||
+                "Ordner",
+            articles:
+                articles.filter(
+                    article => {
+                        const key =
+                            article.title
+                            .toLocaleLowerCase(
+                                "de-DE"
+                            );
+
+                        if (
+                            seen.has(
+                                key
+                            )
+                        ) {
+                            return false;
+                        }
+
+                        seen.add(
+                            key
+                        );
+
+                        return true;
+                    }
+                ),
+            createdAt
+        };
+    }
+
+
     function dedupeById(items) {
         const seen = new Set();
 
@@ -2074,6 +2330,15 @@
         clean.books.entries =
             Array.isArray(raw.books?.entries)
                 ? raw.books.entries.map(normalizeLibraryEntry)
+                : [];
+
+        clean.wikipedia.folders =
+            Array.isArray(
+                raw.wikipedia?.folders
+            )
+                ? raw.wikipedia.folders.map(
+                    normalizeWikipediaFolder
+                )
                 : [];
 
         clean.settings.theme =
@@ -8045,7 +8310,7 @@
 
 
     // ==================================================
-    // AKADEMIE / WIKIPEDIA
+    // BIBLIOTHEK / WIKIPEDIA
     // ==================================================
 
     const WIKIPEDIA_API =
@@ -8104,11 +8369,168 @@
     }
 
 
+    function hideWikipediaFolderComposer() {
+        el.wikipediaFolderComposer.classList.add(
+            "hidden"
+        );
+
+        el.wikipediaFolderNameInput.value =
+            "";
+
+        wikipediaFolderComposerSaveArticle =
+            false;
+    }
+
+
+    function showWikipediaFolderComposer(
+        saveCurrentArticle = false
+    ) {
+        wikipediaFolderComposerSaveArticle =
+            Boolean(
+                saveCurrentArticle
+                &&
+                wikipediaCurrentTitle
+            );
+
+        el.wikipediaFolderComposer.classList.remove(
+            "hidden"
+        );
+
+        window.setTimeout(
+            () => {
+                el.wikipediaFolderNameInput.focus();
+            },
+            40
+        );
+    }
+
+
+    function wikipediaFolderById(
+        folderId
+    ) {
+        return (
+            state.wikipedia.folders.find(
+                folder =>
+                    folder.id
+                    ===
+                    folderId
+            )
+            ??
+            null
+        );
+    }
+
+
+    function renderWikipediaFolders() {
+        el.wikipediaFolders.innerHTML =
+            "";
+
+        const folders =
+            state.wikipedia.folders;
+
+        el.wikipediaFolders.classList.toggle(
+            "hidden",
+            folders.length
+            ===
+            0
+        );
+
+        folders.forEach(
+            folder => {
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "wiki-folder-chip";
+
+                if (
+                    folder.id
+                    ===
+                    wikipediaOpenFolderId
+                ) {
+                    button.classList.add(
+                        "active"
+                    );
+                }
+
+                const icon =
+                    document.createElement(
+                        "span"
+                    );
+
+                icon.className =
+                    "wiki-folder-chip-icon";
+
+                icon.innerHTML =
+                    bookshelfIconSvg();
+
+                const label =
+                    document.createElement(
+                        "span"
+                    );
+
+                label.className =
+                    "wiki-folder-chip-label";
+
+                label.textContent =
+                    folder.name;
+
+                const count =
+                    document.createElement(
+                        "span"
+                    );
+
+                count.className =
+                    "wiki-folder-chip-count";
+
+                count.textContent =
+                    String(
+                        folder.articles.length
+                    );
+
+                button.append(
+                    icon,
+                    label,
+                    count
+                );
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        showWikipediaFolder(
+                            folder.id
+                        );
+                    }
+                );
+
+                el.wikipediaFolders.appendChild(
+                    button
+                );
+            }
+        );
+    }
+
+
     function showWikipediaLanding() {
         wikipediaCurrentTitle =
             "";
 
+        wikipediaOpenFolderId =
+            null;
+
+        wikipediaReturnFolderId =
+            null;
+
         el.wikipediaLanding.classList.remove(
+            "hidden"
+        );
+
+        el.wikipediaFolderView.classList.add(
             "hidden"
         );
 
@@ -8123,9 +8545,180 @@
         el.wikipediaResults.innerHTML =
             "";
 
+        renderWikipediaFolders();
+
         setWikipediaStatus(
             ""
         );
+    }
+
+
+    function showWikipediaFolder(
+        folderId
+    ) {
+        const folder =
+            wikipediaFolderById(
+                folderId
+            );
+
+        if (
+            !folder
+        ) {
+            showWikipediaLanding();
+            return;
+        }
+
+        wikipediaRequestToken +=
+            1;
+
+        wikipediaCurrentTitle =
+            "";
+
+        wikipediaOpenFolderId =
+            folder.id;
+
+        wikipediaReturnFolderId =
+            folder.id;
+
+        el.wikipediaLanding.classList.add(
+            "hidden"
+        );
+
+        el.wikipediaResults.classList.add(
+            "hidden"
+        );
+
+        el.wikipediaArticle.classList.add(
+            "hidden"
+        );
+
+        el.wikipediaFolderView.classList.remove(
+            "hidden"
+        );
+
+        el.wikipediaFolderViewTitle.textContent =
+            folder.name;
+
+        el.wikipediaFolderArticles.innerHTML =
+            "";
+
+        if (
+            folder.articles.length
+            ===
+            0
+        ) {
+            const empty =
+                document.createElement(
+                    "div"
+                );
+
+            empty.className =
+                "wiki-folder-empty";
+
+            empty.textContent =
+                "Noch keine Artikel.";
+
+            el.wikipediaFolderArticles.appendChild(
+                empty
+            );
+        } else {
+            folder.articles.forEach(
+                article => {
+                    const button =
+                        document.createElement(
+                            "button"
+                        );
+
+                    button.type =
+                        "button";
+
+                    button.className =
+                        "wiki-folder-article";
+
+                    button.textContent =
+                        article.title;
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+                            wikipediaReturnFolderId =
+                                folder.id;
+
+                            openWikipediaArticle(
+                                article.title,
+                                false
+                            );
+                        }
+                    );
+
+                    el.wikipediaFolderArticles.appendChild(
+                        button
+                    );
+                }
+            );
+        }
+
+        renderWikipediaFolders();
+
+        setWikipediaStatus(
+            ""
+        );
+    }
+
+
+    function createWikipediaFolder(
+        rawName
+    ) {
+        const name =
+            String(
+                rawName
+                ??
+                ""
+            )
+            .trim();
+
+        if (
+            !name
+        ) {
+            return null;
+        }
+
+        const duplicate =
+            state.wikipedia.folders.find(
+                folder =>
+                    folder.name.toLocaleLowerCase(
+                        "de-DE"
+                    )
+                    ===
+                    name.toLocaleLowerCase(
+                        "de-DE"
+                    )
+            );
+
+        if (
+            duplicate
+        ) {
+            return duplicate;
+        }
+
+        const folder = {
+            id:
+                createId(),
+            name,
+            articles: [],
+            createdAt:
+                nowIso()
+        };
+
+        state.wikipedia.folders.push(
+            folder
+        );
+
+        saveState();
+
+        renderWikipediaFolders();
+
+        return folder;
     }
 
 
@@ -8181,10 +8774,20 @@
         wikipediaCurrentTitle =
             "";
 
+        wikipediaOpenFolderId =
+            null;
+
+        wikipediaReturnFolderId =
+            null;
+
         const token =
             ++wikipediaRequestToken;
 
         el.wikipediaLanding.classList.add(
+            "hidden"
+        );
+
+        el.wikipediaFolderView.classList.add(
             "hidden"
         );
 
@@ -8198,6 +8801,8 @@
 
         el.wikipediaResults.innerHTML =
             "";
+
+        renderWikipediaFolders();
 
         setWikipediaStatus(
             "Suche …",
@@ -8333,6 +8938,9 @@
                 button.addEventListener(
                     "click",
                     () => {
+                        wikipediaReturnFolderId =
+                            null;
+
                         openWikipediaArticle(
                             result.title,
                             false
@@ -8714,7 +9322,14 @@
                 ||
                 cleanTitle;
 
+            wikipediaOpenFolderId =
+                null;
+
             el.wikipediaLanding.classList.add(
+                "hidden"
+            );
+
+            el.wikipediaFolderView.classList.add(
                 "hidden"
             );
 
@@ -8793,6 +9408,8 @@
                 license
             );
 
+            renderWikipediaFolders();
+
             setWikipediaStatus(
                 ""
             );
@@ -8825,6 +9442,151 @@
     }
 
 
+    function closeWikipediaFolderPicker() {
+        el.wikipediaFolderPicker.classList.add(
+            "hidden"
+        );
+    }
+
+
+    function addWikipediaArticleToFolder(
+        folderId
+    ) {
+        const folder =
+            wikipediaFolderById(
+                folderId
+            );
+
+        const title =
+            wikipediaCurrentTitle;
+
+        if (
+            !folder
+            ||
+            !title
+        ) {
+            return;
+        }
+
+        const alreadySaved =
+            folder.articles.some(
+                article =>
+                    article.title.toLocaleLowerCase(
+                        "de-DE"
+                    )
+                    ===
+                    title.toLocaleLowerCase(
+                        "de-DE"
+                    )
+            );
+
+        if (
+            !alreadySaved
+        ) {
+            folder.articles.push({
+                title,
+                addedAt:
+                    nowIso()
+            });
+
+            saveState();
+        }
+
+        closeWikipediaFolderPicker();
+
+        renderWikipediaFolders();
+
+        setWikipediaStatus(
+            `In „${folder.name}“ abgelegt.`
+        );
+
+        window.setTimeout(
+            () => {
+                if (
+                    el.wikipediaStatus.textContent
+                    ===
+                    `In „${folder.name}“ abgelegt.`
+                ) {
+                    setWikipediaStatus(
+                        ""
+                    );
+                }
+            },
+            1500
+        );
+    }
+
+
+    function openWikipediaFolderPicker() {
+        if (
+            !wikipediaCurrentTitle
+        ) {
+            return;
+        }
+
+        el.wikipediaFolderPickerList.innerHTML =
+            "";
+
+        state.wikipedia.folders.forEach(
+            folder => {
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "wiki-folder-picker-option";
+
+                const name =
+                    document.createElement(
+                        "span"
+                    );
+
+                name.textContent =
+                    folder.name;
+
+                const count =
+                    document.createElement(
+                        "span"
+                    );
+
+                count.className =
+                    "wiki-folder-picker-option-count";
+
+                count.textContent =
+                    String(
+                        folder.articles.length
+                    );
+
+                button.append(
+                    name,
+                    count
+                );
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        addWikipediaArticleToFolder(
+                            folder.id
+                        );
+                    }
+                );
+
+                el.wikipediaFolderPickerList.appendChild(
+                    button
+                );
+            }
+        );
+
+        el.wikipediaFolderPicker.classList.remove(
+            "hidden"
+        );
+    }
+
+
     function openWikipediaPortal() {
         wikipediaRequestToken +=
             1;
@@ -8838,28 +9600,23 @@
         wikipediaLastQuery =
             "";
 
+        wikipediaOpenFolderId =
+            null;
+
+        wikipediaReturnFolderId =
+            null;
+
         el.wikipediaSearchInput.value =
             "";
+
+        hideWikipediaFolderComposer();
+
+        closeWikipediaFolderPicker();
 
         showWikipediaLanding();
 
         showScreen(
             screens.wikipedia
-        );
-
-        window.setTimeout(
-            () => {
-                try {
-                    el.wikipediaSearchInput.focus({
-                        preventScroll: true
-                    });
-                } catch (
-                    error
-                ) {
-                    el.wikipediaSearchInput.focus();
-                }
-            },
-            240
         );
     }
 
@@ -8916,8 +9673,106 @@
                             value
                         );
                     },
-                    420
+                    320
                 );
+        }
+    );
+
+
+    el.wikipediaFolderButton.addEventListener(
+        "click",
+        () => {
+            if (
+                el.wikipediaFolderComposer.classList.contains(
+                    "hidden"
+                )
+            ) {
+                showWikipediaFolderComposer();
+            } else {
+                hideWikipediaFolderComposer();
+            }
+        }
+    );
+
+
+    el.wikipediaFolderComposer.addEventListener(
+        "submit",
+        event => {
+            event.preventDefault();
+
+            const shouldSaveArticle =
+                wikipediaFolderComposerSaveArticle
+                &&
+                Boolean(
+                    wikipediaCurrentTitle
+                );
+
+            const folder =
+                createWikipediaFolder(
+                    el.wikipediaFolderNameInput.value
+                );
+
+            if (
+                folder
+            ) {
+                hideWikipediaFolderComposer();
+
+                if (
+                    shouldSaveArticle
+                ) {
+                    addWikipediaArticleToFolder(
+                        folder.id
+                    );
+                } else {
+                    showWikipediaFolder(
+                        folder.id
+                    );
+                }
+            }
+        }
+    );
+
+
+    el.wikipediaFolderCreateCancel.addEventListener(
+        "click",
+        hideWikipediaFolderComposer
+    );
+
+
+    el.wikipediaSaveArticleButton.addEventListener(
+        "click",
+        openWikipediaFolderPicker
+    );
+
+
+    el.wikipediaFolderPickerCancel.addEventListener(
+        "click",
+        closeWikipediaFolderPicker
+    );
+
+
+    el.wikipediaFolderPicker.addEventListener(
+        "click",
+        event => {
+            if (
+                event.target
+                ===
+                el.wikipediaFolderPicker
+            ) {
+                closeWikipediaFolderPicker();
+            }
+        }
+    );
+
+
+    el.wikipediaFolderPickerNew.addEventListener(
+        "click",
+        () => {
+            closeWikipediaFolderPicker();
+
+            showWikipediaFolderComposer(
+                true
+            );
         }
     );
 
@@ -8952,6 +9807,8 @@
             wikipediaRequestToken +=
                 1;
 
+            closeWikipediaFolderPicker();
+
             if (
                 wikipediaCurrentTitle
                 &&
@@ -8968,6 +9825,24 @@
                 openWikipediaArticle(
                     previousTitle,
                     false
+                );
+
+                return;
+            }
+
+            if (
+                wikipediaCurrentTitle
+                &&
+                wikipediaReturnFolderId
+            ) {
+                const folderId =
+                    wikipediaReturnFolderId;
+
+                wikipediaCurrentTitle =
+                    "";
+
+                showWikipediaFolder(
+                    folderId
                 );
 
                 return;
@@ -8992,6 +9867,13 @@
                     showWikipediaLanding();
                 }
 
+                return;
+            }
+
+            if (
+                wikipediaOpenFolderId
+            ) {
+                showWikipediaLanding();
                 return;
             }
 
