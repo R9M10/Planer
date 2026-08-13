@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=35">
+    <link rel="stylesheet" href="style.css?v=36">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=35" defer></script>
+    <script src="app.js?v=36" defer></script>
 </head>
 <body>
 
@@ -540,6 +540,13 @@
     ></button>
 
     <button
+        id="chessRoomAcademyHotspot"
+        class="chess-room-hotspot chess-room-academy-hotspot"
+        type="button"
+        aria-label="Akademie öffnen"
+    ></button>
+
+    <button
         id="chessRoomBackHotspot"
         class="chess-room-hotspot chess-room-back-hotspot"
         type="button"
@@ -547,6 +554,51 @@
     ></button>
 </section>
 
+
+
+<!-- ==================================================
+     AKADEMIE / WIKIPEDIA
+================================================== -->
+
+<section id="wikipediaScreen" class="screen wikipedia-screen">
+    <header class="wiki-topbar">
+        <button id="backFromWikipedia" class="wiki-back-button" type="button" aria-label="Zurück">‹</button>
+        <div class="wiki-room-title">Akademie</div>
+        <div class="wiki-topbar-spacer"></div>
+    </header>
+
+    <main class="wiki-shell">
+        <form id="wikipediaSearchForm" class="wiki-search-form" role="search">
+            <input
+                id="wikipediaSearchInput"
+                class="wiki-search-input"
+                type="search"
+                inputmode="search"
+                autocomplete="off"
+                autocapitalize="sentences"
+                spellcheck="true"
+                placeholder="Wikipedia durchsuchen"
+                aria-label="Wikipedia durchsuchen"
+            >
+            <button id="wikipediaSearchButton" class="wiki-search-button" type="submit" aria-label="Suchen">⌕</button>
+        </form>
+
+        <div id="wikipediaStatus" class="wiki-status" aria-live="polite"></div>
+
+        <section id="wikipediaLanding" class="wiki-landing">
+            <div class="wiki-landing-mark" aria-hidden="true">Α</div>
+            <p>Wissen suchen.</p>
+        </section>
+
+        <section id="wikipediaResults" class="wiki-results hidden" aria-label="Suchergebnisse"></section>
+
+        <article id="wikipediaArticle" class="wiki-article hidden">
+            <h1 id="wikipediaArticleTitle" class="wiki-article-title"></h1>
+            <div id="wikipediaArticleBody" class="wiki-article-body"></div>
+            <footer id="wikipediaArticleFooter" class="wiki-article-footer"></footer>
+        </article>
+    </main>
+</section>
 
 <!-- ==================================================
      SCHACH — SCHWIERIGKEIT

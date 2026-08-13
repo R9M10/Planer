@@ -6791,3 +6791,351 @@ html[data-theme="dark"] #chessRoomScreen .chess-room-background {
     user-select: none;
     -webkit-user-select: none;
 }
+
+/* ==================================================
+   V35 — AKADEMIE / WIKIPEDIA
+================================================== */
+
+#chessRoomScreen .chess-room-academy-hotspot {
+    left: 35%;
+    top: 13%;
+    width: 30%;
+    height: 31%;
+}
+
+.wikipedia-screen {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.wiki-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 80;
+    min-height: calc(62px + env(safe-area-inset-top));
+    display: grid;
+    grid-template-columns: 54px 1fr 54px;
+    align-items: end;
+    padding: env(safe-area-inset-top) 10px 10px;
+    background: color-mix(in srgb, var(--bg) 93%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.wiki-back-button {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 0;
+    padding: 0 0 1px 8px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 31px;
+    font-weight: 240;
+}
+
+.wiki-room-title {
+    align-self: center;
+    color: var(--muted);
+    text-align: center;
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: .055em;
+}
+
+.wiki-topbar-spacer {
+    width: 44px;
+    height: 44px;
+}
+
+.wiki-shell {
+    width: min(100%, 790px);
+    margin: 0 auto;
+    padding: 15px max(20px, env(safe-area-inset-right)) calc(62px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+}
+
+.wiki-search-form {
+    position: relative;
+    width: min(100%, 620px);
+    margin: 2px auto 0;
+}
+
+.wiki-search-input {
+    width: 100%;
+    min-height: 48px;
+    padding: 8px 43px 8px 2px;
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+    border-radius: 0;
+    outline: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 19px;
+    font-weight: 390;
+}
+
+.wiki-search-input::placeholder {
+    color: color-mix(in srgb, var(--muted) 82%, transparent);
+}
+
+.wiki-search-input:focus {
+    border-bottom-color: color-mix(in srgb, var(--text) 46%, transparent);
+}
+
+.wiki-search-button {
+    position: absolute;
+    right: 0;
+    top: 3px;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-family: Georgia, serif;
+    font-size: 25px;
+    font-weight: 300;
+}
+
+.wiki-status {
+    min-height: 24px;
+    margin: 11px auto 0;
+    color: var(--muted);
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: .015em;
+}
+
+.wiki-status.busy::after {
+    content: "";
+    display: inline-block;
+    width: 3px;
+    height: 3px;
+    margin-left: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    vertical-align: middle;
+    animation: wiki-pulse 1s ease-in-out infinite;
+}
+
+@keyframes wiki-pulse {
+    0%, 100% { opacity: .2; transform: scale(.8); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+.wiki-landing {
+    min-height: 54dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+}
+
+.wiki-landing-mark {
+    color: color-mix(in srgb, var(--text) 72%, transparent);
+    font-family: Georgia, serif;
+    font-size: 36px;
+    font-weight: 400;
+}
+
+.wiki-landing p {
+    margin: 0;
+    color: var(--muted);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: 16px;
+}
+
+.wiki-results {
+    width: min(100%, 650px);
+    margin: 10px auto 0;
+}
+
+.wiki-result {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 17px 0 16px;
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+}
+
+.wiki-result:last-child {
+    border-bottom: 0;
+}
+
+.wiki-result-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: 19px;
+    line-height: 1.2;
+}
+
+.wiki-result-snippet {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.wiki-article {
+    width: min(100%, 700px);
+    margin: 11px auto 0;
+}
+
+.wiki-article-title {
+    margin: 17px 0 24px;
+    color: var(--text);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: clamp(31px, 9vw, 44px);
+    font-weight: 450;
+    line-height: 1.06;
+    letter-spacing: -.028em;
+}
+
+.wiki-article-body {
+    color: color-mix(in srgb, var(--text) 94%, transparent);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: 17px;
+    line-height: 1.64;
+}
+
+.wiki-article-body p {
+    margin: 0 0 1.05em;
+}
+
+.wiki-article-body h2,
+.wiki-article-body h3,
+.wiki-article-body h4 {
+    margin: 1.85em 0 .65em;
+    color: var(--text);
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.wiki-article-body h2 { font-size: 26px; }
+.wiki-article-body h3 { font-size: 21px; }
+.wiki-article-body h4 { font-size: 18px; }
+
+.wiki-article-body a {
+    color: inherit;
+    text-decoration-color: color-mix(in srgb, var(--text) 30%, transparent);
+    text-underline-offset: 3px;
+}
+
+.wiki-article-body a[data-wiki-title] {
+    text-decoration-color: color-mix(in srgb, var(--accent) 72%, transparent);
+}
+
+.wiki-article-body img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: 18px auto;
+    border-radius: 2px;
+}
+
+.wiki-article-body figure,
+.wiki-article-body .thumb,
+.wiki-article-body .thumbinner {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 1.35em 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+.wiki-article-body figcaption,
+.wiki-article-body .thumbcaption {
+    margin-top: -8px;
+    color: var(--muted);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.wiki-article-body table {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block;
+    overflow-x: auto;
+    margin: 1.4em 0;
+    border-collapse: collapse;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    font-size: 12px;
+}
+
+.wiki-article-body th,
+.wiki-article-body td {
+    padding: 7px 9px;
+    border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+    background: transparent !important;
+}
+
+.wiki-article-body .infobox {
+    width: 100% !important;
+    float: none !important;
+}
+
+.wiki-article-body ul,
+.wiki-article-body ol {
+    padding-left: 1.35em;
+}
+
+.wiki-article-body blockquote {
+    margin: 1.3em 0;
+    padding-left: 17px;
+    border-left: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+    color: var(--muted);
+}
+
+.wiki-article-body sup {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    font-size: .68em;
+}
+
+.wiki-article-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 15px;
+    margin-top: 44px;
+    padding-top: 17px;
+    border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+.wiki-article-footer a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.wikipedia-screen .hidden {
+    display: none !important;
+}
+
+@media (max-width: 430px) {
+    .wiki-shell {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .wiki-article-body {
+        font-size: 16px;
+        line-height: 1.61;
+    }
+}

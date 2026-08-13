@@ -21,6 +21,7 @@
         planComplete: $("planCompleteScreen"),
         textsHub: $("textsHubScreen"),
         chessRoom: $("chessRoomScreen"),
+        wikipedia: $("wikipediaScreen"),
         chessSetup: $("chessSetupScreen"),
         chessPlay: $("chessPlayScreen"),
         chessAnalysis: $("chessAnalysisScreen"),
@@ -55,7 +56,20 @@
         openPhysicsButton: $("openPhysicsButton"),
         openChessButton: $("openChessButton"),
         chessRoomBoardHotspot: $("chessRoomBoardHotspot"),
+        chessRoomAcademyHotspot: $("chessRoomAcademyHotspot"),
         chessRoomBackHotspot: $("chessRoomBackHotspot"),
+
+        backFromWikipedia: $("backFromWikipedia"),
+        wikipediaSearchForm: $("wikipediaSearchForm"),
+        wikipediaSearchInput: $("wikipediaSearchInput"),
+        wikipediaSearchButton: $("wikipediaSearchButton"),
+        wikipediaStatus: $("wikipediaStatus"),
+        wikipediaLanding: $("wikipediaLanding"),
+        wikipediaResults: $("wikipediaResults"),
+        wikipediaArticle: $("wikipediaArticle"),
+        wikipediaArticleTitle: $("wikipediaArticleTitle"),
+        wikipediaArticleBody: $("wikipediaArticleBody"),
+        wikipediaArticleFooter: $("wikipediaArticleFooter"),
         timelineButton: $("timelineButton"),
         backupButton: $("backupButton"),
         restoreButton: $("restoreButton"),
@@ -394,6 +408,12 @@
 
     let roomTurnBusy = false;
     let roomTurnTimer = null;
+
+    let wikipediaCurrentTitle = "";
+    let wikipediaLastQuery = "";
+    let wikipediaArticleHistory = [];
+    let wikipediaSearchTimer = null;
+    let wikipediaRequestToken = 0;
 
     const CHESS_STORAGE_KEY = "personalPlannerSuite_chess_v2";
 
@@ -8022,6 +8042,964 @@
         }
     );
 
+
+
+    // ==================================================
+    // AKADEMIE / WIKIPEDIA
+    // ==================================================
+
+    const WIKIPEDIA_API =
+        "https://de.wikipedia.org/w/api.php";
+
+
+    function wikipediaApiUrl(
+        parameters
+    ) {
+        const url =
+            new URL(
+                WIKIPEDIA_API
+            );
+
+        Object.entries(
+            parameters
+        ).forEach(
+            ([key, value]) => {
+                url.searchParams.set(
+                    key,
+                    value
+                );
+            }
+        );
+
+        url.searchParams.set(
+            "origin",
+            "*"
+        );
+
+        url.searchParams.set(
+            "format",
+            "json"
+        );
+
+        url.searchParams.set(
+            "formatversion",
+            "2"
+        );
+
+        return url.toString();
+    }
+
+
+    function setWikipediaStatus(
+        message = "",
+        busy = false
+    ) {
+        el.wikipediaStatus.textContent =
+            message;
+
+        el.wikipediaStatus.classList.toggle(
+            "busy",
+            busy
+        );
+    }
+
+
+    function showWikipediaLanding() {
+        wikipediaCurrentTitle =
+            "";
+
+        el.wikipediaLanding.classList.remove(
+            "hidden"
+        );
+
+        el.wikipediaResults.classList.add(
+            "hidden"
+        );
+
+        el.wikipediaArticle.classList.add(
+            "hidden"
+        );
+
+        el.wikipediaResults.innerHTML =
+            "";
+
+        setWikipediaStatus(
+            ""
+        );
+    }
+
+
+    function plainWikipediaSnippet(
+        html
+    ) {
+        const holder =
+            document.createElement(
+                "div"
+            );
+
+        holder.innerHTML =
+            html
+            ??
+            "";
+
+        return (
+            holder.textContent
+            ??
+            ""
+        )
+            .replace(
+                /\s+/g,
+                " "
+            )
+            .trim();
+    }
+
+
+    async function searchWikipedia(
+        query
+    ) {
+        const cleanQuery =
+            String(
+                query
+                ??
+                ""
+            )
+            .trim();
+
+        if (
+            cleanQuery.length
+            <
+            2
+        ) {
+            showWikipediaLanding();
+            return;
+        }
+
+        wikipediaLastQuery =
+            cleanQuery;
+
+        wikipediaCurrentTitle =
+            "";
+
+        const token =
+            ++wikipediaRequestToken;
+
+        el.wikipediaLanding.classList.add(
+            "hidden"
+        );
+
+        el.wikipediaArticle.classList.add(
+            "hidden"
+        );
+
+        el.wikipediaResults.classList.remove(
+            "hidden"
+        );
+
+        el.wikipediaResults.innerHTML =
+            "";
+
+        setWikipediaStatus(
+            "Suche …",
+            true
+        );
+
+        try {
+            const response =
+                await fetch(
+                    wikipediaApiUrl({
+                        action: "query",
+                        list: "search",
+                        srsearch: cleanQuery,
+                        srlimit: "10",
+                        srprop: "snippet|wordcount",
+                        utf8: "1"
+                    }),
+                    {
+                        mode: "cors",
+                        credentials: "omit"
+                    }
+                );
+
+            if (
+                !response.ok
+            ) {
+                throw new Error(
+                    `Wikipedia HTTP ${response.status}`
+                );
+            }
+
+            const data =
+                await response.json();
+
+            if (
+                token
+                !==
+                wikipediaRequestToken
+            ) {
+                return;
+            }
+
+            const results =
+                data.query
+                &&
+                Array.isArray(
+                    data.query.search
+                )
+                    ? data.query.search
+                    : [];
+
+            renderWikipediaResults(
+                results
+            );
+
+            setWikipediaStatus(
+                results.length
+                    ? ""
+                    : "Nichts gefunden."
+            );
+
+        } catch (
+            error
+        ) {
+            console.error(
+                "Wikipedia search failed:",
+                error
+            );
+
+            if (
+                token
+                !==
+                wikipediaRequestToken
+            ) {
+                return;
+            }
+
+            setWikipediaStatus(
+                "Wikipedia konnte gerade nicht erreicht werden."
+            );
+        }
+    }
+
+
+    function renderWikipediaResults(
+        results
+    ) {
+        el.wikipediaResults.innerHTML =
+            "";
+
+        results.forEach(
+            result => {
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "wiki-result";
+
+                const title =
+                    document.createElement(
+                        "span"
+                    );
+
+                title.className =
+                    "wiki-result-title";
+
+                title.textContent =
+                    result.title;
+
+                const snippet =
+                    document.createElement(
+                        "span"
+                    );
+
+                snippet.className =
+                    "wiki-result-snippet";
+
+                snippet.textContent =
+                    plainWikipediaSnippet(
+                        result.snippet
+                    );
+
+                button.append(
+                    title,
+                    snippet
+                );
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        openWikipediaArticle(
+                            result.title,
+                            false
+                        );
+                    }
+                );
+
+                el.wikipediaResults.appendChild(
+                    button
+                );
+            }
+        );
+    }
+
+
+    function normalizeWikipediaMediaUrl(
+        value
+    ) {
+        const raw =
+            String(
+                value
+                ??
+                ""
+            );
+
+        if (
+            raw.startsWith(
+                "//"
+            )
+        ) {
+            return `https:${raw}`;
+        }
+
+        if (
+            raw.startsWith(
+                "/"
+            )
+        ) {
+            return `https://de.wikipedia.org${raw}`;
+        }
+
+        return raw;
+    }
+
+
+    function wikipediaTitleFromHref(
+        href
+    ) {
+        if (
+            !href
+            ||
+            href.startsWith(
+                "#"
+            )
+        ) {
+            return null;
+        }
+
+        try {
+            const url =
+                new URL(
+                    href,
+                    "https://de.wikipedia.org"
+                );
+
+            if (
+                url.hostname
+                !==
+                "de.wikipedia.org"
+                ||
+                !url.pathname.startsWith(
+                    "/wiki/"
+                )
+            ) {
+                return null;
+            }
+
+            const title =
+                decodeURIComponent(
+                    url.pathname.slice(
+                        6
+                    )
+                )
+                .replace(
+                    /_/g,
+                    " "
+                );
+
+            if (
+                /^(Datei|File|Spezial|Special|Hilfe|Help|Portal|Kategorie|Category|Wikipedia):/i.test(
+                    title
+                )
+            ) {
+                return null;
+            }
+
+            return title;
+
+        } catch (
+            error
+        ) {
+            return null;
+        }
+    }
+
+
+    function sanitizeWikipediaHtml(
+        html
+    ) {
+        const parser =
+            new DOMParser();
+
+        const documentNode =
+            parser.parseFromString(
+                String(
+                    html
+                    ??
+                    ""
+                ),
+                "text/html"
+            );
+
+        documentNode.querySelectorAll(
+            "script, style, iframe, object, embed, form, input, button, textarea, select, link, meta, noscript, .mw-editsection, .navbox, .vertical-navbox, .metadata, .noprint"
+        ).forEach(
+            node => {
+                node.remove();
+            }
+        );
+
+        documentNode.querySelectorAll(
+            "*"
+        ).forEach(
+            node => {
+                Array.from(
+                    node.attributes
+                ).forEach(
+                    attribute => {
+                        const name =
+                            attribute.name.toLowerCase();
+
+                        if (
+                            name.startsWith(
+                                "on"
+                            )
+                            ||
+                            name
+                            ===
+                            "style"
+                            ||
+                            name
+                            ===
+                            "srcdoc"
+                        ) {
+                            node.removeAttribute(
+                                attribute.name
+                            );
+                        }
+                    }
+                );
+            }
+        );
+
+        documentNode.querySelectorAll(
+            "img"
+        ).forEach(
+            image => {
+                image.loading =
+                    "lazy";
+
+                image.decoding =
+                    "async";
+
+                if (
+                    image.hasAttribute(
+                        "src"
+                    )
+                ) {
+                    image.src =
+                        normalizeWikipediaMediaUrl(
+                            image.getAttribute(
+                                "src"
+                            )
+                        );
+                }
+
+                if (
+                    image.hasAttribute(
+                        "srcset"
+                    )
+                ) {
+                    const normalized =
+                        image
+                        .getAttribute(
+                            "srcset"
+                        )
+                        .split(
+                            ","
+                        )
+                        .map(
+                            part => {
+                                const bits =
+                                    part
+                                    .trim()
+                                    .split(
+                                        /\s+/
+                                    );
+
+                                bits[0] =
+                                    normalizeWikipediaMediaUrl(
+                                        bits[0]
+                                    );
+
+                                return bits.join(
+                                    " "
+                                );
+                            }
+                        )
+                        .join(
+                            ", "
+                        );
+
+                    image.setAttribute(
+                        "srcset",
+                        normalized
+                    );
+                }
+            }
+        );
+
+        documentNode.querySelectorAll(
+            "a[href]"
+        ).forEach(
+            anchor => {
+                const href =
+                    anchor.getAttribute(
+                        "href"
+                    );
+
+                if (
+                    href
+                    &&
+                    href.startsWith(
+                        "#"
+                    )
+                ) {
+                    return;
+                }
+
+                const internalTitle =
+                    wikipediaTitleFromHref(
+                        href
+                    );
+
+                if (
+                    internalTitle
+                ) {
+                    anchor.href =
+                        "#";
+
+                    anchor.dataset.wikiTitle =
+                        internalTitle;
+
+                    return;
+                }
+
+                try {
+                    const externalUrl =
+                        new URL(
+                            href,
+                            "https://de.wikipedia.org"
+                        );
+
+                    anchor.href =
+                        externalUrl.href;
+
+                    anchor.target =
+                        "_blank";
+
+                    anchor.rel =
+                        "noopener noreferrer";
+
+                } catch (
+                    error
+                ) {
+                    anchor.removeAttribute(
+                        "href"
+                    );
+                }
+            }
+        );
+
+        return documentNode.body.innerHTML;
+    }
+
+
+    async function openWikipediaArticle(
+        title,
+        pushHistory = true
+    ) {
+        const cleanTitle =
+            String(
+                title
+                ??
+                ""
+            )
+            .trim();
+
+        if (
+            !cleanTitle
+        ) {
+            return;
+        }
+
+        if (
+            pushHistory
+            &&
+            wikipediaCurrentTitle
+        ) {
+            wikipediaArticleHistory.push(
+                wikipediaCurrentTitle
+            );
+        }
+
+        const token =
+            ++wikipediaRequestToken;
+
+        setWikipediaStatus(
+            "Artikel wird geladen …",
+            true
+        );
+
+        try {
+            const response =
+                await fetch(
+                    wikipediaApiUrl({
+                        action: "parse",
+                        page: cleanTitle,
+                        prop: "text|displaytitle",
+                        redirects: "1"
+                    }),
+                    {
+                        mode: "cors",
+                        credentials: "omit"
+                    }
+                );
+
+            if (
+                !response.ok
+            ) {
+                throw new Error(
+                    `Wikipedia HTTP ${response.status}`
+                );
+            }
+
+            const data =
+                await response.json();
+
+            if (
+                token
+                !==
+                wikipediaRequestToken
+            ) {
+                return;
+            }
+
+            if (
+                !data.parse
+                ||
+                !data.parse.text
+            ) {
+                throw new Error(
+                    "Wikipedia article missing"
+                );
+            }
+
+            wikipediaCurrentTitle =
+                data.parse.title
+                ||
+                cleanTitle;
+
+            el.wikipediaLanding.classList.add(
+                "hidden"
+            );
+
+            el.wikipediaResults.classList.add(
+                "hidden"
+            );
+
+            el.wikipediaArticle.classList.remove(
+                "hidden"
+            );
+
+            el.wikipediaArticleTitle.textContent =
+                wikipediaCurrentTitle;
+
+            el.wikipediaArticleBody.innerHTML =
+                sanitizeWikipediaHtml(
+                    data.parse.text
+                );
+
+            const articleUrl =
+                `https://de.wikipedia.org/wiki/${encodeURIComponent(
+                    wikipediaCurrentTitle.replace(
+                        / /g,
+                        "_"
+                    )
+                )}`;
+
+            el.wikipediaArticleFooter.innerHTML =
+                "";
+
+            const attribution =
+                document.createElement(
+                    "span"
+                );
+
+            attribution.textContent =
+                "Text aus der deutschsprachigen Wikipedia";
+
+            const source =
+                document.createElement(
+                    "a"
+                );
+
+            source.href =
+                articleUrl;
+
+            source.target =
+                "_blank";
+
+            source.rel =
+                "noopener noreferrer";
+
+            source.textContent =
+                "Original in Wikipedia";
+
+            const license =
+                document.createElement(
+                    "a"
+                );
+
+            license.href =
+                "https://creativecommons.org/licenses/by-sa/4.0/deed.de";
+
+            license.target =
+                "_blank";
+
+            license.rel =
+                "noopener noreferrer";
+
+            license.textContent =
+                "CC BY-SA 4.0";
+
+            el.wikipediaArticleFooter.append(
+                attribution,
+                source,
+                license
+            );
+
+            setWikipediaStatus(
+                ""
+            );
+
+            window.scrollTo(
+                0,
+                0
+            );
+
+        } catch (
+            error
+        ) {
+            console.error(
+                "Wikipedia article failed:",
+                error
+            );
+
+            if (
+                token
+                !==
+                wikipediaRequestToken
+            ) {
+                return;
+            }
+
+            setWikipediaStatus(
+                "Der Artikel konnte nicht geladen werden."
+            );
+        }
+    }
+
+
+    function openWikipediaPortal() {
+        wikipediaRequestToken +=
+            1;
+
+        wikipediaArticleHistory =
+            [];
+
+        wikipediaCurrentTitle =
+            "";
+
+        wikipediaLastQuery =
+            "";
+
+        el.wikipediaSearchInput.value =
+            "";
+
+        showWikipediaLanding();
+
+        showScreen(
+            screens.wikipedia
+        );
+
+        window.setTimeout(
+            () => {
+                try {
+                    el.wikipediaSearchInput.focus({
+                        preventScroll: true
+                    });
+                } catch (
+                    error
+                ) {
+                    el.wikipediaSearchInput.focus();
+                }
+            },
+            240
+        );
+    }
+
+
+    el.chessRoomAcademyHotspot.addEventListener(
+        "click",
+        openWikipediaPortal
+    );
+
+
+    el.wikipediaSearchForm.addEventListener(
+        "submit",
+        event => {
+            event.preventDefault();
+
+            searchWikipedia(
+                el.wikipediaSearchInput.value
+            );
+        }
+    );
+
+
+    el.wikipediaSearchInput.addEventListener(
+        "input",
+        () => {
+            if (
+                wikipediaSearchTimer
+            ) {
+                clearTimeout(
+                    wikipediaSearchTimer
+                );
+            }
+
+            const value =
+                el.wikipediaSearchInput.value
+                .trim();
+
+            if (
+                value.length
+                <
+                2
+            ) {
+                wikipediaRequestToken +=
+                    1;
+
+                showWikipediaLanding();
+                return;
+            }
+
+            wikipediaSearchTimer =
+                window.setTimeout(
+                    () => {
+                        searchWikipedia(
+                            value
+                        );
+                    },
+                    420
+                );
+        }
+    );
+
+
+    el.wikipediaArticleBody.addEventListener(
+        "click",
+        event => {
+            const anchor =
+                event.target.closest(
+                    "a[data-wiki-title]"
+                );
+
+            if (
+                !anchor
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+
+            openWikipediaArticle(
+                anchor.dataset.wikiTitle,
+                true
+            );
+        }
+    );
+
+
+    el.backFromWikipedia.addEventListener(
+        "click",
+        () => {
+            wikipediaRequestToken +=
+                1;
+
+            if (
+                wikipediaCurrentTitle
+                &&
+                wikipediaArticleHistory.length
+                >
+                0
+            ) {
+                const previousTitle =
+                    wikipediaArticleHistory.pop();
+
+                wikipediaCurrentTitle =
+                    "";
+
+                openWikipediaArticle(
+                    previousTitle,
+                    false
+                );
+
+                return;
+            }
+
+            if (
+                wikipediaCurrentTitle
+            ) {
+                wikipediaCurrentTitle =
+                    "";
+
+                if (
+                    wikipediaLastQuery
+                ) {
+                    el.wikipediaSearchInput.value =
+                        wikipediaLastQuery;
+
+                    searchWikipedia(
+                        wikipediaLastQuery
+                    );
+                } else {
+                    showWikipediaLanding();
+                }
+
+                return;
+            }
+
+            showScreen(
+                screens.chessRoom
+            );
+        }
+    );
 
 
     // ==================================================
