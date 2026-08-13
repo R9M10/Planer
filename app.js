@@ -8034,7 +8034,7 @@
         try {
             chessEngine =
                 new Worker(
-                    "./stockfish-worker.js?v=2"
+                    "./stockfish-worker.js?v=3"
                 );
 
             chessEngine.addEventListener(
@@ -8194,7 +8194,7 @@
 
 
     function waitForChessEngine(
-        timeout = 7000
+        timeout = 3200
     ) {
         initChessEngine();
 
@@ -8255,7 +8255,7 @@
     async function runChessEngineTask({
         fen,
         commands,
-        timeout = 9000
+        timeout = 4200
     }) {
         const ready =
             await waitForChessEngine(
@@ -8556,6 +8556,19 @@
                                 : "chess-square-dark"
                         );
 
+                        /*
+                           Force the classical board colors directly on the
+                           square. This prevents global app button styles from
+                           making the board transparent/black.
+                        */
+                        button.style.setProperty(
+                            "background-color",
+                            light
+                                ? "#f2f2ee"
+                                : "#111211",
+                            "important"
+                        );
+
                         if (
                             selectedSquare
                             ===
@@ -8761,6 +8774,30 @@
                 renderChessPlayBoard();
 
                 initChessEngine();
+
+                /*
+                   Warm the engine while White is considering the first move.
+                   This removes most first-response latency.
+                */
+                waitForChessEngine(
+                    3200
+                ).then(
+                    ready => {
+                        if (
+                            ready
+                            &&
+                            chessEngine
+                        ) {
+                            chessEngine.postMessage(
+                                "ucinewgame"
+                            );
+
+                            chessEngine.postMessage(
+                                "isready"
+                            );
+                        }
+                    }
+                );
 
             } catch (
                 error
@@ -9081,6 +9118,24 @@
     }
 
 
+    function chessPieceValue(
+        type
+    ) {
+        return {
+            p: 1,
+            n: 3.2,
+            b: 3.3,
+            r: 5,
+            q: 9.2,
+            k: 0
+        }[
+            type
+        ]
+        ??
+        0;
+    }
+
+
     function randomWeakChessMove() {
         const moves =
             chessGame.moves({
@@ -9108,14 +9163,42 @@
                     move.captured
                 ) {
                     weight +=
-                        3;
+                        Math.round(
+                            chessPieceValue(
+                                move.captured
+                            )
+                            *
+                            3
+                        );
                 }
 
                 if (
                     move.promotion
                 ) {
                     weight +=
-                        4;
+                        10;
+                }
+
+                if (
+                    move.san
+                    &&
+                    move.san.includes(
+                        "+"
+                    )
+                ) {
+                    weight +=
+                        3;
+                }
+
+                if (
+                    move.san
+                    &&
+                    move.san.includes(
+                        "#"
+                    )
+                ) {
+                    weight +=
+                        50;
                 }
 
                 for (
@@ -9142,6 +9225,109 @@
     }
 
 
+    function heuristicEmergencyChessMove() {
+        const moves =
+            chessGame.moves({
+                verbose:
+                    true
+            });
+
+        if (
+            moves.length
+            ===
+            0
+        ) {
+            return null;
+        }
+
+        let best =
+            null;
+
+        let bestScore =
+            -Infinity;
+
+        moves.forEach(
+            move => {
+                let score =
+                    Math.random()
+                    *
+                    0.08;
+
+                if (
+                    move.captured
+                ) {
+                    score +=
+                        chessPieceValue(
+                            move.captured
+                        )
+                        *
+                        2.2;
+                }
+
+                if (
+                    move.promotion
+                ) {
+                    score +=
+                        chessPieceValue(
+                            move.promotion
+                        )
+                        *
+                        1.7;
+                }
+
+                if (
+                    move.san
+                    &&
+                    move.san.includes(
+                        "+"
+                    )
+                ) {
+                    score +=
+                        0.55;
+                }
+
+                if (
+                    move.san
+                    &&
+                    move.san.includes(
+                        "#"
+                    )
+                ) {
+                    score +=
+                        100;
+                }
+
+                /*
+                   Prefer central development a little in the emergency path.
+                   This is only used if Stockfish itself is unavailable.
+                */
+                if (
+                    ["d4", "d5", "e4", "e5", "c4", "c5", "f4", "f5"].includes(
+                        move.to
+                    )
+                ) {
+                    score +=
+                        0.2;
+                }
+
+                if (
+                    score
+                    >
+                    bestScore
+                ) {
+                    bestScore =
+                        score;
+
+                    best =
+                        move;
+                }
+            }
+        );
+
+        return best;
+    }
+
+
     function weakMoveProbability() {
         if (
             chessElo
@@ -9160,16 +9346,21 @@
             /
             1220;
 
+        /*
+           Below Stockfish's native UCI_Elo floor we progressively inject
+           weak moves. Close to 1320 this becomes rare; at 100 it is common.
+        */
         return Math.max(
-            0.08,
+            0.03,
             Math.min(
-                0.94,
-                0.94
+                0.92,
+                0.92
                 *
-                (
+                Math.pow(
                     1
                     -
-                    normalized
+                    normalized,
+                    1.35
                 )
             )
         );
@@ -9240,9 +9431,14 @@
                     )
                 );
 
+            /*
+               Stockfish 18 lite is extremely strong even with short searches.
+               The strength limiter chooses the playing strength; the short
+               movetime keeps the UI responsive.
+            */
             const moveTime =
                 Math.round(
-                    170
+                    110
                     +
                     (
                         targetElo
@@ -9252,7 +9448,7 @@
                     /
                     1180
                     *
-                    560
+                    210
                 );
 
             const result =
@@ -9265,7 +9461,7 @@
                         `go movetime ${moveTime}`
                     ],
                     timeout:
-                        7500
+                        3000
                 });
 
             if (
@@ -9304,8 +9500,20 @@
                         undefined
                 };
             } else {
+                /*
+                   If the engine ever fails, do not silently turn a 2000+
+                   opponent into a random mover.
+                */
                 moveData =
-                    randomWeakChessMove();
+                    chessElo
+                    >=
+                    1320
+                        ? heuristicEmergencyChessMove()
+                        : randomWeakChessMove();
+
+                console.warn(
+                    "Stockfish move unavailable; emergency chess fallback used."
+                );
             }
         }
 
@@ -9348,7 +9556,11 @@
             error
         ) {
             const fallback =
-                randomWeakChessMove();
+                chessElo
+                >=
+                1320
+                    ? heuristicEmergencyChessMove()
+                    : randomWeakChessMove();
 
             if (
                 fallback
@@ -10110,10 +10322,10 @@
                 fen,
                 commands: [
                     "setoption name UCI_LimitStrength value false",
-                    "go depth 11"
+                    "go movetime 170"
                 ],
                 timeout:
-                    9500
+                    2600
             });
 
         if (
@@ -10144,6 +10356,9 @@
 
             el.chessEvalLabel.textContent =
                 "–";
+
+            el.chessEvalBar.dataset.eval =
+                "unavailable";
 
             return;
         }
@@ -10205,6 +10420,9 @@
 
         el.chessEvalLabel.textContent =
             label;
+
+        el.chessEvalBar.dataset.eval =
+            label;
     }
 
 
@@ -10226,6 +10444,14 @@
                 ? "Variante wird analysiert …"
                 : "Stellung wird analysiert …";
 
+        /*
+           Keep the previous bar position while calculating, but mark the
+           number as pending instead of snapping back to 50%.
+        */
+        el.chessEvalLabel.classList.add(
+            "pending"
+        );
+
         const current =
             await evaluateChessFen(
                 fen
@@ -10241,6 +10467,10 @@
 
         setChessEvalBar(
             current
+        );
+
+        el.chessEvalLabel.classList.remove(
+            "pending"
         );
 
         if (

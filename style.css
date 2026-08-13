@@ -6224,3 +6224,103 @@ html[data-theme="dark"] #textsHubScreen .texts-study-background {
         padding-right: 8px;
     }
 }
+
+
+/* ==================================================
+   V28 — CHESS FIXES
+================================================== */
+
+/* Force a true classical monochrome board regardless of global button CSS. */
+.chess-board > .chess-square.chess-square-light {
+    background-color: #f2f2ee !important;
+    background-image: none !important;
+}
+
+.chess-board > .chess-square.chess-square-dark {
+    background-color: #111211 !important;
+    background-image: none !important;
+}
+
+/* Analysis board uses the same exact orientation/colors as the play board. */
+.chess-analysis-board > .chess-square:nth-child(16n + 1),
+.chess-analysis-board > .chess-square:nth-child(16n + 3),
+.chess-analysis-board > .chess-square:nth-child(16n + 5),
+.chess-analysis-board > .chess-square:nth-child(16n + 7),
+.chess-analysis-board > .chess-square:nth-child(16n + 10),
+.chess-analysis-board > .chess-square:nth-child(16n + 12),
+.chess-analysis-board > .chess-square:nth-child(16n + 14),
+.chess-analysis-board > .chess-square:nth-child(16n + 16),
+.chess-play-board > .chess-square:nth-child(16n + 1),
+.chess-play-board > .chess-square:nth-child(16n + 3),
+.chess-play-board > .chess-square:nth-child(16n + 5),
+.chess-play-board > .chess-square:nth-child(16n + 7),
+.chess-play-board > .chess-square:nth-child(16n + 10),
+.chess-play-board > .chess-square:nth-child(16n + 12),
+.chess-play-board > .chess-square:nth-child(16n + 14),
+.chess-play-board > .chess-square:nth-child(16n + 16) {
+    background-color: #f2f2ee !important;
+}
+
+.chess-analysis-board > .chess-square:nth-child(16n + 2),
+.chess-analysis-board > .chess-square:nth-child(16n + 4),
+.chess-analysis-board > .chess-square:nth-child(16n + 6),
+.chess-analysis-board > .chess-square:nth-child(16n + 8),
+.chess-analysis-board > .chess-square:nth-child(16n + 9),
+.chess-analysis-board > .chess-square:nth-child(16n + 11),
+.chess-analysis-board > .chess-square:nth-child(16n + 13),
+.chess-analysis-board > .chess-square:nth-child(16n + 15),
+.chess-play-board > .chess-square:nth-child(16n + 2),
+.chess-play-board > .chess-square:nth-child(16n + 4),
+.chess-play-board > .chess-square:nth-child(16n + 6),
+.chess-play-board > .chess-square:nth-child(16n + 8),
+.chess-play-board > .chess-square:nth-child(16n + 9),
+.chess-play-board > .chess-square:nth-child(16n + 11),
+.chess-play-board > .chess-square:nth-child(16n + 13),
+.chess-play-board > .chess-square:nth-child(16n + 15) {
+    background-color: #111211 !important;
+}
+
+/* The numeric evaluation is always readable inside the bar. */
+.chess-eval-label {
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: 50% !important;
+
+    width: auto !important;
+    height: auto !important;
+
+    padding: 4px 3px;
+
+    border-radius: 4px;
+
+    background: rgba(94, 94, 88, 0.88);
+
+    color: #fff !important;
+
+    writing-mode: horizontal-tb !important;
+    transform: translate(-50%, -50%) rotate(-90deg) !important;
+
+    font-size: 10px !important;
+    font-weight: 650 !important;
+    line-height: 1 !important;
+
+    mix-blend-mode: normal !important;
+
+    font-variant-numeric: tabular-nums;
+
+    transition:
+        opacity 120ms ease,
+        background 120ms ease;
+}
+
+.chess-eval-label.pending {
+    opacity: 0.62;
+}
+
+.chess-eval-white {
+    transition:
+        height
+        180ms
+        cubic-bezier(.22, .61, .36, 1) !important;
+}
