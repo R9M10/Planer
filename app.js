@@ -20,7 +20,9 @@
         sessionReview: $("sessionReviewScreen"),
         planComplete: $("planCompleteScreen"),
         textsHub: $("textsHubScreen"),
-        chess: $("chessScreen"),
+        chessSetup: $("chessSetupScreen"),
+        chessPlay: $("chessPlayScreen"),
+        chessAnalysis: $("chessAnalysisScreen"),
         timeline: $("timelineScreen"),
         fullTextEditor: $("fullTextEditorScreen"),
         physicsList: $("physicsListScreen"),
@@ -179,16 +181,29 @@
         textsSkyBackHotspot: $("textsSkyBackHotspot"),
         textsDrawerMenuHotspot: $("textsDrawerMenuHotspot"),
 
-        backFromChess: $("backFromChess"),
-        newChessGameButton: $("newChessGameButton"),
-        chessEloValue: $("chessEloValue"),
-        chessEloSlider: $("chessEloSlider"),
-        chessStatus: $("chessStatus"),
-        chessBoard: $("chessBoard"),
-        chessEngineState: $("chessEngineState"),
-        chessMoveList: $("chessMoveList"),
-        chessPromotionPanel: $("chessPromotionPanel"),
-        chessPromotionChoices: $("chessPromotionChoices"),
+        chessSetupEloValue: $("chessSetupEloValue"),
+        chessSetupEloSlider: $("chessSetupEloSlider"),
+        startChessGameButton: $("startChessGameButton"),
+
+        backFromChessPlay: $("backFromChessPlay"),
+        chessPlayBoard: $("chessPlayBoard"),
+        chessPlayPromotionPanel: $("chessPlayPromotionPanel"),
+        chessPlayPromotionChoices: $("chessPlayPromotionChoices"),
+
+        backFromChessAnalysis: $("backFromChessAnalysis"),
+        chessAnalysisResult: $("chessAnalysisResult"),
+        chessAnalysisBoard: $("chessAnalysisBoard"),
+        chessEvalBar: $("chessEvalBar"),
+        chessEvalWhite: $("chessEvalWhite"),
+        chessEvalLabel: $("chessEvalLabel"),
+        chessAnalysisFeedback: $("chessAnalysisFeedback"),
+        chessAnalysisPrev: $("chessAnalysisPrev"),
+        chessAnalysisNext: $("chessAnalysisNext"),
+        chessAnalysisMoveLabel: $("chessAnalysisMoveLabel"),
+        chessAnalysisCounter: $("chessAnalysisCounter"),
+        chessAnalysisReturnLine: $("chessAnalysisReturnLine"),
+        chessAnalysisPromotionPanel: $("chessAnalysisPromotionPanel"),
+        chessAnalysisPromotionChoices: $("chessAnalysisPromotionChoices"),
 
         backFromTimeline: $("backFromTimeline"),
         timelineEmpty: $("timelineEmpty"),
@@ -372,22 +387,41 @@
     let screenTransitionToken = 0;
     let screenTransitionCleanupTimer = null;
 
-    const CHESS_STORAGE_KEY = "personalPlannerSuite_chess_v1";
+    const CHESS_STORAGE_KEY = "personalPlannerSuite_chess_v2";
 
     let ChessConstructor = null;
-    let chessGame = null;
     let chessLibraryPromise = null;
-    let chessEngine = null;
-    let chessEngineReady = false;
-    let chessEngineFailed = false;
-    let chessEngineThinking = false;
-    let chessEngineRequestToken = 0;
+
+    let chessGame = null;
+    let chessElo = 1500;
     let chessSelectedSquare = null;
     let chessLegalMoves = [];
     let chessLastMove = null;
     let chessPendingPromotion = null;
-    let chessElo = 1500;
-    let chessEngineFallbackTimer = null;
+    let chessEngineThinking = false;
+    let chessEngineRequestToken = 0;
+
+    let chessEngine = null;
+    let chessEngineReady = false;
+    let chessEngineFailed = false;
+    let chessEngineReadyWaiters = [];
+    let chessEngineTask = null;
+
+    let chessFinalPgn = "";
+    let chessFinalResult = "";
+    let chessAnalysisFens = [];
+    let chessAnalysisSans = [];
+    let chessAnalysisIndex = 0;
+    let chessAnalysisGame = null;
+    let chessAnalysisSelectedSquare = null;
+    let chessAnalysisLegalMoves = [];
+    let chessAnalysisLastMove = null;
+    let chessAnalysisVariation = false;
+    let chessAnalysisBaseFen = "";
+    let chessAnalysisBaseEval = null;
+    let chessAnalysisEvalToken = 0;
+    let chessAnalysisEvalCache = new Map();
+    let chessAnalysisPromotion = null;
 
     let fullTextTarget = null;
     let fullTextPreviousScreen = null;
@@ -7849,7 +7883,7 @@
     // ==================================================
     // SCHACH
     // Regeln: chess.js 1.4.0
-    // KI: Stockfish 18 lite single-threaded via Worker
+    // KI + Analyse: Stockfish 18 lite single-threaded
     // ==================================================
 
     const CHESS_PIECES = {
@@ -7914,31 +7948,38 @@
                         )
                     );
             }
+
+            if (
+                typeof parsed.lastPgn
+                ===
+                "string"
+            ) {
+                chessFinalPgn =
+                    parsed.lastPgn;
+            }
         } catch (
             error
         ) {
-            // Keep defaults.
+            // Defaults remain valid.
         }
     }
 
 
-    function saveChessState() {
+    function saveChessSettings() {
         try {
             localStorage.setItem(
                 CHESS_STORAGE_KEY,
                 JSON.stringify({
                     elo:
                         chessElo,
-                    pgn:
-                        chessGame
-                            ? chessGame.pgn()
-                            : ""
+                    lastPgn:
+                        chessFinalPgn
                 })
             );
         } catch (
             error
         ) {
-            // Storage failure must never interrupt a game.
+            // Chess must remain playable if storage is unavailable.
         }
     }
 
@@ -7981,66 +8022,6 @@
     }
 
 
-    async function ensureChessGame() {
-        const Chess =
-            await loadChessLibrary();
-
-        if (
-            chessGame
-        ) {
-            return chessGame;
-        }
-
-        loadStoredChessSettings();
-
-        chessGame =
-            new Chess();
-
-        try {
-            const raw =
-                localStorage.getItem(
-                    CHESS_STORAGE_KEY
-                );
-
-            if (
-                raw
-            ) {
-                const parsed =
-                    JSON.parse(
-                        raw
-                    );
-
-                if (
-                    parsed.pgn
-                    &&
-                    typeof parsed.pgn
-                    ===
-                    "string"
-                ) {
-                    chessGame.loadPgn(
-                        parsed.pgn
-                    );
-                }
-            }
-        } catch (
-            error
-        ) {
-            chessGame =
-                new Chess();
-        }
-
-        el.chessEloSlider.value =
-            String(
-                chessElo
-            );
-
-        el.chessEloValue.textContent =
-            `${chessElo} Elo`;
-
-        return chessGame;
-    }
-
-
     function initChessEngine() {
         if (
             chessEngine
@@ -8053,56 +8034,19 @@
         try {
             chessEngine =
                 new Worker(
-                    "./stockfish-worker.js?v=1"
+                    "./stockfish-worker.js?v=2"
                 );
 
             chessEngine.addEventListener(
                 "message",
                 event => {
-                    const line =
+                    handleChessEngineLine(
                         String(
                             event.data
                             ??
                             ""
-                        );
-
-                    if (
-                        line.includes(
-                            "uciok"
                         )
-                    ) {
-                        chessEngine.postMessage(
-                            "isready"
-                        );
-
-                        return;
-                    }
-
-                    if (
-                        line.includes(
-                            "readyok"
-                        )
-                    ) {
-                        chessEngineReady =
-                            true;
-
-                        el.chessEngineState.textContent =
-                            "Stockfish bereit";
-
-                        maybeStartChessEngineTurn();
-
-                        return;
-                    }
-
-                    if (
-                        line.startsWith(
-                            "bestmove "
-                        )
-                    ) {
-                        handleChessBestMove(
-                            line
-                        );
-                    }
+                    );
                 }
             );
 
@@ -8118,8 +8062,27 @@
                     chessEngineThinking =
                         false;
 
-                    el.chessEngineState.textContent =
-                        "Engine-Fallback aktiv";
+                    chessEngineReadyWaiters
+                        .splice(
+                            0
+                        )
+                        .forEach(
+                            waiter =>
+                                waiter(
+                                    false
+                                )
+                        );
+
+                    if (
+                        chessEngineTask
+                    ) {
+                        chessEngineTask.resolve(
+                            null
+                        );
+
+                        chessEngineTask =
+                            null;
+                    }
                 }
             );
 
@@ -8132,71 +8095,398 @@
         ) {
             chessEngineFailed =
                 true;
-
-            el.chessEngineState.textContent =
-                "Engine-Fallback aktiv";
         }
     }
 
 
-    function chessSquareName(
-        row,
-        column
-    ) {
-        const file =
-            "abcdefgh"[
-                column
-            ];
-
-        const rank =
-            8
-            -
-            row;
-
-        return `${file}${rank}`;
-    }
-
-
-    function chessMoveTargetsFor(
-        square
+    function handleChessEngineLine(
+        line
     ) {
         if (
-            !chessGame
+            line.includes(
+                "uciok"
+            )
         ) {
-            return [];
-        }
+            chessEngine.postMessage(
+                "isready"
+            );
 
-        try {
-            return chessGame.moves({
-                square,
-                verbose:
-                    true
-            });
-        } catch (
-            error
-        ) {
-            return [];
-        }
-    }
-
-
-    function renderChessBoard() {
-        if (
-            !chessGame
-        ) {
             return;
         }
 
-        el.chessBoard.innerHTML =
+        if (
+            line.includes(
+                "readyok"
+            )
+        ) {
+            chessEngineReady =
+                true;
+
+            chessEngineReadyWaiters
+                .splice(
+                    0
+                )
+                .forEach(
+                    waiter =>
+                        waiter(
+                            true
+                        )
+                );
+
+            return;
+        }
+
+        if (
+            chessEngineTask
+            &&
+            line.startsWith(
+                "info "
+            )
+        ) {
+            const score =
+                parseStockfishScore(
+                    line,
+                    chessEngineTask.fen
+                );
+
+            if (
+                score
+            ) {
+                chessEngineTask.latestScore =
+                    score;
+            }
+
+            return;
+        }
+
+        if (
+            chessEngineTask
+            &&
+            line.startsWith(
+                "bestmove "
+            )
+        ) {
+            const task =
+                chessEngineTask;
+
+            chessEngineTask =
+                null;
+
+            const match =
+                line.match(
+                    /^bestmove\s+(\S+)/
+                );
+
+            task.resolve({
+                bestmove:
+                    match
+                        ? match[
+                            1
+                        ]
+                        : null,
+                score:
+                    task.latestScore
+                    ??
+                    null
+            });
+        }
+    }
+
+
+    function waitForChessEngine(
+        timeout = 7000
+    ) {
+        initChessEngine();
+
+        if (
+            chessEngineReady
+        ) {
+            return Promise.resolve(
+                true
+            );
+        }
+
+        if (
+            chessEngineFailed
+        ) {
+            return Promise.resolve(
+                false
+            );
+        }
+
+        return new Promise(
+            resolve => {
+                let settled =
+                    false;
+
+                const finish =
+                    value => {
+                        if (
+                            settled
+                        ) {
+                            return;
+                        }
+
+                        settled =
+                            true;
+
+                        resolve(
+                            value
+                        );
+                    };
+
+                chessEngineReadyWaiters.push(
+                    finish
+                );
+
+                window.setTimeout(
+                    () => {
+                        finish(
+                            chessEngineReady
+                        );
+                    },
+                    timeout
+                );
+            }
+        );
+    }
+
+
+    async function runChessEngineTask({
+        fen,
+        commands,
+        timeout = 9000
+    }) {
+        const ready =
+            await waitForChessEngine(
+                timeout
+            );
+
+        if (
+            !ready
+            ||
+            !chessEngine
+        ) {
+            return null;
+        }
+
+        if (
+            chessEngineTask
+        ) {
+            const previous =
+                chessEngineTask;
+
+            chessEngineTask =
+                null;
+
+            previous.resolve(
+                null
+            );
+
+            chessEngine.postMessage(
+                "stop"
+            );
+
+            await new Promise(
+                resolve =>
+                    window.setTimeout(
+                        resolve,
+                        35
+                    )
+            );
+        }
+
+        return new Promise(
+            resolve => {
+                let settled =
+                    false;
+
+                const finish =
+                    result => {
+                        if (
+                            settled
+                        ) {
+                            return;
+                        }
+
+                        settled =
+                            true;
+
+                        resolve(
+                            result
+                        );
+                    };
+
+                chessEngineTask = {
+                    fen,
+                    latestScore:
+                        null,
+                    resolve:
+                        finish
+                };
+
+                chessEngine.postMessage(
+                    `position fen ${fen}`
+                );
+
+                commands.forEach(
+                    command => {
+                        chessEngine.postMessage(
+                            command
+                        );
+                    }
+                );
+
+                window.setTimeout(
+                    () => {
+                        if (
+                            chessEngineTask
+                            &&
+                            chessEngineTask.resolve
+                            ===
+                            finish
+                        ) {
+                            chessEngine.postMessage(
+                                "stop"
+                            );
+
+                            chessEngineTask =
+                                null;
+
+                            finish(
+                                null
+                            );
+                        }
+                    },
+                    timeout
+                );
+            }
+        );
+    }
+
+
+    function parseStockfishScore(
+        line,
+        fen
+    ) {
+        const match =
+            line.match(
+                /\bscore\s+(cp|mate)\s+(-?\d+)/
+            );
+
+        if (
+            !match
+        ) {
+            return null;
+        }
+
+        const type =
+            match[
+                1
+            ];
+
+        const raw =
+            Number(
+                match[
+                    2
+                ]
+            );
+
+        const turn =
+            String(
+                fen
+            )
+            .split(
+                /\s+/
+            )[
+                1
+            ];
+
+        const whiteSign =
+            turn
+            ===
+            "w"
+                ? 1
+                : -1;
+
+        if (
+            type
+            ===
+            "mate"
+        ) {
+            const whiteMate =
+                raw
+                *
+                whiteSign;
+
+            return {
+                type:
+                    "mate",
+                value:
+                    whiteMate,
+                pawns:
+                    whiteMate
+                    >
+                    0
+                        ? 100
+                        : -100
+            };
+        }
+
+        const whiteCp =
+            raw
+            *
+            whiteSign;
+
+        return {
+            type:
+                "cp",
+            value:
+                whiteCp,
+            pawns:
+                whiteCp
+                /
+                100
+        };
+    }
+
+
+    function squareFromRowColumn(
+        row,
+        column
+    ) {
+        return `${
+            "abcdefgh"[
+                column
+            ]
+        }${
+            8
+            -
+            row
+        }`;
+    }
+
+
+    function renderChessBoardInto(
+        target,
+        game,
+        {
+            selectedSquare = null,
+            legalMoves = [],
+            lastMove = null,
+            clickHandler = null
+        } = {}
+    ) {
+        target.innerHTML =
             "";
 
         const board =
-            chessGame.board();
+            game.board();
 
         const legalTargets =
             new Map();
 
-        chessLegalMoves.forEach(
+        legalMoves.forEach(
             move => {
                 if (
                     !legalTargets.has(
@@ -8230,7 +8520,7 @@
                         columnIndex
                     ) => {
                         const square =
-                            chessSquareName(
+                            squareFromRowColumn(
                                 rowIndex,
                                 columnIndex
                             );
@@ -8249,7 +8539,7 @@
                         button.dataset.square =
                             square;
 
-                        const isLight =
+                        const light =
                             (
                                 rowIndex
                                 +
@@ -8261,13 +8551,13 @@
                             0;
 
                         button.classList.add(
-                            isLight
+                            light
                                 ? "chess-square-light"
                                 : "chess-square-dark"
                         );
 
                         if (
-                            chessSelectedSquare
+                            selectedSquare
                             ===
                             square
                         ) {
@@ -8277,14 +8567,14 @@
                         }
 
                         if (
-                            chessLastMove
+                            lastMove
                             &&
                             (
-                                chessLastMove.from
+                                lastMove.from
                                 ===
                                 square
                                 ||
-                                chessLastMove.to
+                                lastMove.to
                                 ===
                                 square
                             )
@@ -8294,7 +8584,7 @@
                             );
                         }
 
-                        const targetMoves =
+                        const targets =
                             legalTargets.get(
                                 square
                             )
@@ -8302,7 +8592,7 @@
                             [];
 
                         if (
-                            targetMoves.length
+                            targets.length
                             >
                             0
                         ) {
@@ -8336,16 +8626,20 @@
                             );
                         }
 
-                        button.addEventListener(
-                            "click",
-                            () => {
-                                handleChessSquareClick(
-                                    square
-                                );
-                            }
-                        );
+                        if (
+                            clickHandler
+                        ) {
+                            button.addEventListener(
+                                "click",
+                                () => {
+                                    clickHandler(
+                                        square
+                                    );
+                                }
+                            );
+                        }
 
-                        el.chessBoard.appendChild(
+                        target.appendChild(
                             button
                         );
                     }
@@ -8355,191 +8649,159 @@
     }
 
 
-    function renderChessMoveList() {
-        if (
-            !chessGame
-        ) {
-            return;
-        }
-
-        const history =
-            chessGame.history();
-
-        if (
-            history.length
-            ===
-            0
-        ) {
-            el.chessMoveList.innerHTML =
-                "";
-
-            return;
-        }
-
-        const pairs =
-            [];
-
-        for (
-            let index = 0;
-            index
-            <
-            history.length;
-            index += 2
-        ) {
-            pairs.push({
-                number:
-                    index
-                    /
-                    2
-                    +
-                    1,
-                white:
-                    history[
-                        index
-                    ]
-                    ??
-                    "",
-                black:
-                    history[
-                        index
-                        +
-                        1
-                    ]
-                    ??
-                    ""
-            });
-        }
-
-        el.chessMoveList.innerHTML =
-            pairs
-            .slice(
-                -10
-            )
-            .map(
-                pair =>
-                    `<div class="chess-move-row">
-                        <span>${pair.number}.</span>
-                        <span>${escapeHtml(pair.white)}</span>
-                        <span>${escapeHtml(pair.black)}</span>
-                    </div>`
-            )
-            .join(
-                ""
-            );
-    }
-
-
-    function chessResultText() {
-        if (
-            !chessGame
-        ) {
-            return "";
-        }
-
-        if (
-            chessGame.isCheckmate()
-        ) {
-            return chessGame.turn()
-            ===
-            "w"
-                ? "Schachmatt · Stockfish gewinnt."
-                : "Schachmatt · Du gewinnst.";
-        }
-
-        if (
-            chessGame.isStalemate()
-        ) {
-            return "Remis durch Patt.";
-        }
-
-        if (
-            typeof chessGame.isThreefoldRepetition
-            ===
-            "function"
-            &&
-            chessGame.isThreefoldRepetition()
-        ) {
-            return "Remis durch dreifache Stellungswiederholung.";
-        }
-
-        if (
-            typeof chessGame.isInsufficientMaterial
-            ===
-            "function"
-            &&
-            chessGame.isInsufficientMaterial()
-        ) {
-            return "Remis durch unzureichendes Material.";
-        }
-
-        if (
-            typeof chessGame.isDrawByFiftyMoves
-            ===
-            "function"
-            &&
-            chessGame.isDrawByFiftyMoves()
-        ) {
-            return "Remis nach der 50-Züge-Regel.";
-        }
-
-        if (
-            chessGame.isDraw()
-        ) {
-            return "Remis.";
-        }
-
-        if (
-            chessGame.turn()
-            ===
-            "w"
-        ) {
-            return chessGame.isCheck()
-                ? "Du bist im Schach."
-                : "Du bist am Zug.";
-        }
-
-        return chessGame.isCheck()
-            ? "Stockfish ist im Schach."
-            : "Stockfish denkt …";
-    }
-
-
-    function renderChessStatus() {
-        if (
-            !chessGame
-        ) {
-            return;
-        }
-
-        el.chessStatus.textContent =
-            chessResultText();
-
-        renderChessMoveList();
-    }
-
-
-    function renderChess() {
-        renderChessBoard();
-        renderChessStatus();
-    }
-
-
-    function selectChessSquare(
+    function movesFromSquare(
+        game,
         square
     ) {
-        chessSelectedSquare =
-            square;
-
-        chessLegalMoves =
-            chessMoveTargetsFor(
-                square
-            );
-
-        renderChessBoard();
+        try {
+            return game.moves({
+                square,
+                verbose:
+                    true
+            });
+        } catch (
+            error
+        ) {
+            return [];
+        }
     }
 
 
-    function clearChessSelection() {
+    // ==================================================
+    // SCHACH — SETUP
+    // ==================================================
+
+    async function openChessSetup() {
+        loadStoredChessSettings();
+
+        el.chessSetupEloSlider.value =
+            String(
+                chessElo
+            );
+
+        el.chessSetupEloValue.textContent =
+            `${chessElo} Elo`;
+
+        showScreen(
+            screens.chessSetup
+        );
+
+        try {
+            await loadChessLibrary();
+
+            initChessEngine();
+        } catch (
+            error
+        ) {
+            // The game screen will remain unavailable until the library loads.
+        }
+    }
+
+
+    el.openChessButton.addEventListener(
+        "click",
+        openChessSetup
+    );
+
+
+    el.chessSetupEloSlider.addEventListener(
+        "input",
+        () => {
+            chessElo =
+                Number(
+                    el.chessSetupEloSlider.value
+                );
+
+            el.chessSetupEloValue.textContent =
+                `${chessElo} Elo`;
+
+            saveChessSettings();
+        }
+    );
+
+
+    el.startChessGameButton.addEventListener(
+        "click",
+        async () => {
+            try {
+                const Chess =
+                    await loadChessLibrary();
+
+                chessGame =
+                    new Chess();
+
+                chessFinalPgn =
+                    "";
+
+                chessFinalResult =
+                    "";
+
+                chessSelectedSquare =
+                    null;
+
+                chessLegalMoves =
+                    [];
+
+                chessLastMove =
+                    null;
+
+                chessPendingPromotion =
+                    null;
+
+                chessEngineThinking =
+                    false;
+
+                chessEngineRequestToken +=
+                    1;
+
+                showScreen(
+                    screens.chessPlay
+                );
+
+                renderChessPlayBoard();
+
+                initChessEngine();
+
+            } catch (
+                error
+            ) {
+                window.alert(
+                    "Schach konnte nicht geladen werden. Für das erste Laden ist eine Internetverbindung nötig."
+                );
+            }
+        }
+    );
+
+
+    // ==================================================
+    // SCHACH — PARTIE
+    // ==================================================
+
+    function renderChessPlayBoard() {
+        if (
+            !chessGame
+        ) {
+            return;
+        }
+
+        renderChessBoardInto(
+            el.chessPlayBoard,
+            chessGame,
+            {
+                selectedSquare:
+                    chessSelectedSquare,
+                legalMoves:
+                    chessLegalMoves,
+                lastMove:
+                    chessLastMove,
+                clickHandler:
+                    handleChessPlaySquare
+            }
+        );
+    }
+
+
+    function clearChessPlaySelection() {
         chessSelectedSquare =
             null;
 
@@ -8548,7 +8810,7 @@
     }
 
 
-    function handleChessSquareClick(
+    function handleChessPlaySquare(
         square
     ) {
         if (
@@ -8580,9 +8842,16 @@
                 ===
                 "w"
             ) {
-                selectChessSquare(
-                    square
-                );
+                chessSelectedSquare =
+                    square;
+
+                chessLegalMoves =
+                    movesFromSquare(
+                        chessGame,
+                        square
+                    );
+
+                renderChessPlayBoard();
             }
 
             return;
@@ -8595,9 +8864,16 @@
             ===
             "w"
         ) {
-            selectChessSquare(
-                square
-            );
+            chessSelectedSquare =
+                square;
+
+            chessLegalMoves =
+                movesFromSquare(
+                    chessGame,
+                    square
+                );
+
+            renderChessPlayBoard();
 
             return;
         }
@@ -8615,9 +8891,9 @@
             ===
             0
         ) {
-            clearChessSelection();
+            clearChessPlaySelection();
 
-            renderChessBoard();
+            renderChessPlayBoard();
 
             return;
         }
@@ -8633,7 +8909,7 @@
             >
             0
         ) {
-            showChessPromotion(
+            showPlayPromotion(
                 chessSelectedSquare,
                 square,
                 promotions
@@ -8642,7 +8918,7 @@
             return;
         }
 
-        makeHumanChessMove({
+        makeHumanPlayMove({
             from:
                 chessSelectedSquare,
             to:
@@ -8651,7 +8927,7 @@
     }
 
 
-    function showChessPromotion(
+    function showPlayPromotion(
         from,
         to,
         moves
@@ -8661,6 +8937,43 @@
             to
         };
 
+        fillPromotionChoices(
+            el.chessPlayPromotionChoices,
+            moves,
+            "w",
+            promotion => {
+                el.chessPlayPromotionPanel.classList.add(
+                    "hidden"
+                );
+
+                const pending =
+                    chessPendingPromotion;
+
+                chessPendingPromotion =
+                    null;
+
+                makeHumanPlayMove({
+                    from:
+                        pending.from,
+                    to:
+                        pending.to,
+                    promotion
+                });
+            }
+        );
+
+        el.chessPlayPromotionPanel.classList.remove(
+            "hidden"
+        );
+    }
+
+
+    function fillPromotionChoices(
+        container,
+        moves,
+        color,
+        choose
+    ) {
         const available =
             new Set(
                 moves.map(
@@ -8669,7 +8982,7 @@
                 )
             );
 
-        el.chessPromotionChoices.innerHTML =
+        container.innerHTML =
             "";
 
         [
@@ -8699,47 +9012,30 @@
                     "chess-promotion-choice";
 
                 button.textContent =
-                    CHESS_PIECES.w[
+                    CHESS_PIECES[
+                        color
+                    ][
                         type
                     ];
 
                 button.addEventListener(
                     "click",
                     () => {
-                        el.chessPromotionPanel.classList.add(
-                            "hidden"
+                        choose(
+                            type
                         );
-
-                        const pending =
-                            chessPendingPromotion;
-
-                        chessPendingPromotion =
-                            null;
-
-                        makeHumanChessMove({
-                            from:
-                                pending.from,
-                            to:
-                                pending.to,
-                            promotion:
-                                type
-                        });
                     }
                 );
 
-                el.chessPromotionChoices.appendChild(
+                container.appendChild(
                     button
                 );
             }
         );
-
-        el.chessPromotionPanel.classList.remove(
-            "hidden"
-        );
     }
 
 
-    function makeHumanChessMove(
+    function makeHumanPlayMove(
         move
     ) {
         try {
@@ -8761,63 +9057,31 @@
                     made.to
             };
 
-            clearChessSelection();
+            clearChessPlaySelection();
 
-            saveChessState();
+            renderChessPlayBoard();
 
-            renderChess();
+            if (
+                chessGame.isGameOver()
+            ) {
+                finishChessGame();
 
-            maybeStartChessEngineTurn();
+                return;
+            }
+
+            playChessEngineTurn();
 
         } catch (
             error
         ) {
-            clearChessSelection();
+            clearChessPlaySelection();
 
-            renderChess();
+            renderChessPlayBoard();
         }
     }
 
 
-    function chessWeakMoveProbability() {
-        if (
-            chessElo
-            >=
-            1320
-        ) {
-            return 0;
-        }
-
-        const normalized =
-            (
-                chessElo
-                -
-                100
-            )
-            /
-            (
-                1320
-                -
-                100
-            );
-
-        return Math.max(
-            0.05,
-            Math.min(
-                0.92,
-                0.92
-                *
-                (
-                    1
-                    -
-                    normalized
-                )
-            )
-        );
-    }
-
-
-    function chooseRandomChessMove() {
+    function randomWeakChessMove() {
         const moves =
             chessGame.moves({
                 verbose:
@@ -8832,17 +9096,13 @@
             return null;
         }
 
-        /*
-           Slightly prefer captures/promotions even in weak mode,
-           so low Elo still feels human rather than purely random.
-        */
         const pool =
             [];
 
         moves.forEach(
             move => {
                 let weight =
-                    4;
+                    5;
 
                 if (
                     move.captured
@@ -8882,72 +9142,41 @@
     }
 
 
-    function playFallbackChessMove() {
+    function weakMoveProbability() {
         if (
-            !chessGame
-            ||
-            chessGame.isGameOver()
-            ||
-            chessGame.turn()
-            !==
-            "b"
+            chessElo
+            >=
+            1320
         ) {
-            chessEngineThinking =
-                false;
-
-            renderChess();
-
-            return;
+            return 0;
         }
 
-        const move =
-            chooseRandomChessMove();
+        const normalized =
+            (
+                chessElo
+                -
+                100
+            )
+            /
+            1220;
 
-        if (
-            !move
-        ) {
-            chessEngineThinking =
-                false;
-
-            renderChess();
-
-            return;
-        }
-
-        const made =
-            chessGame.move({
-                from:
-                    move.from,
-                to:
-                    move.to,
-                promotion:
-                    move.promotion
-                    ??
-                    "q"
-            });
-
-        chessLastMove = {
-            from:
-                made.from,
-            to:
-                made.to
-        };
-
-        chessEngineThinking =
-            false;
-
-        el.chessEngineState.textContent =
-            chessEngineFailed
-                ? "Engine-Fallback"
-                : `${chessElo} Elo`;
-
-        saveChessState();
-
-        renderChess();
+        return Math.max(
+            0.08,
+            Math.min(
+                0.94,
+                0.94
+                *
+                (
+                    1
+                    -
+                    normalized
+                )
+            )
+        );
     }
 
 
-    function maybeStartChessEngineTurn() {
+    async function playChessEngineTurn() {
         if (
             !chessGame
             ||
@@ -8956,8 +9185,6 @@
             chessGame.turn()
             !==
             "b"
-            ||
-            chessEngineThinking
         ) {
             return;
         }
@@ -8965,13 +9192,11 @@
         chessEngineThinking =
             true;
 
-        renderChessStatus();
-
-        const token =
+        const request =
             ++chessEngineRequestToken;
 
-        const weakProbability =
-            chessWeakMoveProbability();
+        let moveData =
+            null;
 
         if (
             chessElo
@@ -8980,198 +9205,134 @@
             &&
             Math.random()
             <
-            weakProbability
+            weakMoveProbability()
         ) {
-            el.chessEngineState.textContent =
-                `~${chessElo} Elo`;
-
-            window.setTimeout(
-                () => {
-                    if (
-                        token
-                        !==
-                        chessEngineRequestToken
-                    ) {
-                        return;
-                    }
-
-                    playFallbackChessMove();
-                },
-                260
-                +
-                Math.random()
-                *
-                420
+            await new Promise(
+                resolve =>
+                    window.setTimeout(
+                        resolve,
+                        220
+                        +
+                        Math.random()
+                        *
+                        360
+                    )
             );
-
-            return;
-        }
-
-        initChessEngine();
-
-        if (
-            !chessEngineReady
-        ) {
-            el.chessEngineState.textContent =
-                "Stockfish lädt …";
 
             if (
-                chessEngineFallbackTimer
+                request
+                !==
+                chessEngineRequestToken
             ) {
-                clearTimeout(
-                    chessEngineFallbackTimer
-                );
+                return;
             }
 
-            chessEngineFallbackTimer =
-                window.setTimeout(
-                    () => {
-                        if (
-                            token
-                            !==
-                            chessEngineRequestToken
-                            ||
-                            !chessEngineThinking
-                        ) {
-                            return;
-                        }
+            moveData =
+                randomWeakChessMove();
 
-                        playFallbackChessMove();
-                    },
-                    6500
+        } else {
+            const targetElo =
+                Math.max(
+                    1320,
+                    Math.min(
+                        2500,
+                        chessElo
+                    )
                 );
 
-            return;
-        }
+            const moveTime =
+                Math.round(
+                    170
+                    +
+                    (
+                        targetElo
+                        -
+                        1320
+                    )
+                    /
+                    1180
+                    *
+                    560
+                );
 
-        requestStockfishMove(
-            token
-        );
-    }
+            const result =
+                await runChessEngineTask({
+                    fen:
+                        chessGame.fen(),
+                    commands: [
+                        "setoption name UCI_LimitStrength value true",
+                        `setoption name UCI_Elo value ${targetElo}`,
+                        `go movetime ${moveTime}`
+                    ],
+                    timeout:
+                        7500
+                });
 
+            if (
+                request
+                !==
+                chessEngineRequestToken
+            ) {
+                return;
+            }
 
-    function requestStockfishMove(
-        token
-    ) {
-        if (
-            !chessEngine
-            ||
-            !chessEngineReady
-            ||
-            token
-            !==
-            chessEngineRequestToken
-        ) {
-            return;
-        }
-
-        const targetElo =
-            Math.max(
-                1320,
-                Math.min(
-                    2500,
-                    chessElo
+            if (
+                result
+                &&
+                result.bestmove
+                &&
+                /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(
+                    result.bestmove
                 )
-            );
-
-        const moveTime =
-            Math.round(
-                180
-                +
-                (
-                    targetElo
-                    -
-                    1320
-                )
-                /
-                (
-                    2500
-                    -
-                    1320
-                )
-                *
-                520
-            );
-
-        el.chessEngineState.textContent =
-            `${chessElo} Elo · denkt`;
-
-        chessEngine.postMessage(
-            "stop"
-        );
-
-        chessEngine.postMessage(
-            "setoption name UCI_LimitStrength value true"
-        );
-
-        chessEngine.postMessage(
-            `setoption name UCI_Elo value ${targetElo}`
-        );
-
-        chessEngine.postMessage(
-            `position fen ${chessGame.fen()}`
-        );
-
-        chessEngine.postMessage(
-            `go movetime ${moveTime}`
-        );
-    }
-
-
-    function handleChessBestMove(
-        line
-    ) {
-        if (
-            !chessEngineThinking
-            ||
-            !chessGame
-            ||
-            chessGame.turn()
-            !==
-            "b"
-        ) {
-            return;
-        }
-
-        const match =
-            line.match(
-                /^bestmove\s+([a-h][1-8])([a-h][1-8])([qrbn])?/
-            );
-
-        if (
-            !match
-        ) {
-            playFallbackChessMove();
-
-            return;
+            ) {
+                moveData = {
+                    from:
+                        result.bestmove.slice(
+                            0,
+                            2
+                        ),
+                    to:
+                        result.bestmove.slice(
+                            2,
+                            4
+                        ),
+                    promotion:
+                        result.bestmove[
+                            4
+                        ]
+                        ??
+                        undefined
+                };
+            } else {
+                moveData =
+                    randomWeakChessMove();
+            }
         }
 
         if (
-            chessEngineFallbackTimer
+            !moveData
         ) {
-            clearTimeout(
-                chessEngineFallbackTimer
-            );
+            chessEngineThinking =
+                false;
 
-            chessEngineFallbackTimer =
-                null;
+            if (
+                chessGame.isGameOver()
+            ) {
+                finishChessGame();
+            }
+
+            return;
         }
 
         try {
             const made =
                 chessGame.move({
                     from:
-                        match[
-                            1
-                        ],
+                        moveData.from,
                     to:
-                        match[
-                            2
-                        ],
+                        moveData.to,
                     promotion:
-                        match[
-                            3
-                        ]
+                        moveData.promotion
                         ??
                         "q"
                 });
@@ -9183,106 +9344,152 @@
                     made.to
             };
 
-            chessEngineThinking =
-                false;
-
-            el.chessEngineState.textContent =
-                `${chessElo} Elo`;
-
-            saveChessState();
-
-            renderChess();
-
         } catch (
             error
         ) {
-            playFallbackChessMove();
+            const fallback =
+                randomWeakChessMove();
+
+            if (
+                fallback
+            ) {
+                const made =
+                    chessGame.move({
+                        from:
+                            fallback.from,
+                        to:
+                            fallback.to,
+                        promotion:
+                            fallback.promotion
+                            ??
+                            "q"
+                    });
+
+                chessLastMove = {
+                    from:
+                        made.from,
+                    to:
+                        made.to
+                };
+            }
         }
-    }
-
-
-    async function openChessScreen() {
-        showScreen(
-            screens.chess
-        );
-
-        el.chessStatus.textContent =
-            "Schach wird geladen …";
-
-        try {
-            await ensureChessGame();
-
-            initChessEngine();
-
-            renderChess();
-
-            maybeStartChessEngineTurn();
-
-        } catch (
-            error
-        ) {
-            el.chessStatus.textContent =
-                "Schach konnte nicht geladen werden.";
-
-            el.chessEngineState.textContent =
-                "Internetverbindung zum ersten Laden nötig";
-        }
-    }
-
-
-    function resetChessGame() {
-        if (
-            !ChessConstructor
-        ) {
-            return;
-        }
-
-        chessEngineRequestToken +=
-            1;
 
         chessEngineThinking =
             false;
 
-        chessSelectedSquare =
-            null;
+        renderChessPlayBoard();
 
-        chessLegalMoves =
-            [];
-
-        chessLastMove =
-            null;
-
-        chessPendingPromotion =
-            null;
-
-        chessGame =
-            new ChessConstructor();
-
-        el.chessPromotionPanel.classList.add(
-            "hidden"
-        );
-
-        saveChessState();
-
-        renderChess();
-
-        el.chessEngineState.textContent =
-            chessEngineReady
-                ? "Stockfish bereit"
-                : "Engine wird vorbereitet …";
+        if (
+            chessGame.isGameOver()
+        ) {
+            finishChessGame();
+        }
     }
 
 
-    el.openChessButton.addEventListener(
-        "click",
-        openChessScreen
-    );
+    function chessGameResultText(
+        game
+    ) {
+        if (
+            game.isCheckmate()
+        ) {
+            return game.turn()
+            ===
+            "w"
+                ? "Schachmatt · Schwarz gewinnt"
+                : "Schachmatt · Weiß gewinnt";
+        }
+
+        if (
+            game.isStalemate()
+        ) {
+            return "Remis · Patt";
+        }
+
+        if (
+            typeof game.isThreefoldRepetition
+            ===
+            "function"
+            &&
+            game.isThreefoldRepetition()
+        ) {
+            return "Remis · Stellungswiederholung";
+        }
+
+        if (
+            typeof game.isInsufficientMaterial
+            ===
+            "function"
+            &&
+            game.isInsufficientMaterial()
+        ) {
+            return "Remis · Unzureichendes Material";
+        }
+
+        if (
+            typeof game.isDrawByFiftyMoves
+            ===
+            "function"
+            &&
+            game.isDrawByFiftyMoves()
+        ) {
+            return "Remis · 50-Züge-Regel";
+        }
+
+        return "Remis";
+    }
 
 
-    el.backFromChess.addEventListener(
+    function finishChessGame() {
+        if (
+            !chessGame
+        ) {
+            return;
+        }
+
+        chessEngineThinking =
+            false;
+
+        chessEngineRequestToken +=
+            1;
+
+        chessFinalPgn =
+            chessGame.pgn();
+
+        chessFinalResult =
+            chessGameResultText(
+                chessGame
+            );
+
+        saveChessSettings();
+
+        window.setTimeout(
+            () => {
+                prepareChessAnalysis();
+
+                showScreen(
+                    screens.chessAnalysis
+                );
+
+                renderChessAnalysis();
+
+                updateChessAnalysisEvaluation();
+            },
+            520
+        );
+    }
+
+
+    el.backFromChessPlay.addEventListener(
         "click",
         () => {
-            el.chessPromotionPanel.classList.add(
+            chessEngineRequestToken +=
+                1;
+
+            chessEngineThinking =
+                false;
+
+            el.chessPlayPromotionPanel.classList.add(
                 "hidden"
             );
 
@@ -9293,48 +9500,888 @@
     );
 
 
-    el.newChessGameButton.addEventListener(
+    // ==================================================
+    // SCHACH — ANALYSE
+    // ==================================================
+
+    function prepareChessAnalysis() {
+        chessAnalysisFens =
+            [];
+
+        chessAnalysisSans =
+            [];
+
+        chessAnalysisEvalCache =
+            new Map();
+
+        chessAnalysisIndex =
+            0;
+
+        chessAnalysisVariation =
+            false;
+
+        chessAnalysisSelectedSquare =
+            null;
+
+        chessAnalysisLegalMoves =
+            [];
+
+        chessAnalysisLastMove =
+            null;
+
+        const replay =
+            new ChessConstructor();
+
+        chessAnalysisFens.push(
+            replay.fen()
+        );
+
+        const sans =
+            chessGame
+                ? chessGame.history()
+                : [];
+
+        sans.forEach(
+            san => {
+                replay.move(
+                    san
+                );
+
+                chessAnalysisSans.push(
+                    san
+                );
+
+                chessAnalysisFens.push(
+                    replay.fen()
+                );
+            }
+        );
+
+        loadChessAnalysisPosition(
+            0
+        );
+    }
+
+
+    function loadChessAnalysisPosition(
+        index
+    ) {
+        if (
+            !ChessConstructor
+            ||
+            chessAnalysisFens.length
+            ===
+            0
+        ) {
+            return;
+        }
+
+        chessAnalysisIndex =
+            Math.max(
+                0,
+                Math.min(
+                    chessAnalysisFens.length
+                    -
+                    1,
+                    index
+                )
+            );
+
+        chessAnalysisGame =
+            new ChessConstructor(
+                chessAnalysisFens[
+                    chessAnalysisIndex
+                ]
+            );
+
+        chessAnalysisSelectedSquare =
+            null;
+
+        chessAnalysisLegalMoves =
+            [];
+
+        chessAnalysisVariation =
+            false;
+
+        chessAnalysisBaseFen =
+            chessAnalysisGame.fen();
+
+        chessAnalysisBaseEval =
+            null;
+
+        el.chessAnalysisReturnLine.classList.add(
+            "hidden"
+        );
+
+        if (
+            chessAnalysisIndex
+            >
+            0
+        ) {
+            const before =
+                new ChessConstructor(
+                    chessAnalysisFens[
+                        chessAnalysisIndex
+                        -
+                        1
+                    ]
+                );
+
+            const verbose =
+                before.moves({
+                    verbose:
+                        true
+                });
+
+            const san =
+                chessAnalysisSans[
+                    chessAnalysisIndex
+                    -
+                    1
+                ];
+
+            const move =
+                verbose.find(
+                    candidate =>
+                        candidate.san
+                        ===
+                        san
+                );
+
+            chessAnalysisLastMove =
+                move
+                    ? {
+                        from:
+                            move.from,
+                        to:
+                            move.to
+                    }
+                    : null;
+        } else {
+            chessAnalysisLastMove =
+                null;
+        }
+    }
+
+
+    function renderChessAnalysis() {
+        if (
+            !chessAnalysisGame
+        ) {
+            return;
+        }
+
+        renderChessBoardInto(
+            el.chessAnalysisBoard,
+            chessAnalysisGame,
+            {
+                selectedSquare:
+                    chessAnalysisSelectedSquare,
+                legalMoves:
+                    chessAnalysisLegalMoves,
+                lastMove:
+                    chessAnalysisLastMove,
+                clickHandler:
+                    handleChessAnalysisSquare
+            }
+        );
+
+        el.chessAnalysisResult.textContent =
+            chessFinalResult;
+
+        const total =
+            Math.max(
+                0,
+                chessAnalysisFens.length
+                -
+                1
+            );
+
+        el.chessAnalysisCounter.textContent =
+            `${chessAnalysisIndex} / ${total}`;
+
+        if (
+            chessAnalysisVariation
+        ) {
+            el.chessAnalysisMoveLabel.textContent =
+                "Variante";
+
+            el.chessAnalysisReturnLine.classList.remove(
+                "hidden"
+            );
+        } else if (
+            chessAnalysisIndex
+            ===
+            0
+        ) {
+            el.chessAnalysisMoveLabel.textContent =
+                "Ausgangsstellung";
+        } else {
+            const ply =
+                chessAnalysisIndex;
+
+            const moveNumber =
+                Math.ceil(
+                    ply
+                    /
+                    2
+                );
+
+            const side =
+                ply
+                %
+                2
+                ===
+                1
+                    ? ""
+                    : " …";
+
+            el.chessAnalysisMoveLabel.textContent =
+                `${moveNumber}.${side} ${
+                    chessAnalysisSans[
+                        ply
+                        -
+                        1
+                    ]
+                }`;
+        }
+
+        el.chessAnalysisPrev.disabled =
+            chessAnalysisVariation
+            ||
+            chessAnalysisIndex
+            <=
+            0;
+
+        el.chessAnalysisNext.disabled =
+            chessAnalysisVariation
+            ||
+            chessAnalysisIndex
+            >=
+            total;
+    }
+
+
+    function handleChessAnalysisSquare(
+        square
+    ) {
+        if (
+            !chessAnalysisGame
+            ||
+            chessAnalysisGame.isGameOver()
+        ) {
+            return;
+        }
+
+        const piece =
+            chessAnalysisGame.get(
+                square
+            );
+
+        const turn =
+            chessAnalysisGame.turn();
+
+        if (
+            !chessAnalysisSelectedSquare
+        ) {
+            if (
+                piece
+                &&
+                piece.color
+                ===
+                turn
+            ) {
+                chessAnalysisSelectedSquare =
+                    square;
+
+                chessAnalysisLegalMoves =
+                    movesFromSquare(
+                        chessAnalysisGame,
+                        square
+                    );
+
+                renderChessAnalysis();
+            }
+
+            return;
+        }
+
+        if (
+            piece
+            &&
+            piece.color
+            ===
+            turn
+        ) {
+            chessAnalysisSelectedSquare =
+                square;
+
+            chessAnalysisLegalMoves =
+                movesFromSquare(
+                    chessAnalysisGame,
+                    square
+                );
+
+            renderChessAnalysis();
+
+            return;
+        }
+
+        const candidates =
+            chessAnalysisLegalMoves.filter(
+                move =>
+                    move.to
+                    ===
+                    square
+            );
+
+        if (
+            candidates.length
+            ===
+            0
+        ) {
+            chessAnalysisSelectedSquare =
+                null;
+
+            chessAnalysisLegalMoves =
+                [];
+
+            renderChessAnalysis();
+
+            return;
+        }
+
+        const promotions =
+            candidates.filter(
+                move =>
+                    move.promotion
+            );
+
+        if (
+            promotions.length
+            >
+            0
+        ) {
+            chessAnalysisPromotion = {
+                from:
+                    chessAnalysisSelectedSquare,
+                to:
+                    square
+            };
+
+            fillPromotionChoices(
+                el.chessAnalysisPromotionChoices,
+                promotions,
+                turn,
+                promotion => {
+                    el.chessAnalysisPromotionPanel.classList.add(
+                        "hidden"
+                    );
+
+                    const pending =
+                        chessAnalysisPromotion;
+
+                    chessAnalysisPromotion =
+                        null;
+
+                    makeChessAnalysisMove({
+                        from:
+                            pending.from,
+                        to:
+                            pending.to,
+                        promotion
+                    });
+                }
+            );
+
+            el.chessAnalysisPromotionPanel.classList.remove(
+                "hidden"
+            );
+
+            return;
+        }
+
+        makeChessAnalysisMove({
+            from:
+                chessAnalysisSelectedSquare,
+            to:
+                square
+        });
+    }
+
+
+    async function makeChessAnalysisMove(
+        move
+    ) {
+        if (
+            !chessAnalysisGame
+        ) {
+            return;
+        }
+
+        const beforeFen =
+            chessAnalysisGame.fen();
+
+        const mover =
+            chessAnalysisGame.turn();
+
+        const baseline =
+            await evaluateChessFen(
+                beforeFen
+            );
+
+        let made =
+            null;
+
+        try {
+            made =
+                chessAnalysisGame.move(
+                    move
+                );
+        } catch (
+            error
+        ) {
+            return;
+        }
+
+        chessAnalysisLastMove = {
+            from:
+                made.from,
+            to:
+                made.to
+        };
+
+        chessAnalysisSelectedSquare =
+            null;
+
+        chessAnalysisLegalMoves =
+            [];
+
+        chessAnalysisVariation =
+            true;
+
+        el.chessAnalysisReturnLine.classList.remove(
+            "hidden"
+        );
+
+        renderChessAnalysis();
+
+        el.chessAnalysisFeedback.textContent =
+            "Alternative wird analysiert …";
+
+        const after =
+            await evaluateChessFen(
+                chessAnalysisGame.fen(),
+                true
+            );
+
+        if (
+            !after
+        ) {
+            el.chessAnalysisFeedback.textContent =
+                "Bewertung nicht verfügbar.";
+
+            return;
+        }
+
+        setChessEvalBar(
+            after
+        );
+
+        const quality =
+            classifyChessMoveQuality(
+                baseline,
+                after,
+                mover
+            );
+
+        el.chessAnalysisFeedback.textContent =
+            `${made.san} · ${quality}`;
+    }
+
+
+    function classifyChessMoveQuality(
+        before,
+        after,
+        mover
+    ) {
+        if (
+            !before
+            ||
+            !after
+        ) {
+            return "analysiert";
+        }
+
+        const beforeScore =
+            scoreForQuality(
+                before
+            );
+
+        const afterScore =
+            scoreForQuality(
+                after
+            );
+
+        const loss =
+            mover
+            ===
+            "w"
+                ? beforeScore
+                    -
+                    afterScore
+                : afterScore
+                    -
+                    beforeScore;
+
+        if (
+            loss
+            <=
+            0.12
+        ) {
+            return "sehr gut";
+        }
+
+        if (
+            loss
+            <=
+            0.45
+        ) {
+            return "gut";
+        }
+
+        if (
+            loss
+            <=
+            1.0
+        ) {
+            return "ungenau";
+        }
+
+        if (
+            loss
+            <=
+            2.2
+        ) {
+            return "Fehler";
+        }
+
+        return "grober Fehler";
+    }
+
+
+    function scoreForQuality(
+        score
+    ) {
+        if (
+            score.type
+            ===
+            "mate"
+        ) {
+            return score.value
+            >
+            0
+                ? 100
+                : -100;
+        }
+
+        return score.pawns;
+    }
+
+
+    async function evaluateChessFen(
+        fen,
+        force = false
+    ) {
+        if (
+            !force
+            &&
+            chessAnalysisEvalCache.has(
+                fen
+            )
+        ) {
+            return chessAnalysisEvalCache.get(
+                fen
+            );
+        }
+
+        const result =
+            await runChessEngineTask({
+                fen,
+                commands: [
+                    "setoption name UCI_LimitStrength value false",
+                    "go depth 11"
+                ],
+                timeout:
+                    9500
+            });
+
+        if (
+            result
+            &&
+            result.score
+        ) {
+            chessAnalysisEvalCache.set(
+                fen,
+                result.score
+            );
+
+            return result.score;
+        }
+
+        return null;
+    }
+
+
+    function setChessEvalBar(
+        score
+    ) {
+        if (
+            !score
+        ) {
+            el.chessEvalWhite.style.height =
+                "50%";
+
+            el.chessEvalLabel.textContent =
+                "–";
+
+            return;
+        }
+
+        let whitePercent =
+            50;
+
+        let label =
+            "0.0";
+
+        if (
+            score.type
+            ===
+            "mate"
+        ) {
+            whitePercent =
+                score.value
+                >
+                0
+                    ? 98
+                    : 2;
+
+            label =
+                score.value
+                >
+                0
+                    ? `M${Math.abs(score.value)}`
+                    : `−M${Math.abs(score.value)}`;
+        } else {
+            whitePercent =
+                50
+                +
+                Math.tanh(
+                    score.pawns
+                    /
+                    5
+                )
+                *
+                47;
+
+            label =
+                score.pawns
+                >=
+                0
+                    ? `+${score.pawns.toFixed(1)}`
+                    : score.pawns.toFixed(
+                        1
+                    );
+        }
+
+        el.chessEvalWhite.style.height =
+            `${Math.max(
+                2,
+                Math.min(
+                    98,
+                    whitePercent
+                )
+            )}%`;
+
+        el.chessEvalLabel.textContent =
+            label;
+    }
+
+
+    async function updateChessAnalysisEvaluation() {
+        if (
+            !chessAnalysisGame
+        ) {
+            return;
+        }
+
+        const token =
+            ++chessAnalysisEvalToken;
+
+        const fen =
+            chessAnalysisGame.fen();
+
+        el.chessAnalysisFeedback.textContent =
+            chessAnalysisVariation
+                ? "Variante wird analysiert …"
+                : "Stellung wird analysiert …";
+
+        const current =
+            await evaluateChessFen(
+                fen
+            );
+
+        if (
+            token
+            !==
+            chessAnalysisEvalToken
+        ) {
+            return;
+        }
+
+        setChessEvalBar(
+            current
+        );
+
+        if (
+            chessAnalysisVariation
+        ) {
+            return;
+        }
+
+        if (
+            chessAnalysisIndex
+            ===
+            0
+        ) {
+            el.chessAnalysisFeedback.textContent =
+                "Ausgangsstellung";
+
+            return;
+        }
+
+        const previousFen =
+            chessAnalysisFens[
+                chessAnalysisIndex
+                -
+                1
+            ];
+
+        const previous =
+            await evaluateChessFen(
+                previousFen
+            );
+
+        if (
+            token
+            !==
+            chessAnalysisEvalToken
+        ) {
+            return;
+        }
+
+        const mover =
+            chessAnalysisIndex
+            %
+            2
+            ===
+            1
+                ? "w"
+                : "b";
+
+        const quality =
+            classifyChessMoveQuality(
+                previous,
+                current,
+                mover
+            );
+
+        el.chessAnalysisFeedback.textContent =
+            `${
+                chessAnalysisSans[
+                    chessAnalysisIndex
+                    -
+                    1
+                ]
+            } · ${quality}`;
+    }
+
+
+    el.chessAnalysisPrev.addEventListener(
         "click",
         () => {
-            const hasMoves =
-                chessGame
-                &&
-                chessGame.history().length
-                >
-                0;
-
             if (
-                hasMoves
-                &&
-                !window.confirm(
-                    "Neue Partie beginnen?"
-                )
+                chessAnalysisVariation
             ) {
                 return;
             }
 
-            resetChessGame();
+            loadChessAnalysisPosition(
+                chessAnalysisIndex
+                -
+                1
+            );
+
+            renderChessAnalysis();
+
+            updateChessAnalysisEvaluation();
         }
     );
 
 
-    el.chessEloSlider.addEventListener(
-        "input",
+    el.chessAnalysisNext.addEventListener(
+        "click",
         () => {
-            chessElo =
-                Number(
-                    el.chessEloSlider.value
-                );
+            if (
+                chessAnalysisVariation
+            ) {
+                return;
+            }
 
-            el.chessEloValue.textContent =
-                `${chessElo} Elo`;
+            loadChessAnalysisPosition(
+                chessAnalysisIndex
+                +
+                1
+            );
 
-            saveChessState();
+            renderChessAnalysis();
+
+            updateChessAnalysisEvaluation();
         }
     );
 
 
-    // ==================================================
+    el.chessAnalysisReturnLine.addEventListener(
+        "click",
+        () => {
+            loadChessAnalysisPosition(
+                chessAnalysisIndex
+            );
+
+            renderChessAnalysis();
+
+            updateChessAnalysisEvaluation();
+        }
+    );
+
+
+    el.backFromChessAnalysis.addEventListener(
+        "click",
+        () => {
+            chessAnalysisEvalToken +=
+                1;
+
+            el.chessAnalysisPromotionPanel.classList.add(
+                "hidden"
+            );
+
+            showScreen(
+                screens.textsHub
+            );
+        }
+    );
+
+
     // ZEITSTRAHL
     // ==================================================
 

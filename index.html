@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=29">
+    <link rel="stylesheet" href="style.css?v=30">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=29" defer></script>
+    <script src="app.js?v=30" defer></script>
 </head>
 <body>
 
@@ -526,26 +526,19 @@
 
 
 <!-- ==================================================
-     SCHACH
+     SCHACH — SCHWIERIGKEIT
 ================================================== -->
 
-<section id="chessScreen" class="screen chess-screen">
-    <header class="topbar chess-topbar">
-        <button id="backFromChess" class="icon-button" type="button" aria-label="Zurück">‹</button>
-        <div class="chess-title-symbol" aria-label="Schach">♞</div>
-        <button id="newChessGameButton" class="small-top-button" type="button">Neu</button>
-    </header>
+<section id="chessSetupScreen" class="screen chess-setup-screen">
+    <main class="chess-setup-shell">
+        <h1>Wie schwer soll ichs dir machen?</h1>
 
-    <main class="chess-shell">
-        <section class="chess-strength-panel" aria-label="Gegnerstärke">
-            <div class="chess-strength-head">
-                <span>Gegner</span>
-                <strong id="chessEloValue">1500 Elo</strong>
-            </div>
+        <div class="chess-setup-elo">
+            <div id="chessSetupEloValue" class="chess-setup-elo-value">1500 Elo</div>
 
             <input
-                id="chessEloSlider"
-                class="chess-elo-slider"
+                id="chessSetupEloSlider"
+                class="chess-setup-slider"
                 type="range"
                 min="100"
                 max="2500"
@@ -553,33 +546,86 @@
                 value="1500"
                 aria-label="Elo des Gegners"
             >
-
-            <div class="chess-strength-scale" aria-hidden="true">
-                <span>100</span>
-                <span>2500</span>
-            </div>
-        </section>
-
-        <div id="chessStatus" class="chess-status" aria-live="polite">
-            Schach wird geladen …
         </div>
 
-        <div class="chess-board-frame">
-            <div id="chessBoard" class="chess-board" role="grid" aria-label="Schachbrett"></div>
-        </div>
+        <button id="startChessGameButton" class="chess-continue-button" type="button">
+            Weiter
+        </button>
+    </main>
+</section>
 
-        <div class="chess-underboard">
-            <div id="chessEngineState" class="chess-engine-state">Engine wird vorbereitet …</div>
-            <div class="chess-player-note">Du spielst Weiß.</div>
-        </div>
 
-        <div id="chessMoveList" class="chess-move-list" aria-label="Zugliste"></div>
+<!-- ==================================================
+     SCHACH — PARTIE
+================================================== -->
+
+<section id="chessPlayScreen" class="screen chess-play-screen">
+    <button id="backFromChessPlay" class="chess-play-back" type="button" aria-label="Zurück">‹</button>
+
+    <main class="chess-play-shell">
+        <div id="chessPlayBoard" class="chess-board chess-play-board" role="grid" aria-label="Schachbrett"></div>
     </main>
 
-    <div id="chessPromotionPanel" class="chess-promotion-panel hidden" role="dialog" aria-modal="true" aria-label="Bauernumwandlung">
+    <div id="chessPlayPromotionPanel" class="chess-promotion-panel hidden" role="dialog" aria-modal="true" aria-label="Bauernumwandlung">
         <div class="chess-promotion-card">
-            <div class="chess-promotion-title">Umwandeln in</div>
-            <div id="chessPromotionChoices" class="chess-promotion-choices"></div>
+            <div id="chessPlayPromotionChoices" class="chess-promotion-choices"></div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ==================================================
+     SCHACH — ANALYSE
+================================================== -->
+
+<section id="chessAnalysisScreen" class="screen chess-analysis-screen">
+    <header class="topbar chess-analysis-topbar">
+        <button id="backFromChessAnalysis" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <div class="chess-analysis-title">Analyse</div>
+        <div class="topbar-spacer"></div>
+    </header>
+
+    <main class="chess-analysis-shell">
+        <div id="chessAnalysisResult" class="chess-analysis-result"></div>
+
+        <div class="chess-analysis-stage">
+            <div class="chess-eval-column">
+                <div id="chessEvalBar" class="chess-eval-bar">
+                    <div id="chessEvalWhite" class="chess-eval-white"></div>
+                    <div id="chessEvalLabel" class="chess-eval-label">0.0</div>
+                </div>
+            </div>
+
+            <div id="chessAnalysisBoard" class="chess-board chess-analysis-board" role="grid" aria-label="Analysebrett"></div>
+        </div>
+
+        <div id="chessAnalysisFeedback" class="chess-analysis-feedback">
+            Stellung wird analysiert …
+        </div>
+
+        <div class="chess-analysis-navigation">
+            <button id="chessAnalysisPrev" type="button" aria-label="Vorheriger Zug">‹</button>
+
+            <div class="chess-analysis-position">
+                <strong id="chessAnalysisMoveLabel">Ausgangsstellung</strong>
+                <span id="chessAnalysisCounter">0 / 0</span>
+            </div>
+
+            <button id="chessAnalysisNext" type="button" aria-label="Nächster Zug">›</button>
+        </div>
+
+        <button id="chessAnalysisReturnLine" class="chess-analysis-return hidden" type="button">
+            Zur Partie
+        </button>
+
+        <div class="chess-analysis-hint">
+            Du kannst auf dem Brett alternative Züge ausprobieren.
+        </div>
+    </main>
+
+    <div id="chessAnalysisPromotionPanel" class="chess-promotion-panel hidden" role="dialog" aria-modal="true" aria-label="Bauernumwandlung">
+        <div class="chess-promotion-card">
+            <div id="chessAnalysisPromotionChoices" class="chess-promotion-choices"></div>
         </div>
     </div>
 </section>

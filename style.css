@@ -5530,7 +5530,7 @@ html[data-theme="dark"] #textsHubScreen .texts-study-background {
 
 
 /* ==================================================
-   V26 — SCHACH-EINGANG AN DER RECHTEN WAND
+   V27 — SCHACH-EINGANG
 ================================================== */
 
 #textsHubScreen .texts-hotspot-chess {
@@ -5544,102 +5544,68 @@ html[data-theme="dark"] #textsHubScreen .texts-study-background {
 
 
 /* ==================================================
-   V26 — SCHACH
+   V27 — SCHWIERIGKEIT
 ================================================== */
 
-.chess-screen {
+.chess-setup-screen {
     background: var(--bg);
 }
 
-.chess-topbar {
-    position: sticky;
-    top: 0;
+.chess-setup-shell {
+    min-height: 100dvh;
 
-    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 
-    background:
-        color-mix(
-            in srgb,
-            var(--bg) 94%,
-            transparent
-        );
+    gap: 34px;
 
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    padding:
+        calc(32px + env(safe-area-inset-top))
+        30px
+        calc(32px + env(safe-area-inset-bottom));
 }
 
-.chess-title-symbol {
-    align-self: end;
-    justify-self: center;
-
-    margin-bottom: 10px;
+.chess-setup-shell h1 {
+    margin: 0;
 
     color: var(--text);
 
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
+    font-size: clamp(25px, 7vw, 38px);
+    font-weight: 350;
+    letter-spacing: -0.025em;
 
-    font-size: 25px;
-    line-height: 1;
+    text-align: center;
 }
 
-.chess-shell {
-    width: min(100%, 620px);
-
-    margin: 0 auto;
-
-    padding:
-        18px
-        18px
-        calc(54px + env(safe-area-inset-bottom));
+.chess-setup-elo {
+    width: min(520px, 82vw);
 }
 
-.chess-strength-panel {
-    margin:
-        2px
-        auto
-        20px;
-
-    padding: 0 3px;
-}
-
-.chess-strength-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-
-    margin-bottom: 9px;
+.chess-setup-elo-value {
+    margin-bottom: 16px;
 
     color: var(--muted);
 
-    font-size: 13px;
-    letter-spacing: 0.015em;
-}
+    text-align: center;
 
-.chess-strength-head strong {
-    color: var(--text);
-
-    font-size: 15px;
-    font-weight: 500;
+    font-size: 18px;
 
     font-variant-numeric: tabular-nums;
 }
 
-.chess-elo-slider {
+.chess-setup-slider {
     appearance: none;
     -webkit-appearance: none;
 
     width: 100%;
-    height: 24px;
-
-    margin: 0;
+    height: 32px;
 
     background: transparent;
 }
 
-.chess-elo-slider::-webkit-slider-runnable-track {
+.chess-setup-slider::-webkit-slider-runnable-track {
     height: 2px;
 
     border-radius: 999px;
@@ -5647,62 +5613,53 @@ html[data-theme="dark"] #textsHubScreen .texts-study-background {
     background:
         color-mix(
             in srgb,
-            var(--text) 24%,
+            var(--text) 28%,
             transparent
         );
 }
 
-.chess-elo-slider::-webkit-slider-thumb {
+.chess-setup-slider::-webkit-slider-thumb {
     appearance: none;
     -webkit-appearance: none;
 
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
 
-    margin-top: -8px;
+    margin-top: -10px;
 
     border: 1px solid
         color-mix(
             in srgb,
-            var(--text) 34%,
+            var(--text) 45%,
             transparent
         );
 
     border-radius: 50%;
 
     background: var(--bg);
-
-    box-shadow:
-        0 2px 8px
-        color-mix(
-            in srgb,
-            #000 13%,
-            transparent
-        );
 }
 
-.chess-elo-slider::-moz-range-track {
+.chess-setup-slider::-moz-range-track {
     height: 2px;
 
     border: 0;
-    border-radius: 999px;
 
     background:
         color-mix(
             in srgb,
-            var(--text) 24%,
+            var(--text) 28%,
             transparent
         );
 }
 
-.chess-elo-slider::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
+.chess-setup-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
 
     border: 1px solid
         color-mix(
             in srgb,
-            var(--text) 34%,
+            var(--text) 45%,
             transparent
         );
 
@@ -5711,65 +5668,90 @@ html[data-theme="dark"] #textsHubScreen .texts-study-background {
     background: var(--bg);
 }
 
-.chess-strength-scale {
-    display: flex;
-    justify-content: space-between;
+.chess-continue-button {
+    padding: 11px 16px;
 
-    margin-top: -1px;
+    border: 0;
 
-    color:
-        color-mix(
-            in srgb,
-            var(--muted) 72%,
-            transparent
-        );
-
-    font-size: 10px;
-
-    font-variant-numeric: tabular-nums;
-}
-
-.chess-status {
-    min-height: 28px;
-
-    margin-bottom: 11px;
+    background: transparent;
 
     color: var(--text);
 
-    text-align: center;
-
-    font-size: 14px;
+    font-size: 19px;
     font-weight: 390;
 }
 
-.chess-board-frame {
+
+/* ==================================================
+   V27 — PARTIE: NUR BRETT + ZURÜCK
+================================================== */
+
+.chess-play-screen {
+    position: fixed !important;
+    inset: 0 !important;
+
+    width: 100vw !important;
+    height: 100dvh !important;
+
+    padding: 0 !important;
+
+    overflow: hidden !important;
+
+    background: #080908 !important;
+}
+
+.chess-play-shell {
     width: 100%;
+    height: 100%;
 
     display: flex;
+    align-items: center;
     justify-content: center;
 }
 
-.chess-board {
-    width: min(92vw, 560px);
-    aspect-ratio: 1 / 1;
+.chess-play-back {
+    position: fixed;
 
+    top: calc(14px + env(safe-area-inset-top));
+    left: 14px;
+
+    z-index: 100;
+
+    width: 46px;
+    height: 46px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: 0;
+    background: transparent;
+
+    color: rgba(220, 220, 214, 0.72);
+
+    font-size: 31px;
+    font-weight: 240;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+.chess-board {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
 
     overflow: hidden;
 
-    border-radius: 3px;
-
-    box-shadow:
-        0 14px 34px
-        color-mix(
-            in srgb,
-            #000 15%,
-            transparent
-        );
-
     touch-action: manipulation;
+}
+
+.chess-play-board {
+    width: min(100vw, 100dvh);
+    height: min(100vw, 100dvh);
+
+    background: #000;
 }
 
 .chess-square {
@@ -5788,29 +5770,60 @@ html[data-theme="dark"] #textsHubScreen .texts-study-background {
     border: 0;
     border-radius: 0;
 
-    color: inherit;
-
     -webkit-tap-highlight-color: transparent;
 
     transition:
-        filter 120ms ease,
-        box-shadow 120ms ease;
+        filter 90ms ease,
+        box-shadow 90ms ease;
 }
 
 .chess-square-light {
-    background: #d8d1c2;
+    background: #f0f0ec;
 }
 
 .chess-square-dark {
-    background: #7d7567;
+    background: #151615;
 }
 
-html[data-theme="dark"] .chess-square-light {
-    background: #b9b2a4;
+.chess-piece {
+    position: relative;
+    z-index: 2;
+
+    display: block;
+
+    font-family:
+        "Arial Unicode MS",
+        "Noto Sans Symbols 2",
+        "Noto Sans Symbols",
+        "Apple Symbols",
+        "Segoe UI Symbol",
+        serif;
+
+    font-size: clamp(31px, 10.6vw, 69px);
+    line-height: 1;
+
+    transform: translateY(-1%);
+
+    user-select: none;
+    -webkit-user-select: none;
+
+    pointer-events: none;
 }
 
-html[data-theme="dark"] .chess-square-dark {
-    background: #625c52;
+.chess-piece-w {
+    color: #fbfaf5;
+
+    text-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.95),
+        0 0 2px rgba(0, 0, 0, 0.85);
+}
+
+.chess-piece-b {
+    color: #10110f;
+
+    text-shadow:
+        0 0 1px rgba(255, 255, 255, 0.74),
+        0 1px 0 rgba(255, 255, 255, 0.32);
 }
 
 .chess-square.last-move::before,
@@ -5826,10 +5839,10 @@ html[data-theme="dark"] .chess-square-dark {
 .chess-square.last-move::before {
     background:
         rgba(
-            177,
-            138,
-            75,
-            0.24
+            126,
+            126,
+            118,
+            0.22
         );
 }
 
@@ -5837,10 +5850,10 @@ html[data-theme="dark"] .chess-square-dark {
     box-shadow:
         inset 0 0 0 3px
         rgba(
-            125,
-            85,
-            59,
-            0.72
+            130,
+            130,
+            120,
+            0.75
         );
 }
 
@@ -5849,17 +5862,17 @@ html[data-theme="dark"] .chess-square-dark {
 
     position: absolute;
 
-    width: 16%;
+    width: 17%;
     aspect-ratio: 1;
 
     border-radius: 50%;
 
     background:
         rgba(
-            35,
-            35,
-            31,
-            0.31
+            128,
+            128,
+            120,
+            0.56
         );
 
     pointer-events: none;
@@ -5873,10 +5886,10 @@ html[data-theme="dark"] .chess-square-dark {
 
     border: 3px solid
         rgba(
-            55,
-            47,
-            39,
-            0.34
+            128,
+            128,
+            120,
+            0.56
         );
 
     border-radius: 50%;
@@ -5884,100 +5897,10 @@ html[data-theme="dark"] .chess-square-dark {
     pointer-events: none;
 }
 
-.chess-piece {
-    position: relative;
-    z-index: 2;
 
-    display: block;
-
-    transform: translateY(-1%);
-
-    font-family:
-        "Arial Unicode MS",
-        "Noto Sans Symbols 2",
-        "Noto Sans Symbols",
-        "Apple Symbols",
-        "Segoe UI Symbol",
-        serif;
-
-    font-size: clamp(29px, 10vw, 53px);
-    line-height: 1;
-
-    user-select: none;
-    -webkit-user-select: none;
-
-    pointer-events: none;
-}
-
-.chess-piece-w {
-    color: #f4f0e6;
-
-    text-shadow:
-        0 1px 1px rgba(0, 0, 0, 0.75),
-        0 0 1px rgba(0, 0, 0, 0.72);
-}
-
-.chess-piece-b {
-    color: #1f201d;
-
-    text-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.16);
-}
-
-.chess-underboard {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 14px;
-
-    width: min(92vw, 560px);
-
-    margin:
-        11px
-        auto
-        18px;
-
-    color: var(--muted);
-
-    font-size: 11px;
-}
-
-.chess-engine-state {
-    min-width: 0;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.chess-player-note {
-    flex-shrink: 0;
-}
-
-.chess-move-list {
-    width: min(92vw, 560px);
-
-    margin: 0 auto;
-
-    color: var(--muted);
-
-    font-size: 12px;
-
-    font-variant-numeric: tabular-nums;
-}
-
-.chess-move-row {
-    display: grid;
-    grid-template-columns: 32px 1fr 1fr;
-    gap: 8px;
-
-    padding: 4px 2px;
-}
-
-.chess-move-row span:first-child {
-    opacity: 0.62;
-}
+/* ==================================================
+   V27 — BAUERNUMWANDLUNG
+================================================== */
 
 .chess-promotion-panel {
     position: fixed;
@@ -5989,17 +5912,16 @@ html[data-theme="dark"] .chess-square-dark {
     align-items: center;
     justify-content: center;
 
-    padding: 24px;
-
     background:
-        color-mix(
-            in srgb,
-            var(--bg) 72%,
-            transparent
+        rgba(
+            7,
+            8,
+            7,
+            0.72
         );
 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .chess-promotion-panel.hidden {
@@ -6007,29 +5929,9 @@ html[data-theme="dark"] .chess-square-dark {
 }
 
 .chess-promotion-card {
-    width: min(330px, 86vw);
-
-    padding: 22px;
+    padding: 12px;
 
     background: var(--bg);
-
-    box-shadow:
-        0 18px 54px
-        color-mix(
-            in srgb,
-            #000 22%,
-            transparent
-        );
-}
-
-.chess-promotion-title {
-    margin-bottom: 16px;
-
-    color: var(--muted);
-
-    text-align: center;
-
-    font-size: 13px;
 }
 
 .chess-promotion-choices {
@@ -6039,13 +5941,15 @@ html[data-theme="dark"] .chess-square-dark {
 }
 
 .chess-promotion-choice {
-    min-height: 62px;
+    width: 62px;
+    height: 62px;
 
     border: 0;
+
     background:
         color-mix(
             in srgb,
-            var(--text) 6%,
+            var(--text) 7%,
             transparent
         );
 
@@ -6053,25 +5957,270 @@ html[data-theme="dark"] .chess-square-dark {
 
     font-family:
         "Arial Unicode MS",
-        "Noto Sans Symbols 2",
         "Apple Symbols",
         serif;
 
-    font-size: 37px;
+    font-size: 38px;
+}
+
+
+/* ==================================================
+   V27 — ANALYSE
+================================================== */
+
+.chess-analysis-screen {
+    background: var(--bg);
+}
+
+.chess-analysis-topbar {
+    position: sticky;
+    top: 0;
+
+    z-index: 50;
+
+    background:
+        color-mix(
+            in srgb,
+            var(--bg) 94%,
+            transparent
+        );
+
+    backdrop-filter: blur(13px);
+    -webkit-backdrop-filter: blur(13px);
+}
+
+.chess-analysis-title {
+    align-self: end;
+    justify-self: center;
+
+    margin-bottom: 11px;
+
+    color: var(--muted);
+
+    font-size: 14px;
+    font-weight: 430;
+}
+
+.chess-analysis-shell {
+    width: min(100%, 690px);
+
+    margin: 0 auto;
+
+    padding:
+        20px
+        16px
+        calc(54px + env(safe-area-inset-bottom));
+}
+
+.chess-analysis-result {
+    min-height: 24px;
+
+    margin-bottom: 13px;
+
+    color: var(--text);
+
+    text-align: center;
+
+    font-size: 14px;
+}
+
+.chess-analysis-stage {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px;
+
+    align-items: stretch;
+
+    width: min(94vw, 610px);
+
+    margin: 0 auto;
+}
+
+.chess-analysis-board {
+    width: 100%;
+    aspect-ratio: 1;
+
+    border-radius: 2px;
+}
+
+.chess-eval-column {
+    min-width: 0;
+}
+
+.chess-eval-bar {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    background: #121312;
+
+    border:
+        1px solid
+        color-mix(
+            in srgb,
+            var(--text) 20%,
+            transparent
+        );
+}
+
+.chess-eval-white {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    height: 50%;
+
+    background: #f0f0ec;
+
+    transition:
+        height
+        260ms
+        cubic-bezier(.22, .61, .36, 1);
+}
+
+.chess-eval-label {
+    position: absolute;
+    inset: 0;
+
+    z-index: 3;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+
+    color: #8d8d87;
+
+    font-size: 10px;
+    font-weight: 560;
+
+    mix-blend-mode: difference;
+
+    pointer-events: none;
+}
+
+.chess-analysis-feedback {
+    min-height: 27px;
+
+    margin:
+        14px
+        auto
+        9px;
+
+    color: var(--text);
+
+    text-align: center;
+
+    font-size: 14px;
+}
+
+.chess-analysis-navigation {
+    width: min(94vw, 610px);
+
+    margin: 0 auto;
+
+    display: grid;
+    grid-template-columns: 58px 1fr 58px;
+    align-items: center;
+}
+
+.chess-analysis-navigation button {
+    height: 52px;
+
+    border: 0;
+
+    background: transparent;
+
+    color: var(--text);
+
+    font-size: 31px;
+    font-weight: 250;
+}
+
+.chess-analysis-navigation button:disabled {
+    opacity: 0.22;
+}
+
+.chess-analysis-position {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 3px;
+
+    min-width: 0;
+}
+
+.chess-analysis-position strong {
+    max-width: 100%;
+
+    overflow: hidden;
+
+    color: var(--text);
+
+    font-size: 14px;
+    font-weight: 500;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chess-analysis-position span {
+    color: var(--muted);
+
+    font-size: 11px;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.chess-analysis-return {
+    display: block;
+
+    margin:
+        7px
+        auto
+        0;
+
+    padding: 7px 10px;
+
+    border: 0;
+
+    background: transparent;
+
+    color: var(--text);
+
+    font-size: 13px;
+}
+
+.chess-analysis-return.hidden {
+    display: none;
+}
+
+.chess-analysis-hint {
+    margin-top: 18px;
+
+    color: var(--muted);
+
+    text-align: center;
+
+    font-size: 11px;
 }
 
 @media (max-width: 390px) {
-    .chess-shell {
-        padding-left: 12px;
-        padding-right: 12px;
+    .chess-analysis-stage,
+    .chess-analysis-navigation {
+        width: 96vw;
     }
 
-    .chess-underboard,
-    .chess-move-list {
-        width: 94vw;
-    }
-
-    .chess-board {
-        width: 94vw;
+    .chess-analysis-shell {
+        padding-left: 8px;
+        padding-right: 8px;
     }
 }

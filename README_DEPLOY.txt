@@ -1,4 +1,4 @@
-PLANER v26 + SCHACH — DATEIEN FÜR GITHUB PAGES
+PLANER v27 + SCHACHANALYSE — DATEIEN FÜR GITHUB PAGES
 
 Upload/replace these files in the same repository directory:
 
@@ -7,21 +7,38 @@ Upload/replace these files in the same repository directory:
 - app.js
 - stockfish-worker.js
 - THIRD_PARTY_LICENSES.txt
+- README_DEPLOY.txt
 
-No build step is required.
+SCHACHABLAUF
 
-Important:
-The first chess version loads chess.js and the Stockfish 18 lite-single
-engine from pinned public package URLs at runtime. The chess screen therefore
-needs internet access when those resources are not already cached.
+1. Im Studierzimmer die rechte Wand antippen.
+2. Es erscheint nur:
+   "Wie schwer soll ichs dir machen?"
+   Elo-Slider 100–2500
+   Weiter
+3. Danach läuft die Partie auf einem reduzierten Schwarz-Weiß-Brett.
+   Sichtbar ist nur das Brett und der kleine Zurück-Pfeil.
+4. Die Partie endet automatisch bei Schachmatt oder Remis.
+5. Danach öffnet sich die Analyse.
 
-Navigation:
-In the Texte study-room screen, tap the right wall beside the window to open
-Chess.
+ANALYSE
 
-Opponent strength:
-The slider runs from 100 to 2500 Elo. For the range supported directly by
-Stockfish's UCI strength limiting, the app uses UCI_LimitStrength/UCI_Elo.
-For very low settings, extra deliberate move weakening is added so that
-100–1300 behaves substantially weaker. The displayed Elo is a target/playing
-strength setting, not an official FIDE rating measurement.
+- Mit ‹ und › durch die echte Partie gehen.
+- Die vertikale Bewertungsleiste zeigt Stockfishs Bewertung aus Sicht von Weiß.
+- Unter dem Brett wird der gespielte Zug grob als sehr gut / gut /
+  ungenau / Fehler / grober Fehler eingeordnet.
+- Auf jeder analysierten Stellung können alternative legale Züge direkt
+  auf dem Brett gespielt werden.
+- Die alternative Stellung wird neu von Stockfish bewertet.
+- "Zur Partie" setzt die Analyse auf die echte Partie an derselben Stelle zurück.
+
+TECHNIK
+
+- chess.js 1.4.0 übernimmt vollständige Zugregeln.
+- Stockfish 18 lite single-threaded spielt die KI und analysiert.
+- 100–1300 Elo wird zusätzlich bewusst abgeschwächt, weil Stockfishs
+  UCI_LimitStrength nicht bis 100 Elo reicht.
+- Die Elo-Angabe ist eine Ziel-Spielstärke, keine gemessene FIDE-Elo.
+
+Für das erstmalige Laden von chess.js und Stockfish wird weiterhin Internet
+benötigt, solange die Bibliotheken nicht im Browsercache liegen.
