@@ -69,6 +69,15 @@
         newsCategories: $("newsCategories"),
         newsStatus: $("newsStatus"),
         newsList: $("newsList"),
+        newsListView: $("newsListView"),
+        newsArticleView: $("newsArticleView"),
+        newsArticleSource: $("newsArticleSource"),
+        newsArticleTitle: $("newsArticleTitle"),
+        newsArticleMeta: $("newsArticleMeta"),
+        newsArticleStandfirst: $("newsArticleStandfirst"),
+        newsArticleBody: $("newsArticleBody"),
+        newsArticleNotice: $("newsArticleNotice"),
+        newsArticleOriginal: $("newsArticleOriginal"),
         chessRoomBackHotspot: $("chessRoomBackHotspot"),
 
         backFromWikipedia: $("backFromWikipedia"),
@@ -12494,35 +12503,26 @@
 
 
     // ==================================================
-    // V47 — REUTERS / NACHRICHTEN
-    //
-    // Keine Browser-Abfrage von GDELT mehr.
-    // Die App lädt ausschließlich eine statische JSON-Datei vom
-    // eigenen GitHub-Pages-Origin. Diese Datei wird durch GitHub
-    // Actions regelmäßig aus dem öffentlichen Reuters-Sitemap erneuert.
+    // V48 — NACHRICHTEN: GUARDIAN + PROPUBLICA
     // ==================================================
 
     const NEWS_STATIC_FEED =
-        "./data/reuters.json";
+        "./data/news.json";
 
     const NEWS_CACHE_KEY =
-        "plannerReutersCache_v3";
+        "plannerNewsCache_v48";
 
     const NEWS_CATEGORY_LABELS = {
-        top:
-            "Aktuell",
         world:
             "Welt",
-        business:
-            "Wirtschaft",
         science:
             "Wissenschaft",
-        technology:
-            "Technologie"
+        investigative:
+            "Investigativ"
     };
 
     let newsActiveCategory =
-        "top";
+        "world";
 
     let newsRequestToken =
         0;
@@ -12530,8 +12530,17 @@
     let newsFeedCache =
         null;
 
+    let newsArticleIndex =
+        new Map();
 
-    function parseReutersDate(
+    let newsArticleOpen =
+        false;
+
+    let newsListScrollTop =
+        0;
+
+
+    function parseNewsDate(
         raw
     ) {
         const parsed =
@@ -12555,7 +12564,7 @@
         raw
     ) {
         const date =
-            parseReutersDate(
+            parseNewsDate(
                 raw
             );
 
@@ -12617,7 +12626,41 @@
                 day:
                     "2-digit",
                 month:
-                    "2-digit"
+                    "2-digit",
+                year:
+                    date.getFullYear()
+                    !==
+                    new Date().getFullYear()
+                        ? "numeric"
+                        : undefined
+            }
+        );
+    }
+
+
+    function formatNewsDateLong(
+        raw
+    ) {
+        const date =
+            parseNewsDate(
+                raw
+            );
+
+        if (
+            !date
+        ) {
+            return "";
+        }
+
+        return date.toLocaleDateString(
+            "de-DE",
+            {
+                day:
+                    "numeric",
+                month:
+                    "long",
+                year:
+                    "numeric"
             }
         );
     }
@@ -12655,103 +12698,147 @@
     }
 
 
-    function normalizeReutersArticles(
-        articles
+    function normalizeNewsArticle(
+        article
     ) {
-        const seen =
-            new Set();
+        if (
+            !article
+            ||
+            !article.id
+            ||
+            !article.title
+            ||
+            !article.url
+        ) {
+            return null;
+        }
 
-        return (
-            Array.isArray(
-                articles
-            )
-                ? articles
-                : []
+        return {
+            id:
+                String(
+                    article.id
+                ),
+            source:
+                String(
+                    article.source
+                    ??
+                    ""
+                ),
+            title:
+                String(
+                    article.title
+                    ??
+                    ""
+                )
+                .trim(),
+            url:
+                String(
+                    article.url
+                    ??
+                    ""
+                ),
+            publishedAt:
+                String(
+                    article.publishedAt
+                    ??
+                    ""
+                ),
+            byline:
+                String(
+                    article.byline
+                    ??
+                    ""
+                ),
+            standfirst:
+                String(
+                    article.standfirst
+                    ??
+                    article.excerpt
+                    ??
+                    ""
+                ),
+            bodyHtml:
+                String(
+                    article.bodyHtml
+                    ??
+                    ""
+                ),
+            fullText:
+                Boolean(
+                    article.fullText
+                ),
+            category:
+                String(
+                    article.category
+                    ??
+                    ""
+                )
+        };
+    }
+
+
+    function normalizeNewsFeed(
+        raw
+    ) {
+        const categories = {};
+        newsArticleIndex = new Map();
+
+        Object.keys(
+            NEWS_CATEGORY_LABELS
         )
-        .filter(
-            article => {
-                const url =
-                    String(
-                        article?.url
-                        ??
-                        ""
+        .forEach(
+            category => {
+                const seen =
+                    new Set();
+
+                const rows =
+                    Array.isArray(
+                        raw?.categories?.[category]
+                    )
+                        ? raw.categories[category]
+                        : [];
+
+                categories[category] =
+                    rows
+                    .map(
+                        normalizeNewsArticle
+                    )
+                    .filter(
+                        article => {
+                            if (
+                                !article
+                                ||
+                                seen.has(
+                                    article.id
+                                )
+                            ) {
+                                return false;
+                            }
+
+                            seen.add(
+                                article.id
+                            );
+
+                            newsArticleIndex.set(
+                                article.id,
+                                article
+                            );
+
+                            return true;
+                        }
                     );
-
-                const title =
-                    String(
-                        article?.title
-                        ??
-                        ""
-                    )
-                    .trim();
-
-                if (
-                    !url
-                    ||
-                    !title
-                    ||
-                    !/^https?:\/\//i.test(
-                        url
-                    )
-                ) {
-                    return false;
-                }
-
-                let hostname =
-                    "";
-
-                try {
-                    hostname =
-                        new URL(
-                            url
-                        )
-                        .hostname
-                        .toLowerCase();
-                } catch (
-                    error
-                ) {
-                    return false;
-                }
-
-                if (
-                    hostname
-                    !==
-                    "reuters.com"
-                    &&
-                    !hostname.endsWith(
-                        ".reuters.com"
-                    )
-                ) {
-                    return false;
-                }
-
-                const key =
-                    title
-                    .toLowerCase()
-                    .replace(
-                        /\s+/g,
-                        " "
-                    );
-
-                if (
-                    seen.has(
-                        key
-                    )
-                ) {
-                    return false;
-                }
-
-                seen.add(
-                    key
-                );
-
-                return true;
             }
-        )
-        .slice(
-            0,
-            80
         );
+
+        return {
+            generatedAt:
+                String(
+                    raw?.generatedAt
+                    ??
+                    ""
+                ),
+            categories
+        };
     }
 
 
@@ -12767,11 +12854,7 @@
                 );
 
             if (
-                !parsed
-                ||
-                !Array.isArray(
-                    parsed.articles
-                )
+                !parsed?.categories
             ) {
                 return null;
             }
@@ -12803,59 +12886,203 @@
     }
 
 
-    function articleMatchesNewsCategory(
-        article,
-        category
+    function stripNewsHtmlToText(
+        html
     ) {
         if (
-            category
-            ===
-            "top"
+            !html
         ) {
-            return true;
+            return "";
         }
 
-        const categories =
-            Array.isArray(
-                article?.categories
-            )
-                ? article.categories
-                : [];
+        const documentObject =
+            new DOMParser()
+            .parseFromString(
+                html,
+                "text/html"
+            );
 
-        return categories.includes(
-            category
-        );
+        return (
+            documentObject.body.textContent
+            ??
+            ""
+        )
+        .replace(
+            /\s+/g,
+            " "
+        )
+        .trim();
     }
 
 
-    function articlesForNewsCategory(
-        feed,
-        category
+    function appendSanitizedNewsHtml(
+        target,
+        html
     ) {
-        const articles =
-            normalizeReutersArticles(
-                feed?.articles
+        target.replaceChildren();
+
+        if (
+            !html
+        ) {
+            return;
+        }
+
+        const parsed =
+            new DOMParser()
+            .parseFromString(
+                `<div>${html}</div>`,
+                "text/html"
             );
 
-        const filtered =
-            articles.filter(
-                article =>
-                    articleMatchesNewsCategory(
-                        article,
-                        category
+        const root =
+            parsed.body.firstElementChild;
+
+        if (
+            !root
+        ) {
+            return;
+        }
+
+        const allowedTags =
+            new Set([
+                "P",
+                "H2",
+                "H3",
+                "H4",
+                "BLOCKQUOTE",
+                "UL",
+                "OL",
+                "LI",
+                "A",
+                "STRONG",
+                "EM",
+                "B",
+                "I",
+                "BR"
+            ]);
+
+        const copyNode =
+            (
+                sourceNode,
+                destination
+            ) => {
+                if (
+                    sourceNode.nodeType
+                    ===
+                    Node.TEXT_NODE
+                ) {
+                    destination.appendChild(
+                        document.createTextNode(
+                            sourceNode.textContent
+                            ??
+                            ""
+                        )
+                    );
+
+                    return;
+                }
+
+                if (
+                    sourceNode.nodeType
+                    !==
+                    Node.ELEMENT_NODE
+                ) {
+                    return;
+                }
+
+                const tagName =
+                    sourceNode.tagName;
+
+                if (
+                    allowedTags.has(
+                        tagName
                     )
-            );
+                ) {
+                    const element =
+                        document.createElement(
+                            tagName.toLowerCase()
+                        );
 
-        /*
-           Wenn eine Spezialrubrik im frisch erzeugten Reuters-Sitemap
-           ungewöhnlich leer ist, zeigen wir nicht eine Fehlermeldung,
-           sondern die aktuelle Reuters-Gesamtliste.
-        */
-        return filtered.length
-            ? filtered
-            : category === "top"
-                ? articles
-                : [];
+                    if (
+                        tagName
+                        ===
+                        "A"
+                    ) {
+                        const href =
+                            sourceNode.getAttribute(
+                                "href"
+                            );
+
+                        if (
+                            href
+                        ) {
+                            try {
+                                const resolved =
+                                    new URL(
+                                        href,
+                                        "https://www.theguardian.com/"
+                                    );
+
+                                if (
+                                    resolved.protocol
+                                    ===
+                                    "https:"
+                                    ||
+                                    resolved.protocol
+                                    ===
+                                    "http:"
+                                ) {
+                                    element.href =
+                                        resolved.href;
+
+                                    element.target =
+                                        "_blank";
+
+                                    element.rel =
+                                        "noopener noreferrer";
+                                }
+                            } catch (
+                                error
+                            ) {
+                                // Ungültigen Link weglassen.
+                            }
+                        }
+                    }
+
+                    [...sourceNode.childNodes]
+                    .forEach(
+                        child =>
+                            copyNode(
+                                child,
+                                element
+                            )
+                    );
+
+                    destination.appendChild(
+                        element
+                    );
+
+                    return;
+                }
+
+                [...sourceNode.childNodes]
+                .forEach(
+                    child =>
+                        copyNode(
+                            child,
+                            destination
+                        )
+                );
+            };
+
+        [...root.childNodes]
+        .forEach(
+            child =>
+                copyNode(
+                    child,
+                    target
+                )
+        );
     }
 
 
@@ -12889,22 +13116,19 @@
 
         articles.forEach(
             article => {
-                const link =
+                const button =
                     document.createElement(
-                        "a"
+                        "button"
                     );
 
-                link.className =
+                button.type =
+                    "button";
+
+                button.className =
                     "news-item";
 
-                link.href =
-                    article.url;
-
-                link.target =
-                    "_blank";
-
-                link.rel =
-                    "noopener noreferrer";
+                button.dataset.newsArticleId =
+                    article.id;
 
                 const meta =
                     document.createElement(
@@ -12923,7 +13147,7 @@
                     "news-item-source";
 
                 source.textContent =
-                    "Reuters";
+                    article.source;
 
                 meta.appendChild(
                     source
@@ -12973,80 +13197,241 @@
                 title.textContent =
                     article.title;
 
-                link.append(
+                const standfirstText =
+                    stripNewsHtmlToText(
+                        article.standfirst
+                    );
+
+                button.append(
                     meta,
                     title
                 );
 
+                if (
+                    standfirstText
+                ) {
+                    const trail =
+                        document.createElement(
+                            "div"
+                        );
+
+                    trail.className =
+                        "news-item-trail";
+
+                    trail.textContent =
+                        standfirstText;
+
+                    button.appendChild(
+                        trail
+                    );
+                }
+
                 el.newsList.appendChild(
-                    link
+                    button
                 );
             }
         );
     }
 
 
-    function renderReutersFeed(
-        feed,
-        category = newsActiveCategory
+    function currentNewsArticles() {
+        return (
+            newsFeedCache?.categories?.[newsActiveCategory]
+            ??
+            []
+        );
+    }
+
+
+    function renderNewsFeed(
+        feed
     ) {
         newsFeedCache =
-            feed;
+            normalizeNewsFeed(
+                feed
+            );
+
+        renderNewsCategoryState();
 
         const articles =
-            articlesForNewsCategory(
-                feed,
-                category
-            );
+            currentNewsArticles();
 
         renderNewsList(
             articles
         );
 
         const generated =
-            parseReutersDate(
-                feed?.generatedAt
+            parseNewsDate(
+                newsFeedCache.generatedAt
             );
 
         if (
             generated
         ) {
-            const ageMinutes =
-                Math.max(
-                    0,
-                    Math.round(
-                        (
-                            Date.now()
-                            -
-                            generated.getTime()
-                        )
-                        /
-                        60000
-                    )
-                );
-
-            if (
-                ageMinutes
-                <
-                90
-            ) {
-                setNewsStatus(
-                    `${articles.length} Meldungen · zuletzt aktualisiert vor ${ageMinutes} Min.`
-                );
-            } else {
-                setNewsStatus(
-                    `${articles.length} Meldungen · Feed zuletzt ${formatNewsTime(feed.generatedAt)} aktualisiert`
-                );
-            }
+            setNewsStatus(
+                `${articles.length} Artikel · aktualisiert ${formatNewsTime(newsFeedCache.generatedAt)}`
+            );
         } else {
             setNewsStatus(
-                `${articles.length} Meldungen`
+                `${articles.length} Artikel`
             );
         }
     }
 
 
-    async function loadReutersStaticFeed(
+    function showNewsListView() {
+        newsArticleOpen =
+            false;
+
+        el.newsArticleView.hidden =
+            true;
+
+        el.newsListView.hidden =
+            false;
+
+        el.newsRefreshButton.hidden =
+            false;
+
+        requestAnimationFrame(
+            () => {
+                window.scrollTo(
+                    0,
+                    newsListScrollTop
+                );
+            }
+        );
+    }
+
+
+    function openNewsArticle(
+        articleId
+    ) {
+        const article =
+            newsArticleIndex.get(
+                articleId
+            );
+
+        if (
+            !article
+        ) {
+            return;
+        }
+
+        newsListScrollTop =
+            window.scrollY
+            ||
+            document.documentElement.scrollTop
+            ||
+            0;
+
+        newsArticleOpen =
+            true;
+
+        el.newsListView.hidden =
+            true;
+
+        el.newsArticleView.hidden =
+            false;
+
+        el.newsRefreshButton.hidden =
+            true;
+
+        el.newsArticleSource.textContent =
+            article.source;
+
+        el.newsArticleTitle.textContent =
+            article.title;
+
+        const metaParts = [];
+
+        if (
+            article.byline
+        ) {
+            metaParts.push(
+                stripNewsHtmlToText(
+                    article.byline
+                )
+            );
+        }
+
+        const longDate =
+            formatNewsDateLong(
+                article.publishedAt
+            );
+
+        if (
+            longDate
+        ) {
+            metaParts.push(
+                longDate
+            );
+        }
+
+        el.newsArticleMeta.textContent =
+            metaParts.join(
+                " · "
+            );
+
+        const standfirstText =
+            stripNewsHtmlToText(
+                article.standfirst
+            );
+
+        el.newsArticleStandfirst.textContent =
+            standfirstText;
+
+        el.newsArticleStandfirst.hidden =
+            !standfirstText;
+
+        el.newsArticleNotice.hidden =
+            true;
+
+        el.newsArticleNotice.textContent =
+            "";
+
+        if (
+            article.fullText
+            &&
+            article.bodyHtml
+        ) {
+            appendSanitizedNewsHtml(
+                el.newsArticleBody,
+                article.bodyHtml
+            );
+        } else {
+            el.newsArticleBody.replaceChildren();
+
+            if (
+                article.source
+                ===
+                "ProPublica"
+            ) {
+                el.newsArticleNotice.hidden =
+                    false;
+
+                el.newsArticleNotice.textContent =
+                    "ProPublica erlaubt keine automatische Volltext-Wiederveröffentlichung aller Stories. Diese Meldung bleibt deshalb als interne Vorschau; der vollständige Text liegt beim Original.";
+            }
+        }
+
+        el.newsArticleOriginal.href =
+            article.url;
+
+        el.newsArticleOriginal.textContent =
+            article.source
+            ===
+            "The Guardian"
+                ? "Original bei The Guardian ↗"
+                : "Original bei ProPublica ↗";
+
+        window.scrollTo(
+            0,
+            0
+        );
+    }
+
+
+    async function loadNewsStaticFeed(
         force = false
     ) {
         const requestToken =
@@ -13060,13 +13445,13 @@
             &&
             newsFeedCache
         ) {
-            renderReutersFeed(
+            renderNewsFeed(
                 newsFeedCache
             );
         } else if (
-            cached?.articles?.length
+            cached?.categories
         ) {
-            renderReutersFeed(
+            renderNewsFeed(
                 cached
             );
 
@@ -13078,7 +13463,7 @@
             el.newsList.replaceChildren();
 
             setNewsStatus(
-                "Lade Reuters",
+                "Lade Nachrichten",
                 true
             );
         }
@@ -13097,31 +13482,37 @@
                 !response.ok
             ) {
                 throw new Error(
-                    `Reuters feed ${response.status}`
+                    `news feed ${response.status}`
                 );
             }
 
             const feed =
-                await response.json();
+                normalizeNewsFeed(
+                    await response.json()
+                );
 
-            const normalizedFeed = {
-                generatedAt:
-                    feed?.generatedAt
-                    ??
-                    "",
-                articles:
-                    normalizeReutersArticles(
-                        feed?.articles
-                    )
-            };
+            const total =
+                Object.values(
+                    feed.categories
+                )
+                .reduce(
+                    (
+                        sum,
+                        rows
+                    ) =>
+                        sum
+                        +
+                        rows.length,
+                    0
+                );
 
             if (
-                normalizedFeed.articles.length
+                total
                 ===
                 0
             ) {
                 throw new Error(
-                    "Reuters feed empty"
+                    "news feed empty"
                 );
             }
 
@@ -13134,11 +13525,11 @@
             }
 
             writeNewsCache(
-                normalizedFeed
+                feed
             );
 
-            renderReutersFeed(
-                normalizedFeed
+            renderNewsFeed(
+                feed
             );
         } catch (
             error
@@ -13155,14 +13546,14 @@
                 readNewsCache();
 
             if (
-                fallback?.articles?.length
+                fallback?.categories
             ) {
-                renderReutersFeed(
+                renderNewsFeed(
                     fallback
                 );
 
                 setNewsStatus(
-                    "Gespeicherte Reuters-Meldungen · Feed wird gerade nicht aktualisiert"
+                    "Gespeicherte Nachrichten · Live-Feed gerade nicht erreichbar"
                 );
             } else {
                 renderNewsList(
@@ -13170,14 +13561,14 @@
                 );
 
                 setNewsStatus(
-                    "Reuters-Feed noch nicht erzeugt · GitHub Action einmal ausführen"
+                    "Nachrichten-Feed noch nicht erzeugt · GitHub Pages Workflow starten"
                 );
             }
         }
     }
 
 
-    async function fetchReutersNews(
+    async function fetchNews(
         category = newsActiveCategory,
         options = {}
     ) {
@@ -13187,22 +13578,25 @@
                 category
             )
                 ? category
-                : "top";
+                : "world";
 
         renderNewsCategoryState();
 
         if (
             newsFeedCache
         ) {
-            renderReutersFeed(
-                newsFeedCache,
-                newsActiveCategory
+            renderNewsList(
+                currentNewsArticles()
+            );
+
+            setNewsStatus(
+                `${currentNewsArticles().length} Artikel · aktualisiert ${formatNewsTime(newsFeedCache.generatedAt)}`
             );
 
             if (
                 options.force
             ) {
-                await loadReutersStaticFeed(
+                await loadNewsStaticFeed(
                     true
                 );
             }
@@ -13210,7 +13604,7 @@
             return;
         }
 
-        await loadReutersStaticFeed(
+        await loadNewsStaticFeed(
             Boolean(
                 options.force
             )
@@ -13223,7 +13617,9 @@
             screens.news
         );
 
-        fetchReutersNews(
+        showNewsListView();
+
+        fetchNews(
             newsActiveCategory
         );
     }
@@ -13315,7 +13711,15 @@
     el.backFromNews.addEventListener(
         "click",
         () => {
+            if (
+                newsArticleOpen
+            ) {
+                showNewsListView();
+                return;
+            }
+
             newsRequestToken += 1;
+
             showScreen(
                 screens.filmRoom
             );
@@ -13326,8 +13730,12 @@
     el.newsRefreshButton.addEventListener(
         "click",
         () => {
-            fetchReutersNews(
-                newsActiveCategory
+            fetchNews(
+                newsActiveCategory,
+                {
+                    force:
+                        true
+                }
             );
         }
     );
@@ -13358,8 +13766,29 @@
                 return;
             }
 
-            fetchReutersNews(
+            fetchNews(
                 category
+            );
+        }
+    );
+
+
+    el.newsList.addEventListener(
+        "click",
+        event => {
+            const button =
+                event.target.closest(
+                    "[data-news-article-id]"
+                );
+
+            if (
+                !button
+            ) {
+                return;
+            }
+
+            openNewsArticle(
+                button.dataset.newsArticleId
             );
         }
     );

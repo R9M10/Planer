@@ -1,31 +1,61 @@
-PLANER v47 — REUTERS FEED OHNE BROWSER-API
+PLANER v48 — GUARDIAN + PROPUBLICA NACHRICHTEN
 
-Warum v46 scheiterte
+WAS NEU IST
+-----------
+Der bisherige Reuters-Prototyp wurde vollständig durch „Nachrichten“ ersetzt.
+
+Kategorien:
+- Welt
+- Wissenschaft
+- Investigativ
+
+THE GUARDIAN
+------------
+Die Guardian Open Platform liefert aktuelle Artikel einschließlich Artikeltext.
+Guardian-Artikel werden deshalb vollständig in der internen Leseransicht der App
+geöffnet — ohne neuen Browser-Tab.
+
+PROPUBLICA
+----------
+Aktuelle ProPublica-Stories werden in „Investigativ“ ergänzt. ProPublica untersagt
+aber automatisches/wholesale Republishing seiner Volltexte. Deshalb erscheinen
+diese Artikel als interne Vorschau mit Titel, Metadaten und Beschreibung; über
+„Original bei ProPublica“ gelangt man zum Volltext. Einzelne Stories könnten
+später bewusst und manuell zur Wiederveröffentlichung ausgewählt werden.
+
+TECHNIK / SICHERHEIT
 --------------------
-Der GDELT-DOC-Endpunkt ist als direkter Browser-Dienst nicht stabil genug:
-Timeouts und Rate-Limits können die Nachrichtenansicht blockieren.
+Der Guardian API-Key liegt NICHT in app.js.
 
-Neue Architektur
------------------
-Die App fragt beim Öffnen von Reuters keine externe Nachrichten-API mehr ab.
+GitHub Actions baut die GitHub-Pages-Seite etwa alle 30 Minuten neu. Dabei wird
+data/news.json mit Guardian-Volltext und aktuellen ProPublica-Metadaten erzeugt.
+Der erzeugte Volltext wird als Pages-Artefakt deployt und nicht in die Git-Historie
+committed.
 
-Stattdessen:
-1. GitHub Actions liest etwa alle 30 Minuten den öffentlichen Reuters-Sitemap.
-2. Daraus wird data/reuters.json erzeugt.
-3. Die App lädt ausschließlich ./data/reuters.json von der eigenen GitHub-Pages-Seite.
-4. Dadurch gibt es im Browser kein CORS, JSONP oder externes API-Timeout mehr.
-5. Wenn Reuters vorübergehend nicht erreichbar ist, bleibt die letzte erfolgreiche
-   data/reuters.json erhalten.
+EINMALIGE EINRICHTUNG
+---------------------
+1. Kostenlosen Guardian Developer Key anlegen:
+   https://open-platform.theguardian.com/access/
 
-Einmalige GitHub-Einstellung
-----------------------------
-Falls der Workflow beim Commit mit einer Berechtigungsfehlermeldung stoppt:
+2. In GitHub:
+   Repository -> Settings -> Secrets and variables -> Actions
+   -> New repository secret
+   Name: GUARDIAN_API_KEY
+   Value: <dein Guardian Key>
 
-Repository -> Settings -> Actions -> General -> Workflow permissions
--> "Read and write permissions" aktivieren.
+3. GitHub Pages umstellen:
+   Repository -> Settings -> Pages -> Build and deployment -> Source
+   -> GitHub Actions
 
-Danach unter Actions -> "Update Reuters feed" -> "Run workflow" einmal manuell starten.
+4. Unter Actions den Workflow
+   „Deploy planner with current news“
+   einmal mit „Run workflow“ starten.
 
-Der Workflow läuft anschließend automatisch ungefähr alle 30 Minuten.
+Ohne eigenes Secret versucht der Prototyp als Fallback den öffentlichen Guardian
+Test-Key. Für zuverlässige Nutzung sollte der eigene Developer-Key gesetzt werden.
 
-Der Film-Hotspot bleibt wie in v46 auf dem unteren Filmband.
+BEDIENUNG
+---------
+Der bestehende Hotspot an der Wand rechts neben der Terrassentür öffnet Nachrichten.
+Ein Artikel öffnet innerhalb der App. Der Zurück-Pfeil führt zuerst zur Artikelliste
+und von dort zurück in den Filmraum.

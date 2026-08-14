@@ -7494,3 +7494,167 @@ html[data-theme="dark"] #filmRoomScreen .film-room-background {
     from { opacity: 0.18; transform: scale(0.82); }
     to { opacity: 0.65; transform: scale(1); }
 }
+
+
+/* ==================================================
+   V48 — NACHRICHTEN: GUARDIAN + PROPUBLICA
+================================================== */
+
+.news-room-title {
+    letter-spacing: -.012em;
+}
+
+.news-shell {
+    width: min(100%, 760px);
+}
+
+.news-categories {
+    justify-content: flex-start;
+    gap: 26px;
+}
+
+.news-category {
+    font-size: 12px;
+    letter-spacing: .015em;
+}
+
+.news-item {
+    appearance: none;
+    -webkit-appearance: none;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+}
+
+.news-item-trail {
+    margin-top: 8px;
+    color: color-mix(in srgb, var(--muted) 88%, transparent);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    font-size: 12px;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news-article-view[hidden],
+.news-list-view[hidden] {
+    display: none !important;
+}
+
+.news-article-view {
+    width: min(100%, 690px);
+    margin: 0 auto;
+    padding: 29px 0 72px;
+}
+
+.news-article-source {
+    margin-bottom: 13px;
+    color: color-mix(in srgb, var(--muted) 88%, transparent);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    font-size: 10px;
+    font-weight: 560;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+}
+
+.news-article-title {
+    margin: 0;
+    color: var(--text);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: clamp(30px, 7.4vw, 48px);
+    font-weight: 430;
+    line-height: 1.06;
+    letter-spacing: -.027em;
+}
+
+.news-article-meta {
+    margin-top: 18px;
+    color: color-mix(in srgb, var(--muted) 88%, transparent);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.news-article-standfirst {
+    margin: 25px 0 31px;
+    color: color-mix(in srgb, var(--text) 86%, transparent);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: clamp(18px, 4.8vw, 22px);
+    line-height: 1.36;
+}
+
+.news-article-body {
+    color: color-mix(in srgb, var(--text) 94%, transparent);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: clamp(17px, 4.35vw, 20px);
+    line-height: 1.62;
+}
+
+.news-article-body p {
+    margin: 0 0 1.18em;
+}
+
+.news-article-body h2,
+.news-article-body h3,
+.news-article-body h4 {
+    margin: 1.65em 0 .65em;
+    color: var(--text);
+    font-size: 1.12em;
+    font-weight: 560;
+    line-height: 1.25;
+}
+
+.news-article-body blockquote {
+    margin: 1.6em 0;
+    padding-left: 1.05em;
+    border-left: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+    color: color-mix(in srgb, var(--text) 81%, transparent);
+}
+
+.news-article-body ul,
+.news-article-body ol {
+    padding-left: 1.25em;
+    margin: 0 0 1.2em;
+}
+
+.news-article-body a {
+    color: inherit;
+    text-decoration-color: color-mix(in srgb, var(--text) 33%, transparent);
+    text-underline-offset: .16em;
+}
+
+.news-article-notice {
+    margin-top: 32px;
+    padding: 18px 0;
+    border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.news-article-original {
+    display: inline-block;
+    margin-top: 31px;
+    color: color-mix(in srgb, var(--text) 82%, transparent);
+    font-size: 12px;
+    text-decoration: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 20%, transparent);
+    padding-bottom: 3px;
+}
+
+@media (max-width: 430px) {
+    .news-categories {
+        gap: 23px;
+    }
+
+    .news-article-view {
+        padding-top: 24px;
+    }
+}
