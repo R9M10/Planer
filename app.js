@@ -12508,14 +12508,14 @@
 
 
     // ==================================================
-    // V49 — NACHRICHTEN: GUARDIAN + BELLINGCAT
+    // V51 — NACHRICHTEN: GUARDIAN VOLLTEXT + BELLINGCAT RSS
     // ==================================================
 
     const NEWS_STATIC_FEED =
         "./data/news.json";
 
     const NEWS_CACHE_KEY =
-        "plannerNewsCache_v49";
+        "plannerNewsCache_v51";
 
     const NEWS_CATEGORY_LABELS = {
         world:
@@ -13021,7 +13021,11 @@
                 "EM",
                 "B",
                 "I",
-                "BR"
+                "BR",
+                "FIGURE",
+                "FIGCAPTION",
+                "IMG",
+                "HR"
             ]);
 
         const copyNode =
@@ -13083,7 +13087,7 @@
                                 const resolved =
                                     new URL(
                                         href,
-                                        "https://www.theguardian.com/"
+                                        window.location.href
                                     );
 
                                 if (
@@ -13108,6 +13112,62 @@
                                 error
                             ) {
                                 // Ungültigen Link weglassen.
+                            }
+                        }
+                    }
+
+                    if (
+                        tagName
+                        ===
+                        "IMG"
+                    ) {
+                        const src =
+                            sourceNode.getAttribute(
+                                "src"
+                            );
+
+                        if (
+                            src
+                        ) {
+                            try {
+                                const resolved =
+                                    new URL(
+                                        src,
+                                        window.location.href
+                                    );
+
+                                if (
+                                    resolved.protocol
+                                    ===
+                                    "https:"
+                                    ||
+                                    resolved.protocol
+                                    ===
+                                    "http:"
+                                ) {
+                                    element.src =
+                                        resolved.href;
+
+                                    element.alt =
+                                        sourceNode.getAttribute(
+                                            "alt"
+                                        )
+                                        ||
+                                        "";
+
+                                    element.loading =
+                                        "lazy";
+
+                                    element.decoding =
+                                        "async";
+
+                                    element.referrerPolicy =
+                                        "no-referrer-when-downgrade";
+                                }
+                            } catch (
+                                error
+                            ) {
+                                // Ungültige Bild-URL weglassen.
                             }
                         }
                     }
@@ -13617,7 +13677,7 @@
                     false;
 
                 el.newsArticleNotice.textContent =
-                    "Die Bellingcat-Untersuchung ist vollständig in die Nachrichtenstruktur eingebunden, der vollständige Originaltext wird jedoch nicht gespiegelt. Öffne unten das Original, um die gesamte Recherche einschließlich aller Belege und eingebetteten Medien zu lesen.";
+                    "Bellingcat wird hier als interne Vorschau aus dem offiziellen Feed angezeigt. Für die vollständige Recherche führt der Quellenlink unten zum Originalartikel.";
             }
         }
 
@@ -13629,7 +13689,7 @@
             ===
             "The Guardian"
                 ? "Original bei The Guardian ↗"
-                : "Original bei Bellingcat ↗";
+                : "Vollständigen Artikel bei Bellingcat lesen ↗";
 
         window.scrollTo(
             0,

@@ -1,41 +1,27 @@
-PLANER v49 — GUARDIAN + BELLINGCAT
+PLANER v51 — GUARDIAN VOLLTEXT + BELLINGCAT RSS-VORSCHAU
 
-Nachrichtenrubriken
--------------------
-- Welt: The Guardian
-- Wissenschaft: The Guardian Science + Environment
-- Investigativ: ausschließlich The Guardian
-- Bellingcat: offizieller Bellingcat-RSS-Feed
+Guardian
+--------
+- Welt, Wissenschaft und Investigativ bleiben Guardian-basiert.
+- Guardian-Artikel werden weiterhin mit vollständigem Artikeltext,
+  Titelbild und interner Leseransicht dargestellt.
 
-Darstellung
------------
-- Guardian-Artikel öffnen vollständig innerhalb der App.
-- Bellingcat-Artikel öffnen in derselben internen Leseransicht mit Metadaten,
-  Teaser und Original-Link. Der vollständige Bellingcat-Text wird nicht gespiegelt.
-- Guardian-Thumbnails werden, sofern die Open Platform sie liefert, als ruhige
-  Vorschaubilder in der Liste und als große Artikelabbildung dargestellt.
-- Bellingcat-Bilder werden nur verwendet, wenn der RSS-Feed selbst sowohl eine
-  Medien-URL als auch einen Credit mitliefert.
-- Die Reader-Navigation verhält sich wie die Bibliothek: Zurück geht zuerst zur
-  Artikelliste und danach in den Filmraum.
+Bellingcat
+----------
+- Eigener gleichwertiger Tab "Bellingcat".
+- Keine Bellingcat-Webseiten werden mehr gescrapt oder gespiegelt.
+- Es werden ausschließlich Daten aus dem offiziellen RSS-Feed verwendet:
+  Titel, Autor, Datum, Teaser und feed-seitig bereitgestellte Bilder.
+- Falls media:content, media:thumbnail oder RSS-enclosure ein Bild liefert,
+  wird dieses direkt in der App dargestellt.
+- Als letzter Bild-Fallback wird ausschließlich die erste Bild-URL aus
+  dem Feed-HTML gelesen; der restliche Feed-HTML-Inhalt wird nicht übernommen.
+- Der vollständige Bellingcat-Artikel öffnet über:
+  "Vollständigen Artikel bei Bellingcat lesen ↗"
 
-Datenaktualisierung
--------------------
-.github/workflows/deploy-pages.yml aktualisiert die Inhalte ca. alle 30 Minuten.
-Benötigt weiterhin das Repository-Secret:
-
-GUARDIAN_API_KEY
-
-Bellingcat benötigt keinen API-Key.
-
-Guardian-Lifecycle
-------------------
-Der Updater verwirft Guardian-Fallback-Volltexte, sobald der lokale Feed älter
-als 23 Stunden ist, damit keine alten Open-Platform-Volltexte dauerhaft weiter
-veröffentlicht werden.
-
-Wichtig
+Technik
 -------
-GitHub Pages muss weiterhin unter:
-Settings -> Pages -> Build and deployment -> Source -> GitHub Actions
-laufen.
+- BeautifulSoup und das serverseitige Bellingcat-Seiten-Scraping wurden entfernt.
+- Bellingcat benötigt weiterhin keinen API-Key.
+- GUARDIAN_API_KEY bleibt das einzige benötigte Secret.
+- Der bestehende GitHub-Pages-Workflow aktualisiert den Feed weiterhin automatisch.

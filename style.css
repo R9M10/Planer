@@ -7785,3 +7785,44 @@ html[data-theme="light"] .news-guardian-attribution img {
         margin-top: 24px;
     }
 }
+
+
+/* ==================================================
+   V51 — NACHRICHTEN-READER MEDIEN
+================================================== */
+
+.news-article-body figure {
+    margin: 1.7em 0 1.9em;
+}
+
+.news-article-body figure img,
+.news-article-body > img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: min(68dvh, 720px);
+    object-fit: contain;
+    background: color-mix(in srgb, var(--text) 3%, transparent);
+    border-radius: 2px;
+}
+
+.news-article-body figcaption {
+    margin-top: 8px;
+    color: color-mix(in srgb, var(--muted) 78%, transparent);
+    font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif);
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.news-article-body hr {
+    border: 0;
+    border-top: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    margin: 2em 0;
+}
+
+.news-bellingcat-attribution {
+    color: color-mix(in srgb, var(--text) 76%, transparent);
+    font-size: 11px;
+    line-height: 1.45;
+}
+

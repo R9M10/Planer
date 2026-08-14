@@ -15,7 +15,12 @@ from pathlib import Path
 
 GUARDIAN_ENDPOINT = "https://content.guardianapis.com/search"
 BELLINGCAT_FEED = "https://www.bellingcat.com/feed/"
-UA = "Mozilla/5.0 PlanerNews/1.1"
+
+UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/126.0 Safari/537.36 PlanerNews/3.0"
+)
 
 CONTENT_NS = "http://purl.org/rss/1.0/modules/content/"
 DC_NS = "http://purl.org/dc/elements/1.1/"
@@ -28,18 +33,23 @@ def fetch_json(url: str, timeout: int = 35) -> dict:
         headers={
             "User-Agent": UA,
             "Accept": "application/json",
+            "Accept-Language": "en-US,en;q=0.9",
         },
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return json.load(response)
 
 
-def fetch_bytes(url: str, timeout: int = 35) -> bytes:
+def fetch_bytes(
+    url: str,
+    timeout: int = 35,
+    accept: str = "application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.8",
+) -> bytes:
     request = urllib.request.Request(
         url,
         headers={
             "User-Agent": UA,
-            "Accept": "application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.8",
+            "Accept": accept,
             "Accept-Language": "en-US,en;q=0.9",
         },
     )
@@ -152,51 +162,39 @@ def _find_text(item: ET.Element, tag: str) -> str:
     return (node.text or "").strip() if node is not None and node.text else ""
 
 
-def bellingcat_image(item: ET.Element) -> tuple[str, str]:
+def first_image_from_html(value: str) -> tuple[str, str]:
     """
-    Only use RSS-supplied media when the feed also provides a credit.
-    Bellingcat itself stresses correct image rights/crediting, so an
-    uncredited OG image is intentionally not scraped as a fallback.
+    Extract only the first image URL/alt from feed-provided HTML.
+    The surrounding article body is never retained.
     """
-    media_candidates = []
+    if not value:
+        return "", ""
 
-    for tag in (
-        f"{{{MEDIA_NS}}}content",
-        f"{{{MEDIA_NS}}}thumbnail",
-    ):
-        media_candidates.extend(item.findall(tag))
-
-    credit_node = item.find(f"{{{MEDIA_NS}}}credit")
-    credit = (
-        (credit_node.text or "").strip()
-        if credit_node is not None and credit_node.text
-        else ""
+    img_match = re.search(
+        r"<img\b[^>]*\bsrc=[\"']([^\"']+)[\"'][^>]*>",
+        value,
+        flags=re.I | re.S,
     )
 
-    for node in media_candidates:
-        url = (node.attrib.get("url") or "").strip()
-        node_credit = ""
-        child_credit = node.find(f"{{{MEDIA_NS}}}credit")
-        if child_credit is not None and child_credit.text:
-            node_credit = child_credit.text.strip()
-        effective_credit = node_credit or credit
+    if not img_match:
+        return "", ""
 
-        if url.startswith("https://") and effective_credit:
-            return url, effective_credit
+    src = html.unescape(img_match.group(1)).strip()
 
-    # RSS enclosure is accepted only if a separate credit is present.
-    enclosure = item.find("enclosure")
-    if enclosure is not None and credit:
-        url = (enclosure.attrib.get("url") or "").strip()
-        media_type = (enclosure.attrib.get("type") or "").lower()
-        if url.startswith("https://") and media_type.startswith("image/"):
-            return url, credit
+    tag = img_match.group(0)
+    alt_match = re.search(
+        r"\balt=[\"']([^\"']*)[\"']",
+        tag,
+        flags=re.I | re.S,
+    )
 
-    return "", ""
+    alt = html.unescape(alt_match.group(1)).strip() if alt_match else ""
+    return src, alt
 
 
-def bellingcat_latest(limit: int = 40) -> list[dict]:
+def bellingcat_feed(limit: int = 45) -> list[dict]:
     root = ET.fromstring(fetch_bytes(BELLINGCAT_FEED))
+
     rows: list[dict] = []
     seen: set[str] = set()
 
@@ -217,7 +215,7 @@ def bellingcat_latest(limit: int = 40) -> list[dict]:
         except Exception:
             continue
 
-        if host != "www.bellingcat.com" and host != "bellingcat.com":
+        if host not in {"www.bellingcat.com", "bellingcat.com"}:
             continue
 
         key = url.lower()
@@ -225,13 +223,59 @@ def bellingcat_latest(limit: int = 40) -> list[dict]:
             continue
         seen.add(key)
 
-        description = _find_text(item, "description")
-        author = _find_text(item, f"{{{DC_NS}}}creator")
+        description_html = _find_text(item, "description")
+        content_html = _find_text(item, f"{{{CONTENT_NS}}}encoded")
+
+        teaser = clean_html_text(description_html)
+
+        # Keep previews concise even when the feed description is long.
+        if len(teaser) > 700:
+            teaser = teaser[:697].rsplit(" ", 1)[0] + "…"
+
+        author = clean_html_text(_find_text(item, f"{{{DC_NS}}}creator"))
         published = iso_date(_find_text(item, "pubDate"))
-        image_url, image_credit = bellingcat_image(item)
+
+        image_url = ""
+        image_alt = title
+        image_credit = ""
+
+        # Prefer media:content / media:thumbnail explicitly supplied by RSS.
+        media_content = item.find(f"{{{MEDIA_NS}}}content")
+        if media_content is not None:
+            image_url = (media_content.attrib.get("url") or "").strip()
+
+            media_credit = media_content.find(f"{{{MEDIA_NS}}}credit")
+            if media_credit is not None and media_credit.text:
+                image_credit = clean_html_text(media_credit.text)
+
+        if not image_url:
+            media_thumb = item.find(f"{{{MEDIA_NS}}}thumbnail")
+            if media_thumb is not None:
+                image_url = (media_thumb.attrib.get("url") or "").strip()
+
+        # RSS enclosure is also explicitly feed-provided media.
+        if not image_url:
+            enclosure = item.find("enclosure")
+            if enclosure is not None:
+                enclosure_type = (enclosure.attrib.get("type") or "").lower()
+                if enclosure_type.startswith("image/"):
+                    image_url = (enclosure.attrib.get("url") or "").strip()
+
+        # Last fallback: use only the first image URL embedded in feed HTML.
+        if not image_url:
+            image_url, extracted_alt = first_image_from_html(
+                content_html or description_html
+            )
+            if extracted_alt:
+                image_alt = extracted_alt
+
+        if image_url:
+            image_url = urllib.parse.urljoin(url, image_url)
 
         article_id = "bellingcat:" + (
-            guid.strip() if guid.strip() else urllib.parse.urlparse(url).path.strip("/")
+            guid.strip()
+            if guid.strip()
+            else urllib.parse.urlparse(url).path.strip("/")
         )
 
         rows.append(
@@ -241,13 +285,13 @@ def bellingcat_latest(limit: int = 40) -> list[dict]:
                 "title": title,
                 "url": url,
                 "publishedAt": published,
-                "byline": clean_html_text(author),
-                "standfirst": clean_html_text(description),
+                "byline": author,
+                "standfirst": teaser,
                 "bodyHtml": "",
                 "fullText": False,
                 "category": "bellingcat",
                 "imageUrl": image_url,
-                "imageAlt": title if image_url else "",
+                "imageAlt": image_alt,
                 "imageCredit": image_credit,
             }
         )
@@ -358,8 +402,8 @@ def main() -> int:
     )
 
     investigative_query = (
-        'investigation OR investigative OR investigated OR exclusive OR '
-        'revealed OR documents OR leak OR corruption OR fraud OR abuse OR surveillance'
+        "investigation OR investigative OR investigated OR exclusive OR "
+        "revealed OR documents OR leak OR corruption OR fraud OR abuse OR surveillance"
     )
 
     investigative_guardian = guarded(
@@ -374,7 +418,7 @@ def main() -> int:
     )
 
     bellingcat = guarded(
-        lambda: bellingcat_latest(limit=45),
+        lambda: bellingcat_feed(limit=45),
         bellingcat_fallback,
         "Bellingcat RSS",
     )
