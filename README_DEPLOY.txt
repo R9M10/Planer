@@ -17,3 +17,8 @@ weiter funktionieren.
 Das alte große eingebettete Schwarzes-Loch-Bild wurde aus style.css entfernt.
 Dadurch ist die CSS-Datei deutlich kleiner; das neue Planerbild liegt als
 separate PNG-Datei im Repository.
+
+
+UPDATE v41:
+- planner-pantheon.png wurde durch die vom Nutzer gewünschte Version ersetzt.
+- Hotspots bleiben: Apollon = Pläne, Odysseus = Start, Erde = zurück ins Studienzimmer.
