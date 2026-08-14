@@ -15183,6 +15183,10 @@
                 ) {
                     spotifyPlayerDeviceId =
                         "";
+
+                    setMusicRoomPlaybackActive(
+                        false
+                    );
                 }
             }
         );
@@ -15353,6 +15357,18 @@
     }
 
 
+    function setMusicRoomPlaybackActive(
+        active
+    ) {
+        screens.mapRoom.classList.toggle(
+            "music-is-playing",
+            Boolean(
+                active
+            )
+        );
+    }
+
+
     function renderSpotifyPlayerFallback(
         track
     ) {
@@ -15398,6 +15414,10 @@
         el.spotifyPlayPauseButton.setAttribute(
             "aria-label",
             "Wiedergabe pausieren"
+        );
+
+        setMusicRoomPlaybackActive(
+            true
         );
     }
 
@@ -15459,6 +15479,10 @@
             paused
                 ? "Wiedergabe fortsetzen"
                 : "Wiedergabe pausieren"
+        );
+
+        setMusicRoomPlaybackActive(
+            !paused
         );
     }
 
@@ -15697,6 +15721,10 @@
 
             spotifyPlayerDeviceId =
                 "";
+
+            setMusicRoomPlaybackActive(
+                false
+            );
 
             spotifyPlaylists =
                 [];
@@ -31808,6 +31836,216 @@
 
 
     // ==================================================
+    // V54 — LEBENDIGE RÄUME
+    // ==================================================
+
+    function ambientRandomFactory(
+        seed
+    ) {
+        let value =
+            seed
+            >>> 0;
+
+        return () => {
+            value =
+                (
+                    Math.imul(
+                        value,
+                        1664525
+                    )
+                    +
+                    1013904223
+                )
+                >>> 0;
+
+            return value
+                /
+                4294967296;
+        };
+    }
+
+
+    function seedAmbientParticles() {
+        const layers =
+            document.querySelectorAll(
+                "[data-ambient-kind][data-ambient-count]"
+            );
+
+        layers.forEach(
+            (
+                layer,
+                layerIndex
+            ) => {
+                if (
+                    layer.dataset.ambientReady
+                    ===
+                    "true"
+                ) {
+                    return;
+                }
+
+                const kind =
+                    layer.dataset.ambientKind;
+
+                const count =
+                    Math.max(
+                        0,
+                        Math.min(
+                            64,
+                            Number(
+                                layer.dataset.ambientCount
+                            )
+                            ||
+                            0
+                        )
+                    );
+
+                const random =
+                    ambientRandomFactory(
+                        0x54A11CE
+                        +
+                        layerIndex
+                        *
+                        7919
+                    );
+
+                const fragment =
+                    document.createDocumentFragment();
+
+                for (
+                    let i = 0;
+                    i < count;
+                    i += 1
+                ) {
+                    const particle =
+                        document.createElement(
+                            "span"
+                        );
+
+                    if (
+                        kind
+                        ===
+                        "star"
+                    ) {
+                        particle.className =
+                            "ambient-star";
+
+                        const size =
+                            .55
+                            +
+                            random()
+                            *
+                            1.35;
+
+                        particle.style.setProperty(
+                            "--ambient-x",
+                            `${(random() * 100).toFixed(2)}%`
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-y",
+                            `${(random() * 100).toFixed(2)}%`
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-size",
+                            `${size.toFixed(2)}px`
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-opacity",
+                            (
+                                .22
+                                +
+                                random()
+                                *
+                                .62
+                            ).toFixed(
+                                2
+                            )
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-duration",
+                            `${(2.7 + random() * 6.4).toFixed(2)}s`
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-delay",
+                            `${(-random() * 8.0).toFixed(2)}s`
+                        );
+                    } else {
+                        particle.className =
+                            "ambient-dust-speck";
+
+                        const size =
+                            .65
+                            +
+                            random()
+                            *
+                            1.65;
+
+                        particle.style.setProperty(
+                            "--ambient-x",
+                            `${(random() * 100).toFixed(2)}%`
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-y",
+                            `${(random() * 100).toFixed(2)}%`
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-size",
+                            `${size.toFixed(2)}px`
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-opacity",
+                            (
+                                .10
+                                +
+                                random()
+                                *
+                                .28
+                            ).toFixed(
+                                2
+                            )
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-duration",
+                            `${(9.0 + random() * 14.0).toFixed(2)}s`
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-delay",
+                            `${(-random() * 18.0).toFixed(2)}s`
+                        );
+
+                        particle.style.setProperty(
+                            "--ambient-drift",
+                            `${(-8 + random() * 16).toFixed(2)}px`
+                        );
+                    }
+
+                    fragment.appendChild(
+                        particle
+                    );
+                }
+
+                layer.appendChild(
+                    fragment
+                );
+
+                layer.dataset.ambientReady =
+                    "true";
+            }
+        );
+    }
+
+
+    // ==================================================
     // INITIALIZATION
     // ==================================================
 
@@ -31820,6 +32058,8 @@
     initializeV20ThemeDefault();
 
     applyTheme();
+
+    seedAmbientParticles();
 
     void initializeSpotifyOnLoad();
 

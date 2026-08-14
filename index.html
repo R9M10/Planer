@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=531">
+    <link rel="stylesheet" href="style.css?v=54">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=531" defer></script>
+    <script src="app.js?v=54" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -1139,6 +1139,24 @@ body.youtube-player-open {
     <main class="texts-study-shell">
         <div class="texts-study-background" aria-hidden="true"></div>
 
+        <!-- V54: subtile, rein dekorative Raumbewegungen. -->
+        <div class="room-ambient study-room-ambient" aria-hidden="true">
+            <div class="ambient-stars study-star-field" data-ambient-kind="star" data-ambient-count="34"></div>
+            <div class="ambient-dust study-dust-field" data-ambient-kind="dust" data-ambient-count="18"></div>
+
+            <div class="study-planetarium-motion">
+                <span class="planetarium-ring planetarium-ring-a"></span>
+                <span class="planetarium-ring planetarium-ring-b"></span>
+                <span class="planetarium-orbit-dot"></span>
+            </div>
+
+            <div class="ambient-candle study-candle">
+                <span class="candle-glow"></span>
+                <span class="candle-flame"></span>
+                <span class="candle-smoke"></span>
+            </div>
+        </div>
+
         <button id="openBooksButton" class="texts-study-hotspot texts-hotspot-books" type="button" aria-label="Bücher"></button>
         <button id="openPhysicsButton" class="texts-study-hotspot texts-hotspot-physics" type="button" aria-label="Physik"></button>
         <button id="openFilmsButton" class="texts-study-hotspot texts-hotspot-films" type="button" aria-label="Filme"></button>
@@ -1169,6 +1187,12 @@ body.youtube-player-open {
 
 <section id="chessRoomScreen" class="screen chess-room-screen">
     <div class="chess-room-background" aria-hidden="true"></div>
+
+    <div class="room-ambient chess-room-ambient" aria-hidden="true">
+        <div class="ambient-foliage-clone chess-foliage-left"></div>
+        <div class="ambient-foliage-clone chess-foliage-right"></div>
+        <div class="ambient-dust chess-dust-field" data-ambient-kind="dust" data-ambient-count="15"></div>
+    </div>
 
     <button
         id="chessRoomBoardHotspot"
@@ -1210,6 +1234,12 @@ body.youtube-player-open {
 <section id="filmRoomScreen" class="screen film-room-screen">
     <div class="film-room-background" aria-hidden="true"></div>
 
+    <div class="room-ambient film-room-ambient" aria-hidden="true">
+        <div class="ambient-foliage-clone film-foliage-main"></div>
+        <div class="ambient-foliage-clone film-foliage-edge"></div>
+        <div class="ambient-dust film-dust-field" data-ambient-kind="dust" data-ambient-count="16"></div>
+    </div>
+
     <!-- Nur das untere lose Filmband öffnet die Filme-/YouTube-Anwendung. -->
     <button
         id="filmRoomCameraHotspot"
@@ -1241,6 +1271,21 @@ body.youtube-player-open {
 
 <section id="mapRoomScreen" class="screen map-room-screen">
     <div class="map-room-background" aria-hidden="true"></div>
+
+    <div class="room-ambient map-room-ambient" aria-hidden="true">
+        <div class="ambient-dust map-dust-field" data-ambient-kind="dust" data-ambient-count="17"></div>
+
+        <div class="ambient-candle map-candle">
+            <span class="candle-glow"></span>
+            <span class="candle-flame"></span>
+            <span class="candle-smoke"></span>
+        </div>
+
+        <div class="piano-resonance"></div>
+        <div class="music-room-indicator" aria-hidden="true">
+            <span></span><span></span><span></span>
+        </div>
+    </div>
 
     <!-- Die alte Weltkarte öffnet Nachrichten. -->
     <button
