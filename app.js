@@ -12494,27 +12494,33 @@
 
 
     // ==================================================
-    // V45 — REUTERS / NACHRICHTEN-PROTOTYP
+    // V46 — REUTERS / NACHRICHTEN-PROTOTYP
     //
-    // Datenquelle des Prototyps: GDELT DOC 2.0.
-    // GDELT stellt JSON und CORS bereit. Wir beschränken die Suche
-    // auf reuters.com und verlinken ausschließlich auf Originalartikel.
+    // GDELT bleibt nur der Index für Reuters-Original-Links.
+    // Der Abruf nutzt jetzt zwei Wege parallel:
+    // 1) JSONP (kein CORS nötig)
+    // 2) normales fetch mit AbortController
+    // Der erste erfolgreiche Weg gewinnt. Zusätzlich wird ein kleiner
+    // lokaler Cache verwendet, damit die Ansicht sofort Inhalt zeigen kann.
     // ==================================================
 
     const NEWS_GDELT_ENDPOINT =
         "https://api.gdeltproject.org/api/v2/doc/doc";
 
+    const NEWS_CACHE_KEY =
+        "plannerReutersCache_v2";
+
     const NEWS_CATEGORY_QUERIES = {
         top:
-            "domainis:reuters.com",
+            "domain:reuters.com",
         world:
-            "domainis:reuters.com (world OR Europe OR Asia OR Africa OR Americas OR Middle East)",
+            "domain:reuters.com (world OR Europe OR Asia OR Africa OR Americas OR Middle East)",
         business:
-            "domainis:reuters.com (business OR markets OR economy OR finance OR companies)",
+            "domain:reuters.com (business OR markets OR economy OR finance OR companies)",
         science:
-            "domainis:reuters.com (science OR climate OR space OR health OR research)",
+            "domain:reuters.com (science OR climate OR space OR health OR research)",
         technology:
-            "domainis:reuters.com (technology OR AI OR artificial intelligence OR semiconductor OR software)"
+            "domain:reuters.com (technology OR AI OR artificial intelligence OR semiconductor OR software)"
     };
 
     let newsActiveCategory =
@@ -12772,6 +12778,75 @@
     }
 
 
+    function readNewsCache(
+        category
+    ) {
+        try {
+            const parsed =
+                JSON.parse(
+                    localStorage.getItem(
+                        NEWS_CACHE_KEY
+                    )
+                    ||
+                    "{}"
+                );
+
+            const entry =
+                parsed?.[category];
+
+            if (
+                !entry
+                ||
+                !Array.isArray(
+                    entry.articles
+                )
+            ) {
+                return null;
+            }
+
+            return entry;
+        } catch (
+            error
+        ) {
+            return null;
+        }
+    }
+
+
+    function writeNewsCache(
+        category,
+        articles
+    ) {
+        try {
+            const parsed =
+                JSON.parse(
+                    localStorage.getItem(
+                        NEWS_CACHE_KEY
+                    )
+                    ||
+                    "{}"
+                );
+
+            parsed[category] = {
+                savedAt:
+                    Date.now(),
+                articles
+            };
+
+            localStorage.setItem(
+                NEWS_CACHE_KEY,
+                JSON.stringify(
+                    parsed
+                )
+            );
+        } catch (
+            error
+        ) {
+            // Cache ist nur Komfort; Fehler dürfen die App nicht blockieren.
+        }
+    }
+
+
     function renderNewsList(
         articles
     ) {
@@ -12899,8 +12974,264 @@
     }
 
 
+    function gdeltParams(
+        category,
+        timespan = "48h"
+    ) {
+        return new URLSearchParams({
+            query:
+                NEWS_CATEGORY_QUERIES[
+                    category
+                ],
+            mode:
+                "ArtList",
+            maxrecords:
+                "50",
+            sort:
+                "datedesc",
+            timespan
+        });
+    }
+
+
+    function fetchGdeltJson(
+        category,
+        timespan
+    ) {
+        const params =
+            gdeltParams(
+                category,
+                timespan
+            );
+
+        params.set(
+            "format",
+            "json"
+        );
+
+        const controller =
+            typeof AbortController !== "undefined"
+                ? new AbortController()
+                : null;
+
+        const timeout =
+            window.setTimeout(
+                () => {
+                    controller?.abort();
+                },
+                6500
+            );
+
+        return fetch(
+            `${NEWS_GDELT_ENDPOINT}?${params.toString()}`,
+            {
+                cache:
+                    "no-store",
+                signal:
+                    controller?.signal
+            }
+        )
+        .then(
+            response => {
+                if (
+                    !response.ok
+                ) {
+                    throw new Error(
+                        `GDELT ${response.status}`
+                    );
+                }
+
+                return response.json();
+            }
+        )
+        .finally(
+            () => {
+                window.clearTimeout(
+                    timeout
+                );
+            }
+        );
+    }
+
+
+    function fetchGdeltJsonp(
+        category,
+        timespan
+    ) {
+        return new Promise(
+            (
+                resolve,
+                reject
+            ) => {
+                const callbackName =
+                    `__plannerGdelt_${Date.now()}_${Math.floor(Math.random() * 1e8)}`;
+
+                const script =
+                    document.createElement(
+                        "script"
+                    );
+
+                const params =
+                    gdeltParams(
+                        category,
+                        timespan
+                    );
+
+                params.set(
+                    "format",
+                    "jsonp"
+                );
+
+                params.set(
+                    "callback",
+                    callbackName
+                );
+
+                let finished =
+                    false;
+
+                const cleanup =
+                    () => {
+                        if (
+                            finished
+                        ) {
+                            return;
+                        }
+
+                        finished =
+                            true;
+
+                        window.clearTimeout(
+                            timeout
+                        );
+
+                        script.remove();
+
+                        try {
+                            delete window[callbackName];
+                        } catch (
+                            error
+                        ) {
+                            window[callbackName] =
+                                undefined;
+                        }
+                    };
+
+                const timeout =
+                    window.setTimeout(
+                        () => {
+                            cleanup();
+                            reject(
+                                new Error(
+                                    "GDELT JSONP timeout"
+                                )
+                            );
+                        },
+                        7000
+                    );
+
+                window[callbackName] =
+                    data => {
+                        cleanup();
+                        resolve(
+                            data
+                        );
+                    };
+
+                script.async =
+                    true;
+
+                script.src =
+                    `${NEWS_GDELT_ENDPOINT}?${params.toString()}`;
+
+                script.onerror =
+                    () => {
+                        cleanup();
+                        reject(
+                            new Error(
+                                "GDELT JSONP error"
+                            )
+                        );
+                    };
+
+                document.head.appendChild(
+                    script
+                );
+            }
+        );
+    }
+
+
+    function firstSuccessful(
+        promises
+    ) {
+        return new Promise(
+            (
+                resolve,
+                reject
+            ) => {
+                let failures =
+                    0;
+
+                let lastError =
+                    null;
+
+                promises.forEach(
+                    promise => {
+                        Promise.resolve(
+                            promise
+                        )
+                        .then(
+                            resolve
+                        )
+                        .catch(
+                            error => {
+                                failures += 1;
+                                lastError =
+                                    error;
+
+                                if (
+                                    failures
+                                    ===
+                                    promises.length
+                                ) {
+                                    reject(
+                                        lastError
+                                        ||
+                                        new Error(
+                                            "Keine Nachrichtenquelle erreichbar"
+                                        )
+                                    );
+                                }
+                            }
+                        );
+                    }
+                );
+            }
+        );
+    }
+
+
+    async function requestReutersIndex(
+        category,
+        timespan
+    ) {
+        return firstSuccessful([
+            fetchGdeltJsonp(
+                category,
+                timespan
+            ),
+            fetchGdeltJson(
+                category,
+                timespan
+            )
+        ]);
+    }
+
+
     async function fetchReutersNews(
-        category = newsActiveCategory
+        category = newsActiveCategory,
+        options = {}
     ) {
         const requestToken =
             ++newsRequestToken;
@@ -12912,51 +13243,61 @@
 
         renderNewsCategoryState();
 
-        setNewsStatus(
-            "Aktualisiere",
-            true
-        );
+        const cached =
+            readNewsCache(
+                newsActiveCategory
+            );
 
-        el.newsList.replaceChildren();
+        if (
+            cached?.articles?.length
+            &&
+            !options.forceEmpty
+        ) {
+            renderNewsList(
+                cached.articles
+            );
 
-        const params =
-            new URLSearchParams({
-                query:
-                    NEWS_CATEGORY_QUERIES[
-                        newsActiveCategory
-                    ],
-                mode:
-                    "ArtList",
-                maxrecords:
-                    "50",
-                format:
-                    "json",
-                sort:
-                    "datedesc",
-                timespan:
-                    "3d"
-            });
+            setNewsStatus(
+                "Aktualisiere im Hintergrund",
+                true
+            );
+        } else {
+            el.newsList.replaceChildren();
+
+            setNewsStatus(
+                "Lade Reuters",
+                true
+            );
+        }
 
         try {
-            const response =
-                await fetch(
-                    `${NEWS_GDELT_ENDPOINT}?${params.toString()}`,
-                    {
-                        cache:
-                            "no-store"
-                    }
+            let data =
+                await requestReutersIndex(
+                    newsActiveCategory,
+                    "48h"
+                );
+
+            let articles =
+                normalizeReutersArticles(
+                    data?.articles
                 );
 
             if (
-                !response.ok
+                articles.length
+                ===
+                0
             ) {
-                throw new Error(
-                    `GDELT ${response.status}`
-                );
-            }
+                data =
+                    await requestReutersIndex(
+                        newsActiveCategory,
+                        "7d"
+                    );
 
-            const data =
-                await response.json();
+                articles =
+                    normalizeReutersArticles(
+                        data?.articles
+                    );
+            }
 
             if (
                 requestToken
@@ -12966,19 +13307,23 @@
                 return;
             }
 
-            const articles =
-                normalizeReutersArticles(
-                    data?.articles
-                );
-
             renderNewsList(
                 articles
             );
 
+            if (
+                articles.length
+            ) {
+                writeNewsCache(
+                    newsActiveCategory,
+                    articles
+                );
+            }
+
             setNewsStatus(
                 articles.length
                     ? `${articles.length} aktuelle Meldungen`
-                    : "Keine aktuellen Meldungen"
+                    : "Keine aktuellen Reuters-Meldungen gefunden"
             );
         } catch (
             error
@@ -12991,13 +13336,30 @@
                 return;
             }
 
-            renderNewsList(
-                []
-            );
+            const fallback =
+                readNewsCache(
+                    newsActiveCategory
+                );
 
-            setNewsStatus(
-                "Reuters konnte gerade nicht geladen werden."
-            );
+            if (
+                fallback?.articles?.length
+            ) {
+                renderNewsList(
+                    fallback.articles
+                );
+
+                setNewsStatus(
+                    "Gespeicherte Meldungen · Aktualisierung derzeit nicht möglich"
+                );
+            } else {
+                renderNewsList(
+                    []
+                );
+
+                setNewsStatus(
+                    "Reuters-Index nicht erreichbar · bitte erneut versuchen"
+                );
+            }
         }
     }
 
