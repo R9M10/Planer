@@ -3764,7 +3764,7 @@
 
 
     // ==================================================
-    // PLANER — KOSMOS-NAVIGATION
+    // PLANER — PANTHEON-NAVIGATION
     // ==================================================
 
     el.plannerGalaxyBackHotspot.addEventListener(
@@ -3783,8 +3783,8 @@
             event.stopPropagation();
 
             /*
-               Die bestehende Los-Logik entscheidet korrekt zwischen:
-               laufender Session, Review/Abschluss und neuem aktiven Plan.
+               Odysseus nutzt die bestehende Los-Logik:
+               laufende Session, Review/Abschluss oder neuer aktiver Plan.
             */
             if (
                 sessionPlan
