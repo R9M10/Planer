@@ -1,27 +1,35 @@
-PLANER v51 — GUARDIAN VOLLTEXT + BELLINGCAT RSS-VORSCHAU
+PLANER v52 — KARTENRAUM + NACHRICHTEN-SUCHE
 
-Guardian
---------
-- Welt, Wissenschaft und Investigativ bleiben Guardian-basiert.
-- Guardian-Artikel werden weiterhin mit vollständigem Artikeltext,
-  Titelbild und interner Leseransicht dargestellt.
+NEUER RAUMABSCHNITT
+-------------------
+- map-room-day.png = vom Nutzer bereitgestellte Tagversion.
+- map-room-night.png = vom Nutzer bereitgestellte Nachtversion.
+- Studienzimmer: Klick auf die freie linke Wand -> 90° links in den Kartenraum.
+- Filmraum: Klick rechts neben der Terrassentür -> 90° rechts in den Kartenraum.
+- Kartenraum:
+  - Weltkarte -> Nachrichten
+  - linke Bildkante -> Filmraum
+  - rechte Bildkante -> Studienzimmer
 
-Bellingcat
-----------
-- Eigener gleichwertiger Tab "Bellingcat".
-- Keine Bellingcat-Webseiten werden mehr gescrapt oder gespiegelt.
-- Es werden ausschließlich Daten aus dem offiziellen RSS-Feed verwendet:
-  Titel, Autor, Datum, Teaser und feed-seitig bereitgestellte Bilder.
-- Falls media:content, media:thumbnail oder RSS-enclosure ein Bild liefert,
-  wird dieses direkt in der App dargestellt.
-- Als letzter Bild-Fallback wird ausschließlich die erste Bild-URL aus
-  dem Feed-HTML gelesen; der restliche Feed-HTML-Inhalt wird nicht übernommen.
-- Der vollständige Bellingcat-Artikel öffnet über:
-  "Vollständigen Artikel bei Bellingcat lesen ↗"
+Damit ist der Raum als geschlossener 360°-Ring navigierbar:
+Studienzimmer -> Schachraum -> Filmraum -> Kartenraum -> Studienzimmer.
 
-Technik
--------
-- BeautifulSoup und das serverseitige Bellingcat-Seiten-Scraping wurden entfernt.
-- Bellingcat benötigt weiterhin keinen API-Key.
-- GUARDIAN_API_KEY bleibt das einzige benötigte Secret.
-- Der bestehende GitHub-Pages-Workflow aktualisiert den Feed weiterhin automatisch.
+NACHRICHTEN
+-----------
+- "Nachrichten" in der Kopfzeile ist jetzt anklickbar.
+- Sortierungen:
+  - Neueste zuerst
+  - Älteste zuerst
+  - Quelle A–Z
+  - Titel A–Z
+- Rechts neben den Rubriken befindet sich eine Suche.
+- Beim Öffnen durchsucht die Suche ALLE geladenen Artikel aus:
+  Welt, Wissenschaft, Investigativ und Bellingcat.
+- Gesucht wird in Quelle, Titel, Autor, Teaser, Rubrik und – bei Guardian –
+  auch im vollständigen Artikeltext.
+- Mehrere Suchbegriffe werden mit UND verknüpft.
+- Suchergebnisse zeigen zusätzlich die Rubrik.
+- Zurück schließt zuerst einen geöffneten Artikel, dann eine geöffnete Suche,
+  danach geht es zurück in den Kartenraum.
+
+Guardian/Bellingcat-Feed und bestehender GitHub-Workflow bleiben unverändert.

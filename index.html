@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=51">
+    <link rel="stylesheet" href="style.css?v=52">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=51" defer></script>
+    <script src="app.js?v=52" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -1150,6 +1150,9 @@ body.youtube-player-open {
         <button id="textsSkyBackHotspot" class="texts-study-hotspot texts-hotspot-sky-back" type="button" aria-label="Planer öffnen"></button>
         <button id="textsDrawerMenuHotspot" class="texts-study-hotspot texts-hotspot-drawer-menu" type="button" aria-label="Menü öffnen"></button>
 
+        <!-- Linke Wand: letzte 90°-Drehung in den Karten-/Musikraum. -->
+        <button id="textsMapRoomHotspot" class="texts-study-hotspot texts-hotspot-map-left" type="button" aria-label="Zum Kartenraum drehen"></button>
+
         <!-- Rechte Wand: Kamera dreht in den Schachraum. -->
         <button id="openChessButton" class="texts-study-hotspot texts-hotspot-chess" type="button" aria-label="Zum Schachraum drehen"></button>
     </main>
@@ -1223,14 +1226,47 @@ body.youtube-player-open {
         aria-label="Zum Schachraum zurück"
     ></button>
 
-    <!-- Schmale Wand rechts neben der Terrassentür: Nachrichten. -->
+    <!-- Schmale Wand rechts neben der Terrassentür: weiter in den Kartenraum drehen. -->
     <button
-        id="filmRoomNewsHotspot"
-        class="film-room-hotspot film-room-news-hotspot"
+        id="filmRoomRightHotspot"
+        class="film-room-hotspot film-room-right-hotspot"
         type="button"
-        aria-label="Reuters Nachrichten öffnen"
+        aria-label="Zum Kartenraum drehen"
     ></button>
 </section>
+
+<!-- ==================================================
+     KARTEN- / MUSIKRAUM — LETZTE 90°-DREHUNG
+================================================== -->
+
+<section id="mapRoomScreen" class="screen map-room-screen">
+    <div class="map-room-background" aria-hidden="true"></div>
+
+    <!-- Die alte Weltkarte öffnet Nachrichten. -->
+    <button
+        id="mapRoomMapHotspot"
+        class="map-room-hotspot map-room-map-hotspot"
+        type="button"
+        aria-label="Nachrichten über die Weltkarte öffnen"
+    ></button>
+
+    <!-- Links herum zurück zum Filmraum. -->
+    <button
+        id="mapRoomLeftHotspot"
+        class="map-room-hotspot map-room-left-hotspot"
+        type="button"
+        aria-label="Zum Filmraum zurückdrehen"
+    ></button>
+
+    <!-- Rechts herum zurück ins Studienzimmer. -->
+    <button
+        id="mapRoomRightHotspot"
+        class="map-room-hotspot map-room-right-hotspot"
+        type="button"
+        aria-label="Zum Studienzimmer weiterdrehen"
+    ></button>
+</section>
+
 
 <!-- ==================================================
      NACHRICHTEN — GUARDIAN + BELLINGCAT
@@ -1239,18 +1275,56 @@ body.youtube-player-open {
 <section id="newsScreen" class="screen wikipedia-screen news-screen">
     <header class="wiki-topbar news-topbar">
         <button id="backFromNews" class="wiki-back-button" type="button" aria-label="Zurück">‹</button>
-        <div class="wiki-room-title news-room-title">Nachrichten</div>
+        <button
+            id="newsTitleButton"
+            class="wiki-room-title news-room-title news-title-button"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+        >Nachrichten</button>
         <button id="newsRefreshButton" class="news-refresh-button" type="button" aria-label="Nachrichten aktualisieren" title="Aktualisieren">↻</button>
     </header>
 
+    <div id="newsSortMenu" class="news-sort-menu hidden" role="menu" aria-label="Nachrichten sortieren">
+        <button class="news-sort-option active" type="button" data-news-sort="newest">Neueste zuerst</button>
+        <button class="news-sort-option" type="button" data-news-sort="oldest">Älteste zuerst</button>
+        <button class="news-sort-option" type="button" data-news-sort="source">Quelle A–Z</button>
+        <button class="news-sort-option" type="button" data-news-sort="title">Titel A–Z</button>
+    </div>
+
     <main class="news-shell">
         <section id="newsListView" class="news-list-view">
-            <nav id="newsCategories" class="news-categories" aria-label="Nachrichtenkategorien">
-                <button class="news-category active" type="button" data-news-category="world">Welt</button>
-                <button class="news-category" type="button" data-news-category="science">Wissenschaft</button>
-                <button class="news-category" type="button" data-news-category="investigative">Investigativ</button>
-                <button class="news-category" type="button" data-news-category="bellingcat">Bellingcat</button>
-            </nav>
+            <div class="news-category-row">
+                <nav id="newsCategories" class="news-categories" aria-label="Nachrichtenkategorien">
+                    <button class="news-category active" type="button" data-news-category="world">Welt</button>
+                    <button class="news-category" type="button" data-news-category="science">Wissenschaft</button>
+                    <button class="news-category" type="button" data-news-category="investigative">Investigativ</button>
+                    <button class="news-category" type="button" data-news-category="bellingcat">Bellingcat</button>
+                </nav>
+
+                <button
+                    id="newsSearchToggle"
+                    class="news-search-toggle"
+                    type="button"
+                    aria-label="Alle Artikel durchsuchen"
+                    aria-expanded="false"
+                >⌕</button>
+            </div>
+
+            <div id="newsSearchPanel" class="news-search-panel hidden">
+                <input
+                    id="newsSearchInput"
+                    class="news-search-input"
+                    type="search"
+                    inputmode="search"
+                    autocomplete="off"
+                    autocapitalize="sentences"
+                    spellcheck="true"
+                    placeholder="Alle Artikel durchsuchen"
+                    aria-label="Alle Nachrichtenartikel durchsuchen"
+                >
+                <button id="newsSearchClear" class="news-search-clear" type="button" aria-label="Suche schließen">×</button>
+            </div>
 
             <div id="newsStatus" class="news-status" aria-live="polite"></div>
             <section id="newsList" class="news-list" aria-label="Nachrichtenartikel"></section>

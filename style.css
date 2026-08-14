@@ -7296,7 +7296,7 @@ html[data-theme="dark"] #filmRoomScreen .film-room-background {
 ================================================== */
 
 /* Schmale Wand rechts neben der Terrassentür. */
-#filmRoomScreen .film-room-news-hotspot {
+#filmRoomScreen .film-room-news-hotspot-obsolete {
     left: 88%;
     top: 5%;
     width: 12%;
@@ -7824,5 +7824,259 @@ html[data-theme="light"] .news-guardian-attribution img {
     color: color-mix(in srgb, var(--text) 76%, transparent);
     font-size: 11px;
     line-height: 1.45;
+}
+
+
+
+/* ==================================================
+   V52 — KARTEN- / MUSIKRAUM
+================================================== */
+
+#mapRoomScreen.map-room-screen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #15110b !important;
+}
+
+#mapRoomScreen .map-room-background {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("./map-room-day.png");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 100% 100%;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+html[data-theme="dark"] #mapRoomScreen .map-room-background {
+    background-image: url("./map-room-night.png");
+}
+
+#mapRoomScreen .map-room-hotspot {
+    position: absolute;
+    z-index: 7;
+    margin: 0;
+    padding: 0;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Die gerahmte Weltkarte. */
+#mapRoomScreen .map-room-map-hotspot {
+    left: 31%;
+    top: 18%;
+    width: 65%;
+    height: 27%;
+    z-index: 12;
+}
+
+/* Linke Bildkante = 90° zurück zum Filmraum. */
+#mapRoomScreen .map-room-left-hotspot {
+    left: 0;
+    top: 0;
+    width: 15%;
+    height: 100%;
+    z-index: 6;
+}
+
+/* Rechte Bildkante = 90° weiter ins Studienzimmer.
+   Die Karte liegt mit höherem z-index darüber. */
+#mapRoomScreen .map-room-right-hotspot {
+    right: 0;
+    top: 0;
+    width: 9%;
+    height: 100%;
+    z-index: 6;
+}
+
+/* Im Studienzimmer: freie linke Wand, ohne Bücher/Himmel/Planetarium zu überdecken. */
+#textsHubScreen .texts-hotspot-map-left {
+    left: 0;
+    top: 9%;
+    width: 18%;
+    height: 42%;
+    z-index: 8;
+}
+
+/* Filmraum: rechte Wand neben der Terrasse ist nur noch Raumdrehung. */
+#filmRoomScreen .film-room-right-hotspot {
+    left: 88%;
+    top: 5%;
+    width: 12%;
+    height: 64%;
+    z-index: 10;
+}
+
+
+/* ==================================================
+   V52 — NACHRICHTEN: SUCHE + SORTIERUNG
+================================================== */
+
+.news-title-button {
+    justify-self: center;
+    margin: 0;
+    padding: 10px 9px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.news-sort-menu {
+    position: fixed;
+    top: calc(59px + env(safe-area-inset-top));
+    left: 50%;
+    z-index: 70000;
+    width: min(290px, calc(100vw - 36px));
+    transform: translateX(-50%);
+    padding: 7px;
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--surface) 97%, var(--bg));
+    box-shadow: 0 16px 44px rgba(0, 0, 0, .16);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.news-sort-option {
+    position: relative;
+    width: 100%;
+    min-height: 43px;
+    padding: 8px 34px 8px 11px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.news-sort-option:active {
+    background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.news-sort-option.active::after {
+    content: "✓";
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.news-category-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.news-category-row .news-categories {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-bottom: 0;
+}
+
+.news-search-toggle {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    margin: 0;
+    padding: 0 0 2px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.news-search-toggle[aria-expanded="true"] {
+    color: var(--text);
+}
+
+.news-search-panel {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 12px;
+    padding: 0 2px 9px;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.news-search-panel.hidden {
+    display: none !important;
+}
+
+.news-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 39px;
+    padding: 0 2px;
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    background: transparent;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    font-size: 15px;
+}
+
+.news-search-input::placeholder {
+    color: color-mix(in srgb, var(--muted) 78%, transparent);
+}
+
+.news-search-clear {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 21px;
+    font-weight: 250;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.news-item-category {
+    color: color-mix(in srgb, var(--muted) 82%, transparent);
+}
+
+@media (max-width: 430px) {
+    .news-category-row {
+        gap: 4px;
+    }
+
+    .news-category-row .news-categories {
+        gap: 19px;
+    }
+
+    .news-search-toggle {
+        flex-basis: 34px;
+        width: 34px;
+    }
 }
 
