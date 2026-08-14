@@ -1,61 +1,41 @@
-PLANER v48 — GUARDIAN + PROPUBLICA NACHRICHTEN
+PLANER v49 — GUARDIAN + BELLINGCAT
 
-WAS NEU IST
+Nachrichtenrubriken
+-------------------
+- Welt: The Guardian
+- Wissenschaft: The Guardian Science + Environment
+- Investigativ: ausschließlich The Guardian
+- Bellingcat: offizieller Bellingcat-RSS-Feed
+
+Darstellung
 -----------
-Der bisherige Reuters-Prototyp wurde vollständig durch „Nachrichten“ ersetzt.
+- Guardian-Artikel öffnen vollständig innerhalb der App.
+- Bellingcat-Artikel öffnen in derselben internen Leseransicht mit Metadaten,
+  Teaser und Original-Link. Der vollständige Bellingcat-Text wird nicht gespiegelt.
+- Guardian-Thumbnails werden, sofern die Open Platform sie liefert, als ruhige
+  Vorschaubilder in der Liste und als große Artikelabbildung dargestellt.
+- Bellingcat-Bilder werden nur verwendet, wenn der RSS-Feed selbst sowohl eine
+  Medien-URL als auch einen Credit mitliefert.
+- Die Reader-Navigation verhält sich wie die Bibliothek: Zurück geht zuerst zur
+  Artikelliste und danach in den Filmraum.
 
-Kategorien:
-- Welt
-- Wissenschaft
-- Investigativ
+Datenaktualisierung
+-------------------
+.github/workflows/deploy-pages.yml aktualisiert die Inhalte ca. alle 30 Minuten.
+Benötigt weiterhin das Repository-Secret:
 
-THE GUARDIAN
-------------
-Die Guardian Open Platform liefert aktuelle Artikel einschließlich Artikeltext.
-Guardian-Artikel werden deshalb vollständig in der internen Leseransicht der App
-geöffnet — ohne neuen Browser-Tab.
+GUARDIAN_API_KEY
 
-PROPUBLICA
-----------
-Aktuelle ProPublica-Stories werden in „Investigativ“ ergänzt. ProPublica untersagt
-aber automatisches/wholesale Republishing seiner Volltexte. Deshalb erscheinen
-diese Artikel als interne Vorschau mit Titel, Metadaten und Beschreibung; über
-„Original bei ProPublica“ gelangt man zum Volltext. Einzelne Stories könnten
-später bewusst und manuell zur Wiederveröffentlichung ausgewählt werden.
+Bellingcat benötigt keinen API-Key.
 
-TECHNIK / SICHERHEIT
---------------------
-Der Guardian API-Key liegt NICHT in app.js.
+Guardian-Lifecycle
+------------------
+Der Updater verwirft Guardian-Fallback-Volltexte, sobald der lokale Feed älter
+als 23 Stunden ist, damit keine alten Open-Platform-Volltexte dauerhaft weiter
+veröffentlicht werden.
 
-GitHub Actions baut die GitHub-Pages-Seite etwa alle 30 Minuten neu. Dabei wird
-data/news.json mit Guardian-Volltext und aktuellen ProPublica-Metadaten erzeugt.
-Der erzeugte Volltext wird als Pages-Artefakt deployt und nicht in die Git-Historie
-committed.
-
-EINMALIGE EINRICHTUNG
----------------------
-1. Kostenlosen Guardian Developer Key anlegen:
-   https://open-platform.theguardian.com/access/
-
-2. In GitHub:
-   Repository -> Settings -> Secrets and variables -> Actions
-   -> New repository secret
-   Name: GUARDIAN_API_KEY
-   Value: <dein Guardian Key>
-
-3. GitHub Pages umstellen:
-   Repository -> Settings -> Pages -> Build and deployment -> Source
-   -> GitHub Actions
-
-4. Unter Actions den Workflow
-   „Deploy planner with current news“
-   einmal mit „Run workflow“ starten.
-
-Ohne eigenes Secret versucht der Prototyp als Fallback den öffentlichen Guardian
-Test-Key. Für zuverlässige Nutzung sollte der eigene Developer-Key gesetzt werden.
-
-BEDIENUNG
----------
-Der bestehende Hotspot an der Wand rechts neben der Terrassentür öffnet Nachrichten.
-Ein Artikel öffnet innerhalb der App. Der Zurück-Pfeil führt zuerst zur Artikelliste
-und von dort zurück in den Filmraum.
+Wichtig
+-------
+GitHub Pages muss weiterhin unter:
+Settings -> Pages -> Build and deployment -> Source -> GitHub Actions
+laufen.

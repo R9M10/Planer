@@ -33,3 +33,16 @@ libraries/engine are loaded. The rest of the planner app remains local.
 Board colors are reproduced from the user-supplied reference:
 - Light: #FFCE9E
 - Dark:  #D18B47
+
+
+NEWS SOURCES (v49)
+
+The Guardian Open Platform
+- Guardian content is fetched with the user's Guardian Open Platform key.
+- Full article text is refreshed by the deployment workflow.
+- Article pages retain source attribution and an original-article link.
+
+Bellingcat
+- Metadata is read from the public Bellingcat RSS feed.
+- Full Bellingcat article text is not republished by the app.
+- RSS media is displayed only when the feed supplies an explicit image credit.

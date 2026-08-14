@@ -75,8 +75,13 @@
         newsArticleTitle: $("newsArticleTitle"),
         newsArticleMeta: $("newsArticleMeta"),
         newsArticleStandfirst: $("newsArticleStandfirst"),
+        newsArticleImageWrap: $("newsArticleImageWrap"),
+        newsArticleImage: $("newsArticleImage"),
+        newsArticleImageCredit: $("newsArticleImageCredit"),
         newsArticleBody: $("newsArticleBody"),
         newsArticleNotice: $("newsArticleNotice"),
+        newsGuardianAttribution: $("newsGuardianAttribution"),
+        newsBellingcatAttribution: $("newsBellingcatAttribution"),
         newsArticleOriginal: $("newsArticleOriginal"),
         chessRoomBackHotspot: $("chessRoomBackHotspot"),
 
@@ -12503,14 +12508,14 @@
 
 
     // ==================================================
-    // V48 — NACHRICHTEN: GUARDIAN + PROPUBLICA
+    // V49 — NACHRICHTEN: GUARDIAN + BELLINGCAT
     // ==================================================
 
     const NEWS_STATIC_FEED =
         "./data/news.json";
 
     const NEWS_CACHE_KEY =
-        "plannerNewsCache_v48";
+        "plannerNewsCache_v49";
 
     const NEWS_CATEGORY_LABELS = {
         world:
@@ -12518,7 +12523,9 @@
         science:
             "Wissenschaft",
         investigative:
-            "Investigativ"
+            "Investigativ",
+        bellingcat:
+            "Bellingcat"
     };
 
     let newsActiveCategory =
@@ -12698,6 +12705,46 @@
     }
 
 
+    function safeNewsImageUrl(
+        raw
+    ) {
+        const value =
+            String(
+                raw
+                ??
+                ""
+            )
+            .trim();
+
+        if (
+            !value
+        ) {
+            return "";
+        }
+
+        try {
+            const url =
+                new URL(
+                    value
+                );
+
+            if (
+                url.protocol
+                !==
+                "https:"
+            ) {
+                return "";
+            }
+
+            return url.href;
+        } catch (
+            error
+        ) {
+            return "";
+        }
+    }
+
+
     function normalizeNewsArticle(
         article
     ) {
@@ -12770,6 +12817,22 @@
             category:
                 String(
                     article.category
+                    ??
+                    ""
+                ),
+            imageUrl:
+                safeNewsImageUrl(
+                    article.imageUrl
+                ),
+            imageAlt:
+                String(
+                    article.imageAlt
+                    ??
+                    ""
+                ),
+            imageCredit:
+                String(
+                    article.imageCredit
                     ??
                     ""
                 )
@@ -13086,6 +13149,62 @@
     }
 
 
+    function makeNewsThumbnail(
+        article
+    ) {
+        if (
+            !article.imageUrl
+        ) {
+            return null;
+        }
+
+        const wrap =
+            document.createElement(
+                "div"
+            );
+
+        wrap.className =
+            "news-item-thumb-wrap";
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+        image.className =
+            "news-item-thumb";
+
+        image.src =
+            article.imageUrl;
+
+        image.alt =
+            "";
+
+        image.loading =
+            "lazy";
+
+        image.decoding =
+            "async";
+
+        image.addEventListener(
+            "error",
+            () => {
+                wrap.remove();
+            },
+            {
+                once:
+                    true
+            }
+        );
+
+        wrap.appendChild(
+            image
+        );
+
+        return wrap;
+    }
+
+
     function renderNewsList(
         articles
     ) {
@@ -13105,7 +13224,7 @@
                 "news-empty";
 
             empty.textContent =
-                "Für diese Rubrik sind gerade keine Meldungen im Feed.";
+                "Für diese Rubrik sind gerade keine Artikel im Feed.";
 
             el.newsList.appendChild(
                 empty
@@ -13129,6 +13248,14 @@
 
                 button.dataset.newsArticleId =
                     article.id;
+
+                const copy =
+                    document.createElement(
+                        "div"
+                    );
+
+                copy.className =
+                    "news-item-copy";
 
                 const meta =
                     document.createElement(
@@ -13202,7 +13329,7 @@
                         article.standfirst
                     );
 
-                button.append(
+                copy.append(
                     meta,
                     title
                 );
@@ -13221,8 +13348,25 @@
                     trail.textContent =
                         standfirstText;
 
-                    button.appendChild(
+                    copy.appendChild(
                         trail
+                    );
+                }
+
+                button.appendChild(
+                    copy
+                );
+
+                const thumbnail =
+                    makeNewsThumbnail(
+                        article
+                    );
+
+                if (
+                    thumbnail
+                ) {
+                    button.appendChild(
+                        thumbnail
                     );
                 }
 
@@ -13303,6 +13447,55 @@
     }
 
 
+    function setNewsArticleImage(
+        article
+    ) {
+        const hasImage =
+            Boolean(
+                article.imageUrl
+            );
+
+        el.newsArticleImageWrap.hidden =
+            !hasImage;
+
+        if (
+            !hasImage
+        ) {
+            el.newsArticleImage.removeAttribute(
+                "src"
+            );
+
+            el.newsArticleImage.alt =
+                "";
+
+            el.newsArticleImageCredit.textContent =
+                "";
+
+            return;
+        }
+
+        el.newsArticleImage.src =
+            article.imageUrl;
+
+        el.newsArticleImage.alt =
+            article.imageAlt
+            ||
+            article.title;
+
+        el.newsArticleImageCredit.textContent =
+            article.imageCredit;
+
+        el.newsArticleImageCredit.hidden =
+            !article.imageCredit;
+
+        el.newsArticleImage.onerror =
+            () => {
+                el.newsArticleImageWrap.hidden =
+                    true;
+            };
+    }
+
+
     function openNewsArticle(
         articleId
     ) {
@@ -13372,6 +13565,10 @@
                 " · "
             );
 
+        setNewsArticleImage(
+            article
+        );
+
         const standfirstText =
             stripNewsHtmlToText(
                 article.standfirst
@@ -13389,6 +13586,16 @@
         el.newsArticleNotice.textContent =
             "";
 
+        el.newsGuardianAttribution.hidden =
+            article.source
+            !==
+            "The Guardian";
+
+        el.newsBellingcatAttribution.hidden =
+            article.source
+            !==
+            "Bellingcat";
+
         if (
             article.fullText
             &&
@@ -13404,13 +13611,13 @@
             if (
                 article.source
                 ===
-                "ProPublica"
+                "Bellingcat"
             ) {
                 el.newsArticleNotice.hidden =
                     false;
 
                 el.newsArticleNotice.textContent =
-                    "ProPublica erlaubt keine automatische Volltext-Wiederveröffentlichung aller Stories. Diese Meldung bleibt deshalb als interne Vorschau; der vollständige Text liegt beim Original.";
+                    "Die Bellingcat-Untersuchung ist vollständig in die Nachrichtenstruktur eingebunden, der vollständige Originaltext wird jedoch nicht gespiegelt. Öffne unten das Original, um die gesamte Recherche einschließlich aller Belege und eingebetteten Medien zu lesen.";
             }
         }
 
@@ -13422,7 +13629,7 @@
             ===
             "The Guardian"
                 ? "Original bei The Guardian ↗"
-                : "Original bei ProPublica ↗";
+                : "Original bei Bellingcat ↗";
 
         window.scrollTo(
             0,

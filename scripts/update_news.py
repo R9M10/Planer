@@ -8,13 +8,18 @@ import os
 import re
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
-from html.parser import HTMLParser
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 GUARDIAN_ENDPOINT = "https://content.guardianapis.com/search"
-PROPUBLICA_ARCHIVE = "https://www.propublica.org/archive"
-UA = "Mozilla/5.0 PlanerNews/1.0"
+BELLINGCAT_FEED = "https://www.bellingcat.com/feed/"
+UA = "Mozilla/5.0 PlanerNews/1.1"
+
+CONTENT_NS = "http://purl.org/rss/1.0/modules/content/"
+DC_NS = "http://purl.org/dc/elements/1.1/"
+MEDIA_NS = "http://search.yahoo.com/mrss/"
 
 
 def fetch_json(url: str, timeout: int = 35) -> dict:
@@ -29,17 +34,17 @@ def fetch_json(url: str, timeout: int = 35) -> dict:
         return json.load(response)
 
 
-def fetch_text(url: str, timeout: int = 35) -> str:
+def fetch_bytes(url: str, timeout: int = 35) -> bytes:
     request = urllib.request.Request(
         url,
         headers={
             "User-Agent": UA,
-            "Accept": "text/html,application/xhtml+xml",
+            "Accept": "application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
         },
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
-        return response.read().decode("utf-8", errors="replace")
+        return response.read()
 
 
 def clean_html_text(value: str) -> str:
@@ -47,16 +52,47 @@ def clean_html_text(value: str) -> str:
     return re.sub(r"\s+", " ", html.unescape(value)).strip()
 
 
-def guardian_search(api_key: str, *, category: str, section: str | None = None, q: str | None = None, page_size: int = 35) -> list[dict]:
+def iso_date(value: str) -> str:
+    value = (value or "").strip()
+    if not value:
+        return ""
+
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        try:
+            parsed = parsedate_to_datetime(value)
+        except Exception:
+            return value
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+
+    return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def guardian_search(
+    api_key: str,
+    *,
+    category: str,
+    section: str | None = None,
+    q: str | None = None,
+    page_size: int = 45,
+) -> list[dict]:
     params = {
         "api-key": api_key,
         "order-by": "newest",
-        "page-size": str(page_size),
+        "page-size": str(min(50, page_size)),
         "lang": "en",
-        "show-fields": "headline,trailText,standfirst,byline,body,wordcount,publication,lastModified",
+        "show-fields": (
+            "headline,trailText,standfirst,byline,body,wordcount,publication,"
+            "lastModified,thumbnail"
+        ),
     }
+
     if section:
         params["section"] = section
+
     if q:
         params["q"] = q
         params["query-fields"] = "headline,body"
@@ -77,16 +113,24 @@ def guardian_search(api_key: str, *, category: str, section: str | None = None, 
         if not body:
             continue
 
-        article_id = "guardian:" + str(item.get("id") or item.get("webUrl") or "")
-        if not article_id or article_id in seen:
+        raw_id = str(item.get("id") or item.get("webUrl") or "")
+        if not raw_id:
+            continue
+
+        article_id = "guardian:" + raw_id
+        if article_id in seen:
             continue
         seen.add(article_id)
+
+        title = clean_html_text(fields.get("headline") or item.get("webTitle") or "")
+        if not title:
+            continue
 
         rows.append(
             {
                 "id": article_id,
                 "source": "The Guardian",
-                "title": clean_html_text(fields.get("headline") or item.get("webTitle") or ""),
+                "title": title,
                 "url": item.get("webUrl") or "",
                 "publishedAt": item.get("webPublicationDate") or "",
                 "byline": clean_html_text(fields.get("byline") or ""),
@@ -94,119 +138,122 @@ def guardian_search(api_key: str, *, category: str, section: str | None = None, 
                 "bodyHtml": body,
                 "fullText": True,
                 "category": category,
+                "imageUrl": fields.get("thumbnail") or "",
+                "imageAlt": title,
+                "imageCredit": "The Guardian" if fields.get("thumbnail") else "",
             }
         )
 
     return rows
 
 
-class ArchiveParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.in_h2 = False
-        self.in_link = False
-        self.current_href = ""
-        self.current_text: list[str] = []
-        self.links: list[tuple[str, str]] = []
-
-    def handle_starttag(self, tag: str, attrs) -> None:
-        attrs = dict(attrs)
-        if tag.lower() == "h2":
-            self.in_h2 = True
-        elif self.in_h2 and tag.lower() == "a":
-            self.in_link = True
-            self.current_href = attrs.get("href", "")
-            self.current_text = []
-
-    def handle_data(self, data: str) -> None:
-        if self.in_h2 and self.in_link:
-            self.current_text.append(data)
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag.lower() == "a" and self.in_link:
-            title = re.sub(r"\s+", " ", "".join(self.current_text)).strip()
-            href = self.current_href
-            if title and href:
-                self.links.append((href, title))
-            self.in_link = False
-            self.current_href = ""
-            self.current_text = []
-        elif tag.lower() == "h2":
-            self.in_h2 = False
+def _find_text(item: ET.Element, tag: str) -> str:
+    node = item.find(tag)
+    return (node.text or "").strip() if node is not None and node.text else ""
 
 
-class MetaParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.meta: dict[str, str] = {}
-        self.html_lang = ""
+def bellingcat_image(item: ET.Element) -> tuple[str, str]:
+    """
+    Only use RSS-supplied media when the feed also provides a credit.
+    Bellingcat itself stresses correct image rights/crediting, so an
+    uncredited OG image is intentionally not scraped as a fallback.
+    """
+    media_candidates = []
 
-    def handle_starttag(self, tag: str, attrs) -> None:
-        attrs = dict(attrs)
-        if tag.lower() == "html":
-            self.html_lang = attrs.get("lang", "")
-        if tag.lower() != "meta":
-            return
-        key = attrs.get("property") or attrs.get("name") or ""
-        content = attrs.get("content") or ""
-        if key and content:
-            self.meta[key.lower()] = content
+    for tag in (
+        f"{{{MEDIA_NS}}}content",
+        f"{{{MEDIA_NS}}}thumbnail",
+    ):
+        media_candidates.extend(item.findall(tag))
+
+    credit_node = item.find(f"{{{MEDIA_NS}}}credit")
+    credit = (
+        (credit_node.text or "").strip()
+        if credit_node is not None and credit_node.text
+        else ""
+    )
+
+    for node in media_candidates:
+        url = (node.attrib.get("url") or "").strip()
+        node_credit = ""
+        child_credit = node.find(f"{{{MEDIA_NS}}}credit")
+        if child_credit is not None and child_credit.text:
+            node_credit = child_credit.text.strip()
+        effective_credit = node_credit or credit
+
+        if url.startswith("https://") and effective_credit:
+            return url, effective_credit
+
+    # RSS enclosure is accepted only if a separate credit is present.
+    enclosure = item.find("enclosure")
+    if enclosure is not None and credit:
+        url = (enclosure.attrib.get("url") or "").strip()
+        media_type = (enclosure.attrib.get("type") or "").lower()
+        if url.startswith("https://") and media_type.startswith("image/"):
+            return url, credit
+
+    return "", ""
 
 
-def propublica_latest(limit: int = 18) -> list[dict]:
-    parser = ArchiveParser()
-    parser.feed(fetch_text(PROPUBLICA_ARCHIVE))
-
-    unique: list[tuple[str, str]] = []
+def bellingcat_latest(limit: int = 40) -> list[dict]:
+    root = ET.fromstring(fetch_bytes(BELLINGCAT_FEED))
+    rows: list[dict] = []
     seen: set[str] = set()
 
-    for href, title in parser.links:
-        if href.startswith("/"):
-            href = urllib.parse.urljoin("https://www.propublica.org", href)
-        host = urllib.parse.urlparse(href).netloc.lower()
-        if host != "www.propublica.org":
-            continue
-        if "/article/" not in href:
-            continue
-        if href in seen:
-            continue
-        seen.add(href)
-        unique.append((href, title))
-        if len(unique) >= limit:
-            break
+    items = root.findall("./channel/item")
+    if not items:
+        items = root.findall(".//item")
 
-    rows: list[dict] = []
+    for item in items:
+        title = clean_html_text(_find_text(item, "title"))
+        url = _find_text(item, "link")
+        guid = _find_text(item, "guid")
 
-    for href, archive_title in unique:
+        if not title or not url:
+            continue
+
         try:
-            meta_parser = MetaParser()
-            meta_parser.feed(fetch_text(href, timeout=25))
-            meta = meta_parser.meta
+            host = urllib.parse.urlparse(url).netloc.lower()
+        except Exception:
+            continue
 
-            if meta_parser.html_lang.lower().startswith("es"):
-                continue
+        if host != "www.bellingcat.com" and host != "bellingcat.com":
+            continue
 
-            title = meta.get("og:title") or archive_title
-            description = meta.get("og:description") or meta.get("description") or ""
-            published = meta.get("article:published_time") or ""
-            author = meta.get("author") or ""
+        key = url.lower()
+        if key in seen:
+            continue
+        seen.add(key)
 
-            rows.append(
-                {
-                    "id": "propublica:" + urllib.parse.urlparse(href).path.strip("/").replace("/", ":"),
-                    "source": "ProPublica",
-                    "title": clean_html_text(title),
-                    "url": href,
-                    "publishedAt": published,
-                    "byline": clean_html_text(author),
-                    "standfirst": clean_html_text(description),
-                    "bodyHtml": "",
-                    "fullText": False,
-                    "category": "investigative",
-                }
-            )
-        except Exception as error:
-            print(f"warning: ProPublica metadata failed for {href}: {error}")
+        description = _find_text(item, "description")
+        author = _find_text(item, f"{{{DC_NS}}}creator")
+        published = iso_date(_find_text(item, "pubDate"))
+        image_url, image_credit = bellingcat_image(item)
+
+        article_id = "bellingcat:" + (
+            guid.strip() if guid.strip() else urllib.parse.urlparse(url).path.strip("/")
+        )
+
+        rows.append(
+            {
+                "id": article_id,
+                "source": "Bellingcat",
+                "title": title,
+                "url": url,
+                "publishedAt": published,
+                "byline": clean_html_text(author),
+                "standfirst": clean_html_text(description),
+                "bodyHtml": "",
+                "fullText": False,
+                "category": "bellingcat",
+                "imageUrl": image_url,
+                "imageAlt": title if image_url else "",
+                "imageCredit": image_credit,
+            }
+        )
+
+        if len(rows) >= limit:
+            break
 
     return rows
 
@@ -218,14 +265,46 @@ def sort_date(row: dict) -> str:
 def dedupe(rows: list[dict]) -> list[dict]:
     seen: set[str] = set()
     output: list[dict] = []
+
     for row in rows:
         key = (row.get("url") or row.get("title") or "").lower()
         if not key or key in seen:
             continue
         seen.add(key)
         output.append(row)
+
     output.sort(key=sort_date, reverse=True)
     return output
+
+
+def read_existing(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {"generatedAt": "", "categories": {}}
+
+
+def existing_is_recent(feed: dict, hours: int = 23) -> bool:
+    raw = str(feed.get("generatedAt") or "")
+    try:
+        stamp = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            stamp = stamp.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) - stamp.astimezone(timezone.utc) < timedelta(hours=hours)
+    except Exception:
+        return False
+
+
+def guarded(fetcher, fallback: list[dict], label: str) -> list[dict]:
+    try:
+        rows = fetcher()
+        if not rows:
+            raise RuntimeError("empty result")
+        print(f"{label}: {len(rows)}")
+        return rows
+    except Exception as error:
+        print(f"warning: {label} failed: {error}")
+        return fallback
 
 
 def main() -> int:
@@ -233,55 +312,88 @@ def main() -> int:
     parser.add_argument("--output", default="data/news.json")
     args = parser.parse_args()
 
+    output = Path(args.output)
+    existing = read_existing(output)
+    existing_categories = existing.get("categories") or {}
+    recent_guardian_fallback = existing_is_recent(existing)
+
     api_key = os.environ.get("GUARDIAN_API_KEY", "").strip() or "test"
 
-    world = guardian_search(
-        api_key,
-        category="world",
-        section="world",
-        page_size=36,
+    world_fallback = existing_categories.get("world", []) if recent_guardian_fallback else []
+    science_fallback = existing_categories.get("science", []) if recent_guardian_fallback else []
+    investigative_fallback = existing_categories.get("investigative", []) if recent_guardian_fallback else []
+    bellingcat_fallback = existing_categories.get("bellingcat", [])
+
+    world = guarded(
+        lambda: guardian_search(
+            api_key,
+            category="world",
+            section="world",
+            page_size=50,
+        ),
+        world_fallback,
+        "Guardian world",
     )
 
-    science_core = guardian_search(
-        api_key,
-        category="science",
-        section="science",
-        page_size=32,
+    science_core = guarded(
+        lambda: guardian_search(
+            api_key,
+            category="science",
+            section="science",
+            page_size=45,
+        ),
+        science_fallback,
+        "Guardian science",
     )
 
-    environment = guardian_search(
-        api_key,
-        category="science",
-        section="environment",
-        page_size=14,
+    environment = guarded(
+        lambda: guardian_search(
+            api_key,
+            category="science",
+            section="environment",
+            page_size=24,
+        ),
+        [],
+        "Guardian environment",
     )
 
     investigative_query = (
-        'investigation OR investigated OR investigative OR exclusive OR '
+        'investigation OR investigative OR investigated OR exclusive OR '
         'revealed OR documents OR leak OR corruption OR fraud OR abuse OR surveillance'
     )
 
-    investigative_guardian = guardian_search(
-        api_key,
-        category="investigative",
-        q=investigative_query,
-        page_size=36,
+    investigative_guardian = guarded(
+        lambda: guardian_search(
+            api_key,
+            category="investigative",
+            q=investigative_query,
+            page_size=50,
+        ),
+        investigative_fallback,
+        "Guardian investigative",
     )
 
-    propublica = propublica_latest(limit=20)
+    bellingcat = guarded(
+        lambda: bellingcat_latest(limit=45),
+        bellingcat_fallback,
+        "Bellingcat RSS",
+    )
 
     payload = {
         "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "categories": {
             "world": dedupe(world),
             "science": dedupe(science_core + environment),
-            "investigative": dedupe(investigative_guardian + propublica),
+            "investigative": dedupe(investigative_guardian),
+            "bellingcat": dedupe(bellingcat),
         },
     }
 
-    output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    output.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     counts = {key: len(value) for key, value in payload["categories"].items()}
     print("news feed:", counts)

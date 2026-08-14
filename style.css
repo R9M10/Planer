@@ -7658,3 +7658,130 @@ html[data-theme="dark"] #filmRoomScreen .film-room-background {
         padding-top: 24px;
     }
 }
+
+
+/* ==================================================
+   V49 — NACHRICHTEN: GUARDIAN + BELLINGCAT
+================================================== */
+
+.news-source-note {
+    margin-top: 42px;
+    padding-top: 16px;
+    border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+    color: color-mix(in srgb, var(--muted) 70%, transparent);
+    font-size: 9px;
+    line-height: 1.55;
+    text-align: center;
+}
+
+.news-list-view {
+    width: 100%;
+}
+
+.news-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 17px;
+}
+
+.news-item-copy {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.news-item-thumb-wrap {
+    width: clamp(88px, 24vw, 136px);
+    aspect-ratio: 4 / 3;
+    flex: 0 0 auto;
+    overflow: hidden;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.news-item-thumb {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(.86) contrast(.98);
+}
+
+.news-article-image-wrap {
+    margin: 29px 0 31px;
+}
+
+.news-article-image {
+    display: block;
+    width: 100%;
+    max-height: min(52dvh, 520px);
+    object-fit: cover;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.news-article-image-credit {
+    margin-top: 7px;
+    color: color-mix(in srgb, var(--muted) 72%, transparent);
+    font-size: 9px;
+    line-height: 1.4;
+}
+
+.news-guardian-attribution,
+.news-bellingcat-attribution {
+    margin-top: 34px;
+    padding-top: 18px;
+    border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.news-guardian-attribution a {
+    display: inline-block;
+    text-decoration: none;
+}
+
+.news-guardian-attribution img {
+    display: block;
+    width: 110px;
+    height: auto;
+    opacity: .74;
+}
+
+html[data-theme="light"] .news-guardian-attribution img {
+    filter: invert(1);
+}
+
+.news-bellingcat-attribution {
+    color: color-mix(in srgb, var(--text) 70%, transparent);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    font-size: 10px;
+    letter-spacing: .035em;
+}
+
+.news-article-original {
+    margin-top: 22px;
+}
+
+@media (max-width: 430px) {
+    .news-categories {
+        gap: 20px;
+    }
+
+    .news-item {
+        gap: 13px;
+    }
+
+    .news-item-thumb-wrap {
+        width: 92px;
+    }
+
+    .news-item-title {
+        font-size: clamp(18px, 5vw, 21px);
+    }
+
+    .news-item-trail {
+        -webkit-line-clamp: 2;
+    }
+
+    .news-article-image-wrap {
+        margin-top: 24px;
+    }
+}

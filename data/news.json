@@ -1,68 +1,39 @@
 {
-  "generatedAt": "2026-08-14T12:20:00Z",
+  "generatedAt": "2026-08-14T12:45:00Z",
   "categories": {
     "world": [],
     "science": [],
-    "investigative": [
+    "investigative": [],
+    "bellingcat": [
       {
-        "id": "propublica-lead-remediation-omaha",
-        "source": "ProPublica",
-        "title": "More Than Half the Homes in East Omaha Have Unsafe Lead Levels. That Doesn’t Mean the EPA Will Clean Them Up.",
-        "url": "https://www.propublica.org/article/lead-remediation-epa-standards-omaha-nebraska",
-        "publishedAt": "2026-08-10T09:00:00Z",
-        "byline": "Chris Bowling, Flatwater Free Press",
-        "standfirst": "An investigation into unsafe lead levels and the federal cleanup standard in Omaha.",
-        "bodyHtml": "",
-        "fullText": false,
-        "category": "investigative"
-      },
-      {
-        "id": "propublica-va-mental-health",
-        "source": "ProPublica",
-        "title": "House Democrats Demand Answers From Trump’s VA on Vets Struggling to Access Mental Healthcare",
-        "url": "https://www.propublica.org/article/democrats-veterans-affairs-doug-collins-letter-mental-health",
-        "publishedAt": "2026-08-07T10:00:00Z",
-        "byline": "Eric Umansky",
+        "id": "bellingcat:news:2026:06:12:shadow-fleet-russian-grain-stolen-ukraine-libya-ais-technique-grumant",
+        "source": "Bellingcat",
+        "title": "Heading Off: New Technique Helps Track Grain Smuggling Expansion to Libya",
+        "url": "https://www.bellingcat.com/news/2026/06/12/shadow-fleet-russian-grain-stolen-ukraine-libya-ais-technique-grumant/",
+        "publishedAt": "2026-06-12T00:00:00Z",
+        "byline": "",
         "standfirst": "",
         "bodyHtml": "",
         "fullText": false,
-        "category": "investigative"
+        "category": "bellingcat",
+        "imageUrl": "",
+        "imageAlt": "",
+        "imageCredit": ""
       },
       {
-        "id": "propublica-foreign-aid-south-africa",
-        "source": "ProPublica",
-        "title": "What Is the Trump Administration Doing With Foreign Aid Money?",
-        "url": "https://www.propublica.org/article/trump-administration-afrikaner-south-africa-money",
-        "publishedAt": "2026-08-07T09:00:00Z",
-        "byline": "Anna Maria Barry-Jester and Sharon Lerner",
+        "id": "bellingcat:resources:2026:04:20:xiaohongshu-rednote-open-source-guide",
+        "source": "Bellingcat",
+        "title": "Mining China’s ‘Little Red Book’ for Open Source Gold",
+        "url": "https://www.bellingcat.com/resources/2026/04/20/xiaohongshu-rednote-open-source-guide/",
+        "publishedAt": "2026-04-20T00:00:00Z",
+        "byline": "",
         "standfirst": "",
         "bodyHtml": "",
         "fullText": false,
-        "category": "investigative"
-      },
-      {
-        "id": "propublica-wrongful-conviction-louisiana",
-        "source": "ProPublica",
-        "title": "He’s Eligible for Up to $480,000 After Being Wrongly Imprisoned for 42 Years. The State Says No.",
-        "url": "https://www.propublica.org/article/louisiana-wrongful-conviction-compensation-liz-murrill-elvis-brooks",
-        "publishedAt": "2026-08-06T09:00:00Z",
-        "byline": "Richard A. Webster, Verite News",
-        "standfirst": "",
-        "bodyHtml": "",
-        "fullText": false,
-        "category": "investigative"
-      },
-      {
-        "id": "propublica-james-talarico",
-        "source": "ProPublica",
-        "title": "James Talarico Accused Ken Paxton of Voter Fraud. His Own Voter Registration Is Raising Questions.",
-        "url": "https://www.propublica.org/article/james-talarico-texas-election-law-ken-paxton",
-        "publishedAt": "2026-08-05T10:00:00Z",
-        "byline": "Kayla Guo and Zach Despart",
-        "standfirst": "",
-        "bodyHtml": "",
-        "fullText": false,
-        "category": "investigative"
+        "category": "bellingcat",
+        "imageUrl": "",
+        "imageAlt": "",
+        "imageCredit": ""
       }
     ]
   }
