@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-08-14T11:30:00Z",
+  "source": "Reuters sitemap",
+  "articles": [
+    {
+      "title": "Wall St futures muted as higher oil prices temper risk appetite after S&P record close",
+      "url": "https://www.reuters.com/business/wall-st-futures-muted-higher-oil-prices-temper-risk-appetite-after-sp-record-2026-08-14/",
+      "publishedAt": "2026-08-14T11:14:37Z",
+      "categories": [
+        "business"
+      ]
+    },
+    {
+      "title": "Take Five: The heat is on",
+      "url": "https://www.reuters.com/business/take-five/global-markets-themes-graphic-2026-08-14/",
+      "publishedAt": "2026-08-14T09:25:16Z",
+      "categories": [
+        "business",
+        "world"
+      ]
+    },
+    {
+      "title": "S&P 500 notches record-high close as rate-hike worries ease",
+      "url": "https://www.reuters.com/business/retail-consumer/wall-st-futures-tick-higher-oil-retreats-ahead-inflation-data-2026-08-13/",
+      "publishedAt": "2026-08-13T10:20:57Z",
+      "categories": [
+        "business"
+      ]
+    },
+    {
+      "title": "Qatar, Morocco among six Arab federations backing FIFA's Infantino",
+      "url": "https://www.reuters.com/sports/soccer/qatar-morocco-among-six-arab-federations-backing-fifas-infantino-2026-08-13/",
+      "publishedAt": "2026-08-13T08:27:59Z",
+      "categories": [
+        "world"
+      ]
+    }
+  ]
+}

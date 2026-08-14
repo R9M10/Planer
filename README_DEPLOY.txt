@@ -1,19 +1,31 @@
-PLANER v46 — FILMBAND-HOTSPOT + REUTERS-FIX
+PLANER v47 — REUTERS FEED OHNE BROWSER-API
 
-1. FILME
-- Filme öffnet sich nicht mehr über den großen Kamera-Bereich.
-- Nur das lose untere Filmband im unteren linken Bildbereich ist anklickbar.
-- Die linke Wand ist dadurch frei für die Zurück-Navigation.
+Warum v46 scheiterte
+--------------------
+Der GDELT-DOC-Endpunkt ist als direkter Browser-Dienst nicht stabil genug:
+Timeouts und Rate-Limits können die Nachrichtenansicht blockieren.
 
-2. REUTERS
-- Die bisherige reine fetch-Abfrage wurde ersetzt.
-- GDELT wird nun parallel über JSONP und fetch angesprochen.
-- JSONP umgeht Browser-CORS-Probleme.
-- Beide Wege haben kurze Timeouts; der erste erfolgreiche gewinnt.
-- Query wurde von domainis:reuters.com auf domain:reuters.com erweitert.
-- Erst 48 Stunden, bei leerem Resultat automatisch 7 Tage.
-- Erfolgreiche Ergebnisse werden lokal zwischengespeichert.
-- Beim nächsten Öffnen erscheinen gespeicherte Meldungen sofort, während im Hintergrund aktualisiert wird.
-- Bei Ausfall bleibt der Cache sichtbar statt einer langen leeren Ladeansicht.
+Neue Architektur
+-----------------
+Die App fragt beim Öffnen von Reuters keine externe Nachrichten-API mehr ab.
 
-Alle Artikellinks führen weiterhin direkt zum Reuters-Original.
+Stattdessen:
+1. GitHub Actions liest etwa alle 30 Minuten den öffentlichen Reuters-Sitemap.
+2. Daraus wird data/reuters.json erzeugt.
+3. Die App lädt ausschließlich ./data/reuters.json von der eigenen GitHub-Pages-Seite.
+4. Dadurch gibt es im Browser kein CORS, JSONP oder externes API-Timeout mehr.
+5. Wenn Reuters vorübergehend nicht erreichbar ist, bleibt die letzte erfolgreiche
+   data/reuters.json erhalten.
+
+Einmalige GitHub-Einstellung
+----------------------------
+Falls der Workflow beim Commit mit einer Berechtigungsfehlermeldung stoppt:
+
+Repository -> Settings -> Actions -> General -> Workflow permissions
+-> "Read and write permissions" aktivieren.
+
+Danach unter Actions -> "Update Reuters feed" -> "Run workflow" einmal manuell starten.
+
+Der Workflow läuft anschließend automatisch ungefähr alle 30 Minuten.
+
+Der Film-Hotspot bleibt wie in v46 auf dem unteren Filmband.

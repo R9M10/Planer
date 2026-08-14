@@ -12494,33 +12494,31 @@
 
 
     // ==================================================
-    // V46 — REUTERS / NACHRICHTEN-PROTOTYP
+    // V47 — REUTERS / NACHRICHTEN
     //
-    // GDELT bleibt nur der Index für Reuters-Original-Links.
-    // Der Abruf nutzt jetzt zwei Wege parallel:
-    // 1) JSONP (kein CORS nötig)
-    // 2) normales fetch mit AbortController
-    // Der erste erfolgreiche Weg gewinnt. Zusätzlich wird ein kleiner
-    // lokaler Cache verwendet, damit die Ansicht sofort Inhalt zeigen kann.
+    // Keine Browser-Abfrage von GDELT mehr.
+    // Die App lädt ausschließlich eine statische JSON-Datei vom
+    // eigenen GitHub-Pages-Origin. Diese Datei wird durch GitHub
+    // Actions regelmäßig aus dem öffentlichen Reuters-Sitemap erneuert.
     // ==================================================
 
-    const NEWS_GDELT_ENDPOINT =
-        "https://api.gdeltproject.org/api/v2/doc/doc";
+    const NEWS_STATIC_FEED =
+        "./data/reuters.json";
 
     const NEWS_CACHE_KEY =
-        "plannerReutersCache_v2";
+        "plannerReutersCache_v3";
 
-    const NEWS_CATEGORY_QUERIES = {
+    const NEWS_CATEGORY_LABELS = {
         top:
-            "domain:reuters.com",
+            "Aktuell",
         world:
-            "domain:reuters.com (world OR Europe OR Asia OR Africa OR Americas OR Middle East)",
+            "Welt",
         business:
-            "domain:reuters.com (business OR markets OR economy OR finance OR companies)",
+            "Wirtschaft",
         science:
-            "domain:reuters.com (science OR climate OR space OR health OR research)",
+            "Wissenschaft",
         technology:
-            "domain:reuters.com (technology OR AI OR artificial intelligence OR semiconductor OR software)"
+            "Technologie"
     };
 
     let newsActiveCategory =
@@ -12529,41 +12527,20 @@
     let newsRequestToken =
         0;
 
+    let newsFeedCache =
+        null;
 
-    function parseGdeltDate(
+
+    function parseReutersDate(
         raw
     ) {
-        const value =
-            String(
-                raw
-                ??
-                ""
-            )
-            .trim();
-
-        const match =
-            value.match(
-                /^(\d{4})(\d{2})(\d{2})T?(\d{2})(\d{2})(\d{2})?Z?$/
-            );
-
-        if (
-            match
-        ) {
-            return new Date(
-                Date.UTC(
-                    Number(match[1]),
-                    Number(match[2]) - 1,
-                    Number(match[3]),
-                    Number(match[4]),
-                    Number(match[5]),
-                    Number(match[6] || 0)
-                )
-            );
-        }
-
         const parsed =
             new Date(
-                value
+                String(
+                    raw
+                    ??
+                    ""
+                )
             );
 
         return Number.isNaN(
@@ -12578,7 +12555,7 @@
         raw
     ) {
         const date =
-            parseGdeltDate(
+            parseReutersDate(
                 raw
             );
 
@@ -12773,14 +12750,12 @@
         )
         .slice(
             0,
-            32
+            80
         );
     }
 
 
-    function readNewsCache(
-        category
-    ) {
+    function readNewsCache() {
         try {
             const parsed =
                 JSON.parse(
@@ -12788,23 +12763,20 @@
                         NEWS_CACHE_KEY
                     )
                     ||
-                    "{}"
+                    "null"
                 );
 
-            const entry =
-                parsed?.[category];
-
             if (
-                !entry
+                !parsed
                 ||
                 !Array.isArray(
-                    entry.articles
+                    parsed.articles
                 )
             ) {
                 return null;
             }
 
-            return entry;
+            return parsed;
         } catch (
             error
         ) {
@@ -12814,36 +12786,76 @@
 
 
     function writeNewsCache(
-        category,
-        articles
+        feed
     ) {
         try {
-            const parsed =
-                JSON.parse(
-                    localStorage.getItem(
-                        NEWS_CACHE_KEY
-                    )
-                    ||
-                    "{}"
-                );
-
-            parsed[category] = {
-                savedAt:
-                    Date.now(),
-                articles
-            };
-
             localStorage.setItem(
                 NEWS_CACHE_KEY,
                 JSON.stringify(
-                    parsed
+                    feed
                 )
             );
         } catch (
             error
         ) {
-            // Cache ist nur Komfort; Fehler dürfen die App nicht blockieren.
+            // Cache ist nur Komfort.
         }
+    }
+
+
+    function articleMatchesNewsCategory(
+        article,
+        category
+    ) {
+        if (
+            category
+            ===
+            "top"
+        ) {
+            return true;
+        }
+
+        const categories =
+            Array.isArray(
+                article?.categories
+            )
+                ? article.categories
+                : [];
+
+        return categories.includes(
+            category
+        );
+    }
+
+
+    function articlesForNewsCategory(
+        feed,
+        category
+    ) {
+        const articles =
+            normalizeReutersArticles(
+                feed?.articles
+            );
+
+        const filtered =
+            articles.filter(
+                article =>
+                    articleMatchesNewsCategory(
+                        article,
+                        category
+                    )
+            );
+
+        /*
+           Wenn eine Spezialrubrik im frisch erzeugten Reuters-Sitemap
+           ungewöhnlich leer ist, zeigen wir nicht eine Fehlermeldung,
+           sondern die aktuelle Reuters-Gesamtliste.
+        */
+        return filtered.length
+            ? filtered
+            : category === "top"
+                ? articles
+                : [];
     }
 
 
@@ -12866,7 +12878,7 @@
                 "news-empty";
 
             empty.textContent =
-                "Keine Reuters-Meldungen gefunden.";
+                "Für diese Rubrik sind gerade keine Meldungen im Feed.";
 
             el.newsList.appendChild(
                 empty
@@ -12913,14 +12925,14 @@
                 source.textContent =
                     "Reuters";
 
-                const timeText =
-                    formatNewsTime(
-                        article.seendate
-                    );
-
                 meta.appendChild(
                     source
                 );
+
+                const timeText =
+                    formatNewsTime(
+                        article.publishedAt
+                    );
 
                 if (
                     timeText
@@ -12952,7 +12964,7 @@
 
                 const title =
                     document.createElement(
-                        "h2"
+                        "div"
                     );
 
                 title.className =
@@ -12974,287 +12986,88 @@
     }
 
 
-    function gdeltParams(
-        category,
-        timespan = "48h"
+    function renderReutersFeed(
+        feed,
+        category = newsActiveCategory
     ) {
-        return new URLSearchParams({
-            query:
-                NEWS_CATEGORY_QUERIES[
-                    category
-                ],
-            mode:
-                "ArtList",
-            maxrecords:
-                "50",
-            sort:
-                "datedesc",
-            timespan
-        });
-    }
+        newsFeedCache =
+            feed;
 
-
-    function fetchGdeltJson(
-        category,
-        timespan
-    ) {
-        const params =
-            gdeltParams(
-                category,
-                timespan
+        const articles =
+            articlesForNewsCategory(
+                feed,
+                category
             );
 
-        params.set(
-            "format",
-            "json"
+        renderNewsList(
+            articles
         );
 
-        const controller =
-            typeof AbortController !== "undefined"
-                ? new AbortController()
-                : null;
-
-        const timeout =
-            window.setTimeout(
-                () => {
-                    controller?.abort();
-                },
-                6500
+        const generated =
+            parseReutersDate(
+                feed?.generatedAt
             );
 
-        return fetch(
-            `${NEWS_GDELT_ENDPOINT}?${params.toString()}`,
-            {
-                cache:
-                    "no-store",
-                signal:
-                    controller?.signal
-            }
-        )
-        .then(
-            response => {
-                if (
-                    !response.ok
-                ) {
-                    throw new Error(
-                        `GDELT ${response.status}`
-                    );
-                }
-
-                return response.json();
-            }
-        )
-        .finally(
-            () => {
-                window.clearTimeout(
-                    timeout
-                );
-            }
-        );
-    }
-
-
-    function fetchGdeltJsonp(
-        category,
-        timespan
-    ) {
-        return new Promise(
-            (
-                resolve,
-                reject
-            ) => {
-                const callbackName =
-                    `__plannerGdelt_${Date.now()}_${Math.floor(Math.random() * 1e8)}`;
-
-                const script =
-                    document.createElement(
-                        "script"
-                    );
-
-                const params =
-                    gdeltParams(
-                        category,
-                        timespan
-                    );
-
-                params.set(
-                    "format",
-                    "jsonp"
-                );
-
-                params.set(
-                    "callback",
-                    callbackName
-                );
-
-                let finished =
-                    false;
-
-                const cleanup =
-                    () => {
-                        if (
-                            finished
-                        ) {
-                            return;
-                        }
-
-                        finished =
-                            true;
-
-                        window.clearTimeout(
-                            timeout
-                        );
-
-                        script.remove();
-
-                        try {
-                            delete window[callbackName];
-                        } catch (
-                            error
-                        ) {
-                            window[callbackName] =
-                                undefined;
-                        }
-                    };
-
-                const timeout =
-                    window.setTimeout(
-                        () => {
-                            cleanup();
-                            reject(
-                                new Error(
-                                    "GDELT JSONP timeout"
-                                )
-                            );
-                        },
-                        7000
-                    );
-
-                window[callbackName] =
-                    data => {
-                        cleanup();
-                        resolve(
-                            data
-                        );
-                    };
-
-                script.async =
-                    true;
-
-                script.src =
-                    `${NEWS_GDELT_ENDPOINT}?${params.toString()}`;
-
-                script.onerror =
-                    () => {
-                        cleanup();
-                        reject(
-                            new Error(
-                                "GDELT JSONP error"
-                            )
-                        );
-                    };
-
-                document.head.appendChild(
-                    script
-                );
-            }
-        );
-    }
-
-
-    function firstSuccessful(
-        promises
-    ) {
-        return new Promise(
-            (
-                resolve,
-                reject
-            ) => {
-                let failures =
-                    0;
-
-                let lastError =
-                    null;
-
-                promises.forEach(
-                    promise => {
-                        Promise.resolve(
-                            promise
+        if (
+            generated
+        ) {
+            const ageMinutes =
+                Math.max(
+                    0,
+                    Math.round(
+                        (
+                            Date.now()
+                            -
+                            generated.getTime()
                         )
-                        .then(
-                            resolve
-                        )
-                        .catch(
-                            error => {
-                                failures += 1;
-                                lastError =
-                                    error;
+                        /
+                        60000
+                    )
+                );
 
-                                if (
-                                    failures
-                                    ===
-                                    promises.length
-                                ) {
-                                    reject(
-                                        lastError
-                                        ||
-                                        new Error(
-                                            "Keine Nachrichtenquelle erreichbar"
-                                        )
-                                    );
-                                }
-                            }
-                        );
-                    }
+            if (
+                ageMinutes
+                <
+                90
+            ) {
+                setNewsStatus(
+                    `${articles.length} Meldungen · zuletzt aktualisiert vor ${ageMinutes} Min.`
+                );
+            } else {
+                setNewsStatus(
+                    `${articles.length} Meldungen · Feed zuletzt ${formatNewsTime(feed.generatedAt)} aktualisiert`
                 );
             }
-        );
+        } else {
+            setNewsStatus(
+                `${articles.length} Meldungen`
+            );
+        }
     }
 
 
-    async function requestReutersIndex(
-        category,
-        timespan
-    ) {
-        return firstSuccessful([
-            fetchGdeltJsonp(
-                category,
-                timespan
-            ),
-            fetchGdeltJson(
-                category,
-                timespan
-            )
-        ]);
-    }
-
-
-    async function fetchReutersNews(
-        category = newsActiveCategory,
-        options = {}
+    async function loadReutersStaticFeed(
+        force = false
     ) {
         const requestToken =
             ++newsRequestToken;
 
-        newsActiveCategory =
-            NEWS_CATEGORY_QUERIES[category]
-                ? category
-                : "top";
-
-        renderNewsCategoryState();
-
         const cached =
-            readNewsCache(
-                newsActiveCategory
-            );
+            readNewsCache();
 
         if (
-            cached?.articles?.length
+            !force
             &&
-            !options.forceEmpty
+            newsFeedCache
         ) {
-            renderNewsList(
-                cached.articles
+            renderReutersFeed(
+                newsFeedCache
+            );
+        } else if (
+            cached?.articles?.length
+        ) {
+            renderReutersFeed(
+                cached
             );
 
             setNewsStatus(
@@ -13271,32 +13084,45 @@
         }
 
         try {
-            let data =
-                await requestReutersIndex(
-                    newsActiveCategory,
-                    "48h"
-                );
-
-            let articles =
-                normalizeReutersArticles(
-                    data?.articles
+            const response =
+                await fetch(
+                    `${NEWS_STATIC_FEED}?v=${Date.now()}`,
+                    {
+                        cache:
+                            "no-store"
+                    }
                 );
 
             if (
-                articles.length
+                !response.ok
+            ) {
+                throw new Error(
+                    `Reuters feed ${response.status}`
+                );
+            }
+
+            const feed =
+                await response.json();
+
+            const normalizedFeed = {
+                generatedAt:
+                    feed?.generatedAt
+                    ??
+                    "",
+                articles:
+                    normalizeReutersArticles(
+                        feed?.articles
+                    )
+            };
+
+            if (
+                normalizedFeed.articles.length
                 ===
                 0
             ) {
-                data =
-                    await requestReutersIndex(
-                        newsActiveCategory,
-                        "7d"
-                    );
-
-                articles =
-                    normalizeReutersArticles(
-                        data?.articles
-                    );
+                throw new Error(
+                    "Reuters feed empty"
+                );
             }
 
             if (
@@ -13307,23 +13133,12 @@
                 return;
             }
 
-            renderNewsList(
-                articles
+            writeNewsCache(
+                normalizedFeed
             );
 
-            if (
-                articles.length
-            ) {
-                writeNewsCache(
-                    newsActiveCategory,
-                    articles
-                );
-            }
-
-            setNewsStatus(
-                articles.length
-                    ? `${articles.length} aktuelle Meldungen`
-                    : "Keine aktuellen Reuters-Meldungen gefunden"
+            renderReutersFeed(
+                normalizedFeed
             );
         } catch (
             error
@@ -13337,19 +13152,17 @@
             }
 
             const fallback =
-                readNewsCache(
-                    newsActiveCategory
-                );
+                readNewsCache();
 
             if (
                 fallback?.articles?.length
             ) {
-                renderNewsList(
-                    fallback.articles
+                renderReutersFeed(
+                    fallback
                 );
 
                 setNewsStatus(
-                    "Gespeicherte Meldungen · Aktualisierung derzeit nicht möglich"
+                    "Gespeicherte Reuters-Meldungen · Feed wird gerade nicht aktualisiert"
                 );
             } else {
                 renderNewsList(
@@ -13357,10 +13170,51 @@
                 );
 
                 setNewsStatus(
-                    "Reuters-Index nicht erreichbar · bitte erneut versuchen"
+                    "Reuters-Feed noch nicht erzeugt · GitHub Action einmal ausführen"
                 );
             }
         }
+    }
+
+
+    async function fetchReutersNews(
+        category = newsActiveCategory,
+        options = {}
+    ) {
+        newsActiveCategory =
+            Object.prototype.hasOwnProperty.call(
+                NEWS_CATEGORY_LABELS,
+                category
+            )
+                ? category
+                : "top";
+
+        renderNewsCategoryState();
+
+        if (
+            newsFeedCache
+        ) {
+            renderReutersFeed(
+                newsFeedCache,
+                newsActiveCategory
+            );
+
+            if (
+                options.force
+            ) {
+                await loadReutersStaticFeed(
+                    true
+                );
+            }
+
+            return;
+        }
+
+        await loadReutersStaticFeed(
+            Boolean(
+                options.force
+            )
+        );
     }
 
 
