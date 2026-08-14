@@ -5423,12 +5423,14 @@ html[data-theme="dark"] #textsHubScreen .texts-study-background {
 
 /* Kleine Erde zwischen den beiden Statuen. */
 #plannerHubScreen .planner-cosmos-galaxy {
-    left: 43%;
-    top: 45%;
-    width: 14%;
-    height: 12%;
+    /* Erde im Pantheon-Bild: bewusst etwas großzügiger als das Motiv. */
+    left: 42.5%;
+    top: 34%;
+    width: 19%;
+    height: 16%;
 
-    z-index: 5;
+    /* Muss Apollon/Odysseus sicher überlagern. */
+    z-index: 10;
 }
 
 /* Nur hier ersetzt die Galaxie den Zurück-Pfeil. */
@@ -7266,5 +7268,22 @@ html[data-theme="dark"] #filmRoomScreen .film-room-background {
     transform: translateY(-50%);
     color: var(--muted);
     font-size: 12px;
+}
+
+
+
+/* ==================================================
+   V43 — SCHWARZES-LOCH-UHR
+================================================== */
+
+#sessionFront.session-front-layer,
+#universeCanvas.universe-canvas {
+    background: #020304 !important;
+}
+
+#universeCanvas.universe-canvas {
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
