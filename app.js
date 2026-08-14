@@ -22,6 +22,7 @@
         textsHub: $("textsHubScreen"),
         chessRoom: $("chessRoomScreen"),
         filmRoom: $("filmRoomScreen"),
+        news: $("newsScreen"),
         wikipedia: $("wikipediaScreen"),
         youtube: $("youtubeScreen"),
         chessSetup: $("chessSetupScreen"),
@@ -62,6 +63,12 @@
         chessRoomYoutubeHotspot: $("chessRoomYoutubeHotspot"),
         filmRoomCameraHotspot: $("filmRoomCameraHotspot"),
         filmRoomBackHotspot: $("filmRoomBackHotspot"),
+        filmRoomNewsHotspot: $("filmRoomNewsHotspot"),
+        backFromNews: $("backFromNews"),
+        newsRefreshButton: $("newsRefreshButton"),
+        newsCategories: $("newsCategories"),
+        newsStatus: $("newsStatus"),
+        newsList: $("newsList"),
         chessRoomBackHotspot: $("chessRoomBackHotspot"),
 
         backFromWikipedia: $("backFromWikipedia"),
@@ -12485,6 +12492,527 @@
     }
 
 
+
+    // ==================================================
+    // V45 — REUTERS / NACHRICHTEN-PROTOTYP
+    //
+    // Datenquelle des Prototyps: GDELT DOC 2.0.
+    // GDELT stellt JSON und CORS bereit. Wir beschränken die Suche
+    // auf reuters.com und verlinken ausschließlich auf Originalartikel.
+    // ==================================================
+
+    const NEWS_GDELT_ENDPOINT =
+        "https://api.gdeltproject.org/api/v2/doc/doc";
+
+    const NEWS_CATEGORY_QUERIES = {
+        top:
+            "domainis:reuters.com",
+        world:
+            "domainis:reuters.com (world OR Europe OR Asia OR Africa OR Americas OR Middle East)",
+        business:
+            "domainis:reuters.com (business OR markets OR economy OR finance OR companies)",
+        science:
+            "domainis:reuters.com (science OR climate OR space OR health OR research)",
+        technology:
+            "domainis:reuters.com (technology OR AI OR artificial intelligence OR semiconductor OR software)"
+    };
+
+    let newsActiveCategory =
+        "top";
+
+    let newsRequestToken =
+        0;
+
+
+    function parseGdeltDate(
+        raw
+    ) {
+        const value =
+            String(
+                raw
+                ??
+                ""
+            )
+            .trim();
+
+        const match =
+            value.match(
+                /^(\d{4})(\d{2})(\d{2})T?(\d{2})(\d{2})(\d{2})?Z?$/
+            );
+
+        if (
+            match
+        ) {
+            return new Date(
+                Date.UTC(
+                    Number(match[1]),
+                    Number(match[2]) - 1,
+                    Number(match[3]),
+                    Number(match[4]),
+                    Number(match[5]),
+                    Number(match[6] || 0)
+                )
+            );
+        }
+
+        const parsed =
+            new Date(
+                value
+            );
+
+        return Number.isNaN(
+            parsed.getTime()
+        )
+            ? null
+            : parsed;
+    }
+
+
+    function formatNewsTime(
+        raw
+    ) {
+        const date =
+            parseGdeltDate(
+                raw
+            );
+
+        if (
+            !date
+        ) {
+            return "";
+        }
+
+        const deltaMs =
+            Math.max(
+                0,
+                Date.now()
+                -
+                date.getTime()
+            );
+
+        const minutes =
+            Math.floor(
+                deltaMs
+                /
+                60000
+            );
+
+        if (
+            minutes
+            <
+            1
+        ) {
+            return "gerade eben";
+        }
+
+        if (
+            minutes
+            <
+            60
+        ) {
+            return `vor ${minutes} Min.`;
+        }
+
+        const hours =
+            Math.floor(
+                minutes
+                /
+                60
+            );
+
+        if (
+            hours
+            <
+            24
+        ) {
+            return `vor ${hours} Std.`;
+        }
+
+        return date.toLocaleDateString(
+            "de-DE",
+            {
+                day:
+                    "2-digit",
+                month:
+                    "2-digit"
+            }
+        );
+    }
+
+
+    function setNewsStatus(
+        text,
+        busy = false
+    ) {
+        el.newsStatus.textContent =
+            text;
+
+        el.newsStatus.classList.toggle(
+            "busy",
+            busy
+        );
+    }
+
+
+    function renderNewsCategoryState() {
+        el.newsCategories
+            .querySelectorAll(
+                "[data-news-category]"
+            )
+            .forEach(
+                button => {
+                    button.classList.toggle(
+                        "active",
+                        button.dataset.newsCategory
+                        ===
+                        newsActiveCategory
+                    );
+                }
+            );
+    }
+
+
+    function normalizeReutersArticles(
+        articles
+    ) {
+        const seen =
+            new Set();
+
+        return (
+            Array.isArray(
+                articles
+            )
+                ? articles
+                : []
+        )
+        .filter(
+            article => {
+                const url =
+                    String(
+                        article?.url
+                        ??
+                        ""
+                    );
+
+                const title =
+                    String(
+                        article?.title
+                        ??
+                        ""
+                    )
+                    .trim();
+
+                if (
+                    !url
+                    ||
+                    !title
+                    ||
+                    !/^https?:\/\//i.test(
+                        url
+                    )
+                ) {
+                    return false;
+                }
+
+                let hostname =
+                    "";
+
+                try {
+                    hostname =
+                        new URL(
+                            url
+                        )
+                        .hostname
+                        .toLowerCase();
+                } catch (
+                    error
+                ) {
+                    return false;
+                }
+
+                if (
+                    hostname
+                    !==
+                    "reuters.com"
+                    &&
+                    !hostname.endsWith(
+                        ".reuters.com"
+                    )
+                ) {
+                    return false;
+                }
+
+                const key =
+                    title
+                    .toLowerCase()
+                    .replace(
+                        /\s+/g,
+                        " "
+                    );
+
+                if (
+                    seen.has(
+                        key
+                    )
+                ) {
+                    return false;
+                }
+
+                seen.add(
+                    key
+                );
+
+                return true;
+            }
+        )
+        .slice(
+            0,
+            32
+        );
+    }
+
+
+    function renderNewsList(
+        articles
+    ) {
+        el.newsList.replaceChildren();
+
+        if (
+            articles.length
+            ===
+            0
+        ) {
+            const empty =
+                document.createElement(
+                    "div"
+                );
+
+            empty.className =
+                "news-empty";
+
+            empty.textContent =
+                "Keine Reuters-Meldungen gefunden.";
+
+            el.newsList.appendChild(
+                empty
+            );
+
+            return;
+        }
+
+        articles.forEach(
+            article => {
+                const link =
+                    document.createElement(
+                        "a"
+                    );
+
+                link.className =
+                    "news-item";
+
+                link.href =
+                    article.url;
+
+                link.target =
+                    "_blank";
+
+                link.rel =
+                    "noopener noreferrer";
+
+                const meta =
+                    document.createElement(
+                        "div"
+                    );
+
+                meta.className =
+                    "news-item-meta";
+
+                const source =
+                    document.createElement(
+                        "span"
+                    );
+
+                source.className =
+                    "news-item-source";
+
+                source.textContent =
+                    "Reuters";
+
+                const timeText =
+                    formatNewsTime(
+                        article.seendate
+                    );
+
+                meta.appendChild(
+                    source
+                );
+
+                if (
+                    timeText
+                ) {
+                    const dot =
+                        document.createElement(
+                            "span"
+                        );
+
+                    dot.className =
+                        "news-item-dot";
+
+                    dot.textContent =
+                        "·";
+
+                    const time =
+                        document.createElement(
+                            "span"
+                        );
+
+                    time.textContent =
+                        timeText;
+
+                    meta.append(
+                        dot,
+                        time
+                    );
+                }
+
+                const title =
+                    document.createElement(
+                        "h2"
+                    );
+
+                title.className =
+                    "news-item-title";
+
+                title.textContent =
+                    article.title;
+
+                link.append(
+                    meta,
+                    title
+                );
+
+                el.newsList.appendChild(
+                    link
+                );
+            }
+        );
+    }
+
+
+    async function fetchReutersNews(
+        category = newsActiveCategory
+    ) {
+        const requestToken =
+            ++newsRequestToken;
+
+        newsActiveCategory =
+            NEWS_CATEGORY_QUERIES[category]
+                ? category
+                : "top";
+
+        renderNewsCategoryState();
+
+        setNewsStatus(
+            "Aktualisiere",
+            true
+        );
+
+        el.newsList.replaceChildren();
+
+        const params =
+            new URLSearchParams({
+                query:
+                    NEWS_CATEGORY_QUERIES[
+                        newsActiveCategory
+                    ],
+                mode:
+                    "ArtList",
+                maxrecords:
+                    "50",
+                format:
+                    "json",
+                sort:
+                    "datedesc",
+                timespan:
+                    "3d"
+            });
+
+        try {
+            const response =
+                await fetch(
+                    `${NEWS_GDELT_ENDPOINT}?${params.toString()}`,
+                    {
+                        cache:
+                            "no-store"
+                    }
+                );
+
+            if (
+                !response.ok
+            ) {
+                throw new Error(
+                    `GDELT ${response.status}`
+                );
+            }
+
+            const data =
+                await response.json();
+
+            if (
+                requestToken
+                !==
+                newsRequestToken
+            ) {
+                return;
+            }
+
+            const articles =
+                normalizeReutersArticles(
+                    data?.articles
+                );
+
+            renderNewsList(
+                articles
+            );
+
+            setNewsStatus(
+                articles.length
+                    ? `${articles.length} aktuelle Meldungen`
+                    : "Keine aktuellen Meldungen"
+            );
+        } catch (
+            error
+        ) {
+            if (
+                requestToken
+                !==
+                newsRequestToken
+            ) {
+                return;
+            }
+
+            renderNewsList(
+                []
+            );
+
+            setNewsStatus(
+                "Reuters konnte gerade nicht geladen werden."
+            );
+        }
+    }
+
+
+    function openNewsPortal() {
+        showScreen(
+            screens.news
+        );
+
+        fetchReutersNews(
+            newsActiveCategory
+        );
+    }
+
+
     function openYoutubePortal() {
         youtubeRequestToken +=
             1;
@@ -12556,9 +13084,68 @@
     );
 
 
+    el.filmRoomNewsHotspot.addEventListener(
+        "click",
+        openNewsPortal
+    );
+
+
     el.filmRoomCameraHotspot.addEventListener(
         "click",
         openYoutubePortal
+    );
+
+
+    el.backFromNews.addEventListener(
+        "click",
+        () => {
+            newsRequestToken += 1;
+            showScreen(
+                screens.filmRoom
+            );
+        }
+    );
+
+
+    el.newsRefreshButton.addEventListener(
+        "click",
+        () => {
+            fetchReutersNews(
+                newsActiveCategory
+            );
+        }
+    );
+
+
+    el.newsCategories.addEventListener(
+        "click",
+        event => {
+            const button =
+                event.target.closest(
+                    "[data-news-category]"
+                );
+
+            if (
+                !button
+            ) {
+                return;
+            }
+
+            const category =
+                button.dataset.newsCategory;
+
+            if (
+                category
+                ===
+                newsActiveCategory
+            ) {
+                return;
+            }
+
+            fetchReutersNews(
+                category
+            );
+        }
     );
 
 

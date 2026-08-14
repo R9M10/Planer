@@ -7287,3 +7287,187 @@ html[data-theme="dark"] #filmRoomScreen .film-room-background {
     -webkit-tap-highlight-color: transparent;
 }
 
+
+
+/* ==================================================
+   V45 — REUTERS / NACHRICHTEN-PROTOTYP
+================================================== */
+
+/* Schmale Wand rechts neben der Terrassentür. */
+#filmRoomScreen .film-room-news-hotspot {
+    left: 88%;
+    top: 5%;
+    width: 12%;
+    height: 64%;
+    z-index: 10;
+}
+
+.news-screen {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.news-topbar {
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.news-room-title {
+    color: var(--text);
+}
+
+.news-refresh-button {
+    justify-self: end;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0 7px 1px 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+.news-shell {
+    width: min(100%, 720px);
+    margin: 0 auto;
+    padding: 12px max(19px, env(safe-area-inset-right)) calc(64px + env(safe-area-inset-bottom)) max(19px, env(safe-area-inset-left));
+}
+
+.news-categories {
+    display: flex;
+    gap: 18px;
+    width: 100%;
+    overflow-x: auto;
+    padding: 5px 0 11px;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.news-categories::-webkit-scrollbar {
+    display: none;
+}
+
+.news-category {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 6px 0;
+    border: 0;
+    background: transparent;
+    color: color-mix(in srgb, var(--muted) 88%, transparent);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    font-size: 12px;
+    font-weight: 420;
+    letter-spacing: .01em;
+    white-space: nowrap;
+}
+
+.news-category.active {
+    color: var(--text);
+}
+
+.news-status {
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0 2px;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+}
+
+.news-status.busy::after {
+    content: "";
+    width: 3px;
+    height: 3px;
+    margin-left: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: wiki-pulse 1s ease-in-out infinite;
+}
+
+.news-list {
+    width: 100%;
+}
+
+.news-item {
+    display: block;
+    width: 100%;
+    padding: 19px 0 18px;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+    color: inherit;
+    text-decoration: none;
+}
+
+.news-item:first-child {
+    padding-top: 13px;
+}
+
+.news-item:last-child {
+    border-bottom: 0;
+}
+
+.news-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 7px;
+    color: color-mix(in srgb, var(--muted) 88%, transparent);
+    font-size: 10px;
+    line-height: 1.25;
+    letter-spacing: .018em;
+}
+
+.news-item-source {
+    color: color-mix(in srgb, var(--text) 73%, transparent);
+    font-weight: 520;
+}
+
+.news-item-dot {
+    opacity: .45;
+}
+
+.news-item-title {
+    margin: 0;
+    color: var(--text);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: clamp(19px, 5vw, 23px);
+    font-weight: 430;
+    line-height: 1.22;
+    letter-spacing: -.012em;
+}
+
+.news-empty {
+    min-height: 46dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: 15px;
+    text-align: center;
+}
+
+.news-prototype-note {
+    margin-top: 38px;
+    padding-top: 16px;
+    border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+    color: color-mix(in srgb, var(--muted) 72%, transparent);
+    font-size: 9px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+@media (max-width: 430px) {
+    .news-shell {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .news-categories {
+        gap: 17px;
+    }
+}

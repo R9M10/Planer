@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=44">
+    <link rel="stylesheet" href="style.css?v=45">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=44" defer></script>
+    <script src="app.js?v=45" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -1222,6 +1222,43 @@ body.youtube-player-open {
         type="button"
         aria-label="Zum Schachraum zurück"
     ></button>
+
+    <!-- Schmale Wand rechts neben der Terrassentür: Nachrichten. -->
+    <button
+        id="filmRoomNewsHotspot"
+        class="film-room-hotspot film-room-news-hotspot"
+        type="button"
+        aria-label="Reuters Nachrichten öffnen"
+    ></button>
+</section>
+
+<!-- ==================================================
+     NACHRICHTEN — REUTERS PROTOTYP
+================================================== -->
+
+<section id="newsScreen" class="screen wikipedia-screen news-screen">
+    <header class="wiki-topbar news-topbar">
+        <button id="backFromNews" class="wiki-back-button" type="button" aria-label="Zurück">‹</button>
+        <div class="wiki-room-title news-room-title">Reuters</div>
+        <button id="newsRefreshButton" class="news-refresh-button" type="button" aria-label="Nachrichten aktualisieren" title="Aktualisieren">↻</button>
+    </header>
+
+    <main class="news-shell">
+        <nav id="newsCategories" class="news-categories" aria-label="Nachrichtenkategorien">
+            <button class="news-category active" type="button" data-news-category="top">Aktuell</button>
+            <button class="news-category" type="button" data-news-category="world">Welt</button>
+            <button class="news-category" type="button" data-news-category="business">Wirtschaft</button>
+            <button class="news-category" type="button" data-news-category="science">Wissenschaft</button>
+            <button class="news-category" type="button" data-news-category="technology">Technologie</button>
+        </nav>
+
+        <div id="newsStatus" class="news-status" aria-live="polite"></div>
+        <section id="newsList" class="news-list" aria-label="Reuters Meldungen"></section>
+
+        <footer class="news-prototype-note">
+            Prototyp · Meldungslinks werden über den GDELT-Newsindex gefunden und führen zum Original bei Reuters.
+        </footer>
+    </main>
 </section>
 
 <!-- ==================================================

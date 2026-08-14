@@ -19,3 +19,15 @@ WEITERE EIGENSCHAFTEN
 - Rückseite mit Notiz / Pause / Ende bleibt unverändert.
 - Ein Tipp auf die Vorderseite öffnet weiterhin direkt die Rückseite.
 - Pause / Fortsetzen friert die Szene exakt ein bzw. setzt sie exakt fort.
+
+
+V45 — REUTERS-NACHRICHTEN PROTOTYP
+
+- Neue unsichtbare Klickfläche an der schmalen Wand rechts neben der Terrassentür im Filmraum.
+- Öffnet eine reduzierte Reuters-Nachrichtenansicht im Stil von Bibliothek/Filme.
+- Kategorien: Aktuell, Welt, Wirtschaft, Wissenschaft, Technologie.
+- Browserseitiger Prototyp über GDELT DOC 2.0, gefiltert auf reuters.com.
+- Ein Klick auf eine Meldung öffnet den Originalartikel bei Reuters.
+- Zurück-Pfeil führt in den Filmraum zurück.
+- Aktualisieren-Button lädt die aktuelle Kategorie neu.
+- Keine API-Schlüssel erforderlich.
