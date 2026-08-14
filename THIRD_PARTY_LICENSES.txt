@@ -46,3 +46,10 @@ Bellingcat
 - Metadata is read from the public Bellingcat RSS feed.
 - Full Bellingcat article text is not republished by the app.
 - RSS media is displayed only when the feed supplies an explicit image credit.
+
+
+Spotify
+-------
+Spotify Web API and Spotify Web Playback SDK are accessed at runtime from Spotify services.
+Spotify content, metadata and artwork remain subject to Spotify's Developer Terms and Platform Rules.
+No Spotify SDK source or media content is bundled in this archive.

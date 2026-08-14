@@ -23,6 +23,7 @@
         chessRoom: $("chessRoomScreen"),
         filmRoom: $("filmRoomScreen"),
         mapRoom: $("mapRoomScreen"),
+        music: $("musicScreen"),
         news: $("newsScreen"),
         wikipedia: $("wikipediaScreen"),
         youtube: $("youtubeScreen"),
@@ -67,8 +68,53 @@
         filmRoomBackHotspot: $("filmRoomBackHotspot"),
         filmRoomRightHotspot: $("filmRoomRightHotspot"),
         mapRoomMapHotspot: $("mapRoomMapHotspot"),
+        mapRoomPianoHotspot: $("mapRoomPianoHotspot"),
         mapRoomLeftHotspot: $("mapRoomLeftHotspot"),
         mapRoomRightHotspot: $("mapRoomRightHotspot"),
+        backFromMusic: $("backFromMusic"),
+        spotifyAccountButton: $("spotifyAccountButton"),
+        spotifyAccountMenu: $("spotifyAccountMenu"),
+        spotifyDisconnectButton: $("spotifyDisconnectButton"),
+        spotifyConnectView: $("spotifyConnectView"),
+        spotifyConnectButton: $("spotifyConnectButton"),
+        spotifyConnectStatus: $("spotifyConnectStatus"),
+        spotifyAppView: $("spotifyAppView"),
+        musicTabs: $("musicTabs"),
+        musicSearchPanel: $("musicSearchPanel"),
+        musicPlaylistsPanel: $("musicPlaylistsPanel"),
+        musicLibraryPanel: $("musicLibraryPanel"),
+        spotifySearchForm: $("spotifySearchForm"),
+        spotifySearchInput: $("spotifySearchInput"),
+        spotifySearchStatus: $("spotifySearchStatus"),
+        spotifySearchResults: $("spotifySearchResults"),
+        spotifyNewPlaylistButton: $("spotifyNewPlaylistButton"),
+        spotifyPlaylistsStatus: $("spotifyPlaylistsStatus"),
+        spotifyPlaylistsList: $("spotifyPlaylistsList"),
+        spotifyPlaylistDetail: $("spotifyPlaylistDetail"),
+        spotifyPlaylistDetailBack: $("spotifyPlaylistDetailBack"),
+        spotifyPlaylistDetailHead: $("spotifyPlaylistDetailHead"),
+        spotifyPlaylistTracks: $("spotifyPlaylistTracks"),
+        spotifyLibraryRefresh: $("spotifyLibraryRefresh"),
+        spotifyLibraryStatus: $("spotifyLibraryStatus"),
+        spotifyLibraryList: $("spotifyLibraryList"),
+        spotifyPlayerBar: $("spotifyPlayerBar"),
+        spotifyPlayerArtwork: $("spotifyPlayerArtwork"),
+        spotifyPlayerTitle: $("spotifyPlayerTitle"),
+        spotifyPlayerArtist: $("spotifyPlayerArtist"),
+        spotifyPreviousButton: $("spotifyPreviousButton"),
+        spotifyPlayPauseButton: $("spotifyPlayPauseButton"),
+        spotifyNextButton: $("spotifyNextButton"),
+        spotifyPlaylistPicker: $("spotifyPlaylistPicker"),
+        spotifyPlaylistPickerList: $("spotifyPlaylistPickerList"),
+        spotifyPickerNewPlaylist: $("spotifyPickerNewPlaylist"),
+        spotifyPlaylistPickerCancel: $("spotifyPlaylistPickerCancel"),
+        spotifyPlaylistComposer: $("spotifyPlaylistComposer"),
+        spotifyPlaylistComposerForm: $("spotifyPlaylistComposerForm"),
+        spotifyPlaylistName: $("spotifyPlaylistName"),
+        spotifyPlaylistDescription: $("spotifyPlaylistDescription"),
+        spotifyPlaylistPublic: $("spotifyPlaylistPublic"),
+        spotifyPlaylistComposerStatus: $("spotifyPlaylistComposerStatus"),
+        spotifyPlaylistComposerCancel: $("spotifyPlaylistComposerCancel"),
         backFromNews: $("backFromNews"),
         newsTitleButton: $("newsTitleButton"),
         newsSortMenu: $("newsSortMenu"),
@@ -12867,6 +12913,3069 @@
                 )
         };
     }
+
+
+
+    // ==================================================
+    // SPOTIFY — PKCE, WEB API + WEB PLAYBACK SDK
+    // ==================================================
+
+    const SPOTIFY_CLIENT_ID =
+        "b55ca9d0f3be423a86cad1a2112c04cb";
+
+    const SPOTIFY_REDIRECT_URI =
+        "https://r9m10.github.io/Planer/";
+
+    const SPOTIFY_SCOPES = [
+        "user-read-private",
+        "user-library-read",
+        "user-library-modify",
+        "playlist-read-private",
+        "playlist-read-collaborative",
+        "playlist-modify-private",
+        "playlist-modify-public",
+        "user-read-playback-state",
+        "user-modify-playback-state",
+        "streaming"
+    ];
+
+    const SPOTIFY_TOKEN_KEY =
+        "planer_spotify_tokens_v1";
+
+    const SPOTIFY_PKCE_VERIFIER_KEY =
+        "planer_spotify_pkce_verifier_v1";
+
+    const SPOTIFY_PKCE_STATE_KEY =
+        "planer_spotify_pkce_state_v1";
+
+    let spotifyTokens =
+        loadSpotifyTokens();
+
+    let spotifyProfile =
+        null;
+
+    let spotifyActiveTab =
+        "search";
+
+    let spotifySearchData =
+        {
+            tracks: [],
+            albums: [],
+            artists: []
+        };
+
+    let spotifyPlaylists =
+        [];
+
+    let spotifyPendingTrack =
+        null;
+
+    let spotifyPlaylistAfterCreate =
+        null;
+
+    let spotifySdkPromise =
+        null;
+
+    let spotifyPlayer =
+        null;
+
+    let spotifyPlayerDeviceId =
+        "";
+
+    let spotifyPlayerReadyPromise =
+        null;
+
+    let spotifyPlayerReadyResolve =
+        null;
+
+    let spotifyPlayerState =
+        null;
+
+
+    function spotifySetText(
+        element,
+        text = ""
+    ) {
+        if (element) {
+            element.textContent =
+                text;
+        }
+    }
+
+
+    function loadSpotifyTokens() {
+        try {
+            const raw =
+                localStorage.getItem(
+                    SPOTIFY_TOKEN_KEY
+                );
+
+            if (!raw) {
+                return null;
+            }
+
+            const parsed =
+                JSON.parse(
+                    raw
+                );
+
+            if (
+                !parsed
+                ||
+                !parsed.refreshToken
+            ) {
+                return null;
+            }
+
+            return parsed;
+        } catch {
+            return null;
+        }
+    }
+
+
+    function saveSpotifyTokens(
+        tokenResponse,
+        existing = null
+    ) {
+        const accessToken =
+            tokenResponse.access_token
+            ??
+            existing?.accessToken
+            ??
+            "";
+
+        const refreshToken =
+            tokenResponse.refresh_token
+            ??
+            existing?.refreshToken
+            ??
+            "";
+
+        if (
+            !accessToken
+            ||
+            !refreshToken
+        ) {
+            throw new Error(
+                "Spotify hat keine vollständigen Tokens zurückgegeben."
+            );
+        }
+
+        spotifyTokens = {
+            accessToken,
+            refreshToken,
+            scope:
+                tokenResponse.scope
+                ??
+                existing?.scope
+                ??
+                "",
+            expiresAt:
+                Date.now()
+                +
+                Math.max(
+                    60,
+                    Number(
+                        tokenResponse.expires_in
+                        ??
+                        3600
+                    )
+                )
+                *
+                1000
+                -
+                45000,
+            authorizedAt:
+                existing?.authorizedAt
+                ??
+                Date.now()
+        };
+
+        localStorage.setItem(
+            SPOTIFY_TOKEN_KEY,
+            JSON.stringify(
+                spotifyTokens
+            )
+        );
+    }
+
+
+    function clearSpotifyTokens() {
+        spotifyTokens =
+            null;
+
+        spotifyProfile =
+            null;
+
+        localStorage.removeItem(
+            SPOTIFY_TOKEN_KEY
+        );
+
+        localStorage.removeItem(
+            SPOTIFY_PKCE_VERIFIER_KEY
+        );
+
+        localStorage.removeItem(
+            SPOTIFY_PKCE_STATE_KEY
+        );
+    }
+
+
+    function spotifyRandomString(
+        length = 64
+    ) {
+        const alphabet =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+
+        const values =
+            crypto.getRandomValues(
+                new Uint8Array(
+                    length
+                )
+            );
+
+        return Array.from(
+            values,
+            value =>
+                alphabet[
+                    value
+                    %
+                    alphabet.length
+                ]
+        ).join("");
+    }
+
+
+    async function spotifyCodeChallenge(
+        verifier
+    ) {
+        const bytes =
+            new TextEncoder().encode(
+                verifier
+            );
+
+        const digest =
+            await crypto.subtle.digest(
+                "SHA-256",
+                bytes
+            );
+
+        return btoa(
+            String.fromCharCode(
+                ...new Uint8Array(
+                    digest
+                )
+            )
+        )
+        .replace(
+            /=/g,
+            ""
+        )
+        .replace(
+            /\+/g,
+            "-"
+        )
+        .replace(
+            /\//g,
+            "_"
+        );
+    }
+
+
+    async function beginSpotifyAuthorization() {
+        spotifySetText(
+            el.spotifyConnectStatus,
+            "Spotify wird geöffnet …"
+        );
+
+        const verifier =
+            spotifyRandomString(
+                96
+            );
+
+        const state =
+            spotifyRandomString(
+                32
+            );
+
+        const challenge =
+            await spotifyCodeChallenge(
+                verifier
+            );
+
+        localStorage.setItem(
+            SPOTIFY_PKCE_VERIFIER_KEY,
+            verifier
+        );
+
+        localStorage.setItem(
+            SPOTIFY_PKCE_STATE_KEY,
+            state
+        );
+
+        const authUrl =
+            new URL(
+                "https://accounts.spotify.com/authorize"
+            );
+
+        authUrl.search =
+            new URLSearchParams({
+                client_id:
+                    SPOTIFY_CLIENT_ID,
+                response_type:
+                    "code",
+                redirect_uri:
+                    SPOTIFY_REDIRECT_URI,
+                code_challenge_method:
+                    "S256",
+                code_challenge:
+                    challenge,
+                state,
+                scope:
+                    SPOTIFY_SCOPES.join(
+                        " "
+                    )
+            }).toString();
+
+        window.location.assign(
+            authUrl.toString()
+        );
+    }
+
+
+    function cleanSpotifyCallbackUrl() {
+        const url =
+            new URL(
+                window.location.href
+            );
+
+        [
+            "code",
+            "state",
+            "error"
+        ].forEach(
+            key =>
+                url.searchParams.delete(
+                    key
+                )
+        );
+
+        history.replaceState(
+            {},
+            document.title,
+            `${url.pathname}${url.search}${url.hash}`
+        );
+    }
+
+
+    async function exchangeSpotifyCode(
+        code,
+        returnedState
+    ) {
+        const expectedState =
+            localStorage.getItem(
+                SPOTIFY_PKCE_STATE_KEY
+            );
+
+        const verifier =
+            localStorage.getItem(
+                SPOTIFY_PKCE_VERIFIER_KEY
+            );
+
+        if (
+            !expectedState
+            ||
+            !returnedState
+            ||
+            returnedState
+            !==
+            expectedState
+        ) {
+            throw new Error(
+                "Spotify-Anmeldung konnte nicht sicher bestätigt werden."
+            );
+        }
+
+        if (!verifier) {
+            throw new Error(
+                "Der Spotify-Anmeldevorgang ist abgelaufen. Bitte erneut verbinden."
+            );
+        }
+
+        const response =
+            await fetch(
+                "https://accounts.spotify.com/api/token",
+                {
+                    method:
+                        "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/x-www-form-urlencoded"
+                    },
+                    body:
+                        new URLSearchParams({
+                            client_id:
+                                SPOTIFY_CLIENT_ID,
+                            grant_type:
+                                "authorization_code",
+                            code,
+                            redirect_uri:
+                                SPOTIFY_REDIRECT_URI,
+                            code_verifier:
+                                verifier
+                        })
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data?.error_description
+                ||
+                data?.error
+                ||
+                "Spotify-Anmeldung fehlgeschlagen."
+            );
+        }
+
+        saveSpotifyTokens(
+            data,
+            null
+        );
+
+        localStorage.removeItem(
+            SPOTIFY_PKCE_VERIFIER_KEY
+        );
+
+        localStorage.removeItem(
+            SPOTIFY_PKCE_STATE_KEY
+        );
+    }
+
+
+    async function refreshSpotifyAccessToken() {
+        if (
+            !spotifyTokens?.refreshToken
+        ) {
+            return null;
+        }
+
+        const response =
+            await fetch(
+                "https://accounts.spotify.com/api/token",
+                {
+                    method:
+                        "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/x-www-form-urlencoded"
+                    },
+                    body:
+                        new URLSearchParams({
+                            grant_type:
+                                "refresh_token",
+                            refresh_token:
+                                spotifyTokens.refreshToken,
+                            client_id:
+                                SPOTIFY_CLIENT_ID
+                        })
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            if (
+                data?.error
+                ===
+                "invalid_grant"
+            ) {
+                clearSpotifyTokens();
+                renderSpotifyAuthState();
+                throw new Error(
+                    "Die Spotify-Verbindung ist abgelaufen. Bitte erneut verbinden."
+                );
+            }
+
+            throw new Error(
+                data?.error_description
+                ||
+                data?.error
+                ||
+                "Spotify-Token konnte nicht erneuert werden."
+            );
+        }
+
+        saveSpotifyTokens(
+            data,
+            spotifyTokens
+        );
+
+        return spotifyTokens.accessToken;
+    }
+
+
+    async function getSpotifyAccessToken(
+        forceRefresh = false
+    ) {
+        if (
+            !spotifyTokens?.refreshToken
+        ) {
+            return null;
+        }
+
+        if (
+            forceRefresh
+            ||
+            !spotifyTokens.accessToken
+            ||
+            Date.now()
+            >=
+            Number(
+                spotifyTokens.expiresAt
+                ??
+                0
+            )
+        ) {
+            return refreshSpotifyAccessToken();
+        }
+
+        return spotifyTokens.accessToken;
+    }
+
+
+    async function spotifyApi(
+        path,
+        options = {},
+        retry = true
+    ) {
+        const token =
+            await getSpotifyAccessToken();
+
+        if (!token) {
+            throw new Error(
+                "Bitte zuerst Spotify verbinden."
+            );
+        }
+
+        const headers =
+            new Headers(
+                options.headers
+                ??
+                {}
+            );
+
+        headers.set(
+            "Authorization",
+            `Bearer ${token}`
+        );
+
+        if (
+            options.body
+            &&
+            !headers.has(
+                "Content-Type"
+            )
+        ) {
+            headers.set(
+                "Content-Type",
+                "application/json"
+            );
+        }
+
+        const response =
+            await fetch(
+                path.startsWith(
+                    "http"
+                )
+                    ? path
+                    : `https://api.spotify.com/v1${path}`,
+                {
+                    ...options,
+                    headers
+                }
+            );
+
+        if (
+            response.status
+            ===
+            401
+            &&
+            retry
+        ) {
+            await getSpotifyAccessToken(
+                true
+            );
+
+            return spotifyApi(
+                path,
+                options,
+                false
+            );
+        }
+
+        if (
+            response.status
+            ===
+            429
+        ) {
+            const retryAfter =
+                Math.max(
+                    1,
+                    Number(
+                        response.headers.get(
+                            "Retry-After"
+                        )
+                        ??
+                        1
+                    )
+                );
+
+            if (
+                retry
+                &&
+                retryAfter
+                <=
+                10
+            ) {
+                await new Promise(
+                    resolve =>
+                        setTimeout(
+                            resolve,
+                            retryAfter
+                            *
+                            1000
+                        )
+                );
+
+                return spotifyApi(
+                    path,
+                    options,
+                    false
+                );
+            }
+
+            throw new Error(
+                `Spotify bittet um eine kurze Pause (${retryAfter} s).`
+            );
+        }
+
+        if (
+            response.status
+            ===
+            204
+        ) {
+            return null;
+        }
+
+        const contentType =
+            response.headers.get(
+                "content-type"
+            )
+            ??
+            "";
+
+        const data =
+            contentType.includes(
+                "application/json"
+            )
+                ? await response.json()
+                : await response.text();
+
+        if (!response.ok) {
+            const message =
+                data?.error?.message
+                ||
+                data?.message
+                ||
+                data?.error_description
+                ||
+                (typeof data === "string"
+                    ? data
+                    : "")
+                ||
+                `Spotify-Fehler ${response.status}`;
+
+            throw new Error(
+                message
+            );
+        }
+
+        return data;
+    }
+
+
+    async function loadSpotifyProfile() {
+        if (spotifyProfile) {
+            return spotifyProfile;
+        }
+
+        spotifyProfile =
+            await spotifyApi(
+                "/me"
+            );
+
+        return spotifyProfile;
+    }
+
+
+    function renderSpotifyAuthState() {
+        const connected =
+            Boolean(
+                spotifyTokens?.refreshToken
+            );
+
+        el.spotifyConnectView.classList.toggle(
+            "hidden",
+            connected
+        );
+
+        el.spotifyAppView.classList.toggle(
+            "hidden",
+            !connected
+        );
+
+        el.spotifyAccountButton.classList.toggle(
+            "hidden",
+            !connected
+        );
+
+        if (!connected) {
+            el.spotifyPlayerBar.classList.add(
+                "hidden"
+            );
+        }
+    }
+
+
+    function spotifyImageUrl(
+        images
+    ) {
+        if (
+            !Array.isArray(
+                images
+            )
+        ) {
+            return "";
+        }
+
+        const sorted =
+            [...images]
+            .filter(
+                image =>
+                    image?.url
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    Math.abs(
+                        Number(
+                            a.width
+                            ??
+                            300
+                        )
+                        -
+                        300
+                    )
+                    -
+                    Math.abs(
+                        Number(
+                            b.width
+                            ??
+                            300
+                        )
+                        -
+                        300
+                    )
+            );
+
+        return sorted[0]?.url
+            ??
+            "";
+    }
+
+
+    function spotifyArtistsText(
+        artists
+    ) {
+        return Array.isArray(
+            artists
+        )
+            ? artists
+                .map(
+                    artist =>
+                        artist?.name
+                )
+                .filter(
+                    Boolean
+                )
+                .join(
+                    ", "
+                )
+            : "";
+    }
+
+
+    function makeSpotifyArtwork(
+        url,
+        className,
+        alt = ""
+    ) {
+        if (!url) {
+            const placeholder =
+                document.createElement(
+                    "div"
+                );
+
+            placeholder.className =
+                `${className} music-playlist-placeholder`;
+
+            placeholder.textContent =
+                "♪";
+
+            placeholder.setAttribute(
+                "aria-hidden",
+                "true"
+            );
+
+            return placeholder;
+        }
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+        image.className =
+            className;
+
+        image.src =
+            url;
+
+        image.alt =
+            alt;
+
+        image.loading =
+            "lazy";
+
+        return image;
+    }
+
+
+    function makeSpotifyExternalLink(
+        url,
+        label = "In Spotify öffnen"
+    ) {
+        if (!url) {
+            return null;
+        }
+
+        const link =
+            document.createElement(
+                "a"
+            );
+
+        link.className =
+            "music-row-link";
+
+        link.href =
+            url;
+
+        link.target =
+            "_blank";
+
+        link.rel =
+            "noopener noreferrer";
+
+        link.textContent =
+            "↗";
+
+        link.setAttribute(
+            "aria-label",
+            label
+        );
+
+        link.addEventListener(
+            "click",
+            event =>
+                event.stopPropagation()
+        );
+
+        return link;
+    }
+
+
+    function makeSpotifyTrackRow(
+        track,
+        options = {}
+    ) {
+        const row =
+            document.createElement(
+                "div"
+            );
+
+        row.className =
+            "music-track-row";
+
+        const art =
+            makeSpotifyArtwork(
+                spotifyImageUrl(
+                    track?.album?.images
+                    ??
+                    track?.images
+                ),
+                "music-track-art",
+                track?.album?.name
+                ??
+                ""
+            );
+
+        const main =
+            document.createElement(
+                "div"
+            );
+
+        main.className =
+            "music-row-main";
+
+        const title =
+            document.createElement(
+                "div"
+            );
+
+        title.className =
+            "music-row-title";
+
+        title.textContent =
+            track?.name
+            ??
+            "Unbekannter Titel";
+
+        const subtitle =
+            document.createElement(
+                "div"
+            );
+
+        subtitle.className =
+            "music-row-subtitle";
+
+        subtitle.textContent =
+            spotifyArtistsText(
+                track?.artists
+            )
+            ||
+            track?.album?.name
+            ||
+            "Spotify";
+
+        main.append(
+            title,
+            subtitle
+        );
+
+        const actions =
+            document.createElement(
+                "div"
+            );
+
+        actions.className =
+            "music-row-actions";
+
+        if (
+            track?.uri
+        ) {
+            const play =
+                document.createElement(
+                    "button"
+                );
+
+            play.className =
+                "music-row-button music-row-play";
+
+            play.type =
+                "button";
+
+            play.textContent =
+                "▶";
+
+            play.setAttribute(
+                "aria-label",
+                `„${track.name}“ abspielen`
+            );
+
+            play.addEventListener(
+                "click",
+                async () => {
+                    try {
+                        await spotifyPlayTrack(
+                            track
+                        );
+                    } catch (error) {
+                        spotifySetText(
+                            el.spotifySearchStatus,
+                            error.message
+                        );
+                    }
+                }
+            );
+
+            actions.appendChild(
+                play
+            );
+
+            if (
+                options.allowAdd
+                !==
+                false
+            ) {
+                const add =
+                    document.createElement(
+                        "button"
+                    );
+
+                add.className =
+                    "music-row-button";
+
+                add.type =
+                    "button";
+
+                add.textContent =
+                    "+";
+
+                add.setAttribute(
+                    "aria-label",
+                    `„${track.name}“ zu Playlist hinzufügen`
+                );
+
+                add.addEventListener(
+                    "click",
+                    () =>
+                        openSpotifyPlaylistPicker(
+                            track
+                        )
+                );
+
+                actions.appendChild(
+                    add
+                );
+            }
+        }
+
+        const external =
+            makeSpotifyExternalLink(
+                track?.external_urls?.spotify,
+                `„${track?.name ?? "Titel"}“ in Spotify öffnen`
+            );
+
+        if (external) {
+            actions.appendChild(
+                external
+            );
+        }
+
+        row.append(
+            art,
+            main,
+            actions
+        );
+
+        return row;
+    }
+
+
+    function makeSpotifyEntityRow(
+        entity,
+        type
+    ) {
+        const row =
+            document.createElement(
+                "div"
+            );
+
+        row.className =
+            "music-entity-row";
+
+        const isArtist =
+            type
+            ===
+            "artist";
+
+        const art =
+            makeSpotifyArtwork(
+                spotifyImageUrl(
+                    entity?.images
+                ),
+                `music-entity-art ${isArtist ? "music-artist-art" : ""}`,
+                entity?.name
+                ??
+                ""
+            );
+
+        const main =
+            document.createElement(
+                "div"
+            );
+
+        main.className =
+            "music-row-main";
+
+        const title =
+            document.createElement(
+                "div"
+            );
+
+        title.className =
+            "music-row-title";
+
+        title.textContent =
+            entity?.name
+            ??
+            "Spotify";
+
+        const subtitle =
+            document.createElement(
+                "div"
+            );
+
+        subtitle.className =
+            "music-row-subtitle";
+
+        subtitle.textContent =
+            isArtist
+                ? "Künstler"
+                : spotifyArtistsText(
+                    entity?.artists
+                )
+                ||
+                "Album";
+
+        main.append(
+            title,
+            subtitle
+        );
+
+        const actions =
+            document.createElement(
+                "div"
+            );
+
+        actions.className =
+            "music-row-actions";
+
+        if (
+            !isArtist
+            &&
+            entity?.uri
+        ) {
+            const play =
+                document.createElement(
+                    "button"
+                );
+
+            play.className =
+                "music-row-button music-row-play";
+
+            play.type =
+                "button";
+
+            play.textContent =
+                "▶";
+
+            play.setAttribute(
+                "aria-label",
+                `„${entity.name}“ abspielen`
+            );
+
+            play.addEventListener(
+                "click",
+                async () => {
+                    try {
+                        await spotifyPlayContext(
+                            entity.uri
+                        );
+                    } catch (error) {
+                        spotifySetText(
+                            el.spotifySearchStatus,
+                            error.message
+                        );
+                    }
+                }
+            );
+
+            actions.appendChild(
+                play
+            );
+        }
+
+        const external =
+            makeSpotifyExternalLink(
+                entity?.external_urls?.spotify,
+                `„${entity?.name ?? "Spotify"}“ in Spotify öffnen`
+            );
+
+        if (external) {
+            actions.appendChild(
+                external
+            );
+        }
+
+        row.append(
+            art,
+            main,
+            actions
+        );
+
+        return row;
+    }
+
+
+    function renderSpotifySearchResults() {
+        el.spotifySearchResults.replaceChildren();
+
+        const sections = [
+            [
+                "Songs",
+                spotifySearchData.tracks,
+                item =>
+                    makeSpotifyTrackRow(
+                        item
+                    )
+            ],
+            [
+                "Alben",
+                spotifySearchData.albums,
+                item =>
+                    makeSpotifyEntityRow(
+                        item,
+                        "album"
+                    )
+            ],
+            [
+                "Künstler",
+                spotifySearchData.artists,
+                item =>
+                    makeSpotifyEntityRow(
+                        item,
+                        "artist"
+                    )
+            ]
+        ];
+
+        sections.forEach(
+            ([
+                label,
+                items,
+                makeRow
+            ]) => {
+                if (
+                    !Array.isArray(
+                        items
+                    )
+                    ||
+                    !items.length
+                ) {
+                    return;
+                }
+
+                const section =
+                    document.createElement(
+                        "section"
+                    );
+
+                section.className =
+                    "music-result-section";
+
+                const heading =
+                    document.createElement(
+                        "div"
+                    );
+
+                heading.className =
+                    "music-result-section-title";
+
+                heading.textContent =
+                    label;
+
+                section.appendChild(
+                    heading
+                );
+
+                items.forEach(
+                    item =>
+                        section.appendChild(
+                            makeRow(
+                                item
+                            )
+                        )
+                );
+
+                el.spotifySearchResults.appendChild(
+                    section
+                );
+            }
+        );
+    }
+
+
+    async function searchSpotify(
+        query
+    ) {
+        const q =
+            String(
+                query
+                ??
+                ""
+            ).trim();
+
+        if (!q) {
+            spotifySearchData = {
+                tracks: [],
+                albums: [],
+                artists: []
+            };
+
+            el.spotifySearchResults.replaceChildren();
+
+            spotifySetText(
+                el.spotifySearchStatus,
+                ""
+            );
+
+            return;
+        }
+
+        spotifySetText(
+            el.spotifySearchStatus,
+            "Suche …"
+        );
+
+        const params =
+            new URLSearchParams({
+                q,
+                type:
+                    "track,album,artist",
+                limit:
+                    "10"
+            });
+
+        const data =
+            await spotifyApi(
+                `/search?${params.toString()}`
+            );
+
+        spotifySearchData = {
+            tracks:
+                data?.tracks?.items
+                ??
+                [],
+            albums:
+                data?.albums?.items
+                ??
+                [],
+            artists:
+                data?.artists?.items
+                ??
+                []
+        };
+
+        renderSpotifySearchResults();
+
+        const count =
+            spotifySearchData.tracks.length
+            +
+            spotifySearchData.albums.length
+            +
+            spotifySearchData.artists.length;
+
+        spotifySetText(
+            el.spotifySearchStatus,
+            count
+                ? `${count} Ergebnisse`
+                : "Keine Treffer"
+        );
+    }
+
+
+    function spotifyPlaylistItemCount(
+        playlist
+    ) {
+        return Number(
+            playlist?.items?.total
+            ??
+            playlist?.tracks?.total
+            ??
+            0
+        );
+    }
+
+
+    function renderSpotifyPlaylists() {
+        el.spotifyPlaylistsList.replaceChildren();
+
+        if (
+            !spotifyPlaylists.length
+        ) {
+            spotifySetText(
+                el.spotifyPlaylistsStatus,
+                "Noch keine Playlists gefunden."
+            );
+
+            return;
+        }
+
+        spotifySetText(
+            el.spotifyPlaylistsStatus,
+            `${spotifyPlaylists.length} Playlists`
+        );
+
+        spotifyPlaylists.forEach(
+            playlist => {
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+                row.className =
+                    "music-playlist-row";
+
+                row.tabIndex =
+                    0;
+
+                row.setAttribute(
+                    "role",
+                    "button"
+                );
+
+                const art =
+                    makeSpotifyArtwork(
+                        spotifyImageUrl(
+                            playlist?.images
+                        ),
+                        "music-playlist-art",
+                        playlist?.name
+                        ??
+                        ""
+                    );
+
+                const main =
+                    document.createElement(
+                        "div"
+                    );
+
+                main.className =
+                    "music-row-main";
+
+                const title =
+                    document.createElement(
+                        "div"
+                    );
+
+                title.className =
+                    "music-row-title";
+
+                title.textContent =
+                    playlist?.name
+                    ??
+                    "Playlist";
+
+                const subtitle =
+                    document.createElement(
+                        "div"
+                    );
+
+                subtitle.className =
+                    "music-row-subtitle";
+
+                const total =
+                    spotifyPlaylistItemCount(
+                        playlist
+                    );
+
+                subtitle.textContent =
+                    `${total} ${total === 1 ? "Titel" : "Titel"}`;
+
+                main.append(
+                    title,
+                    subtitle
+                );
+
+                const actions =
+                    document.createElement(
+                        "div"
+                    );
+
+                actions.className =
+                    "music-row-actions";
+
+                if (
+                    playlist?.uri
+                ) {
+                    const play =
+                        document.createElement(
+                            "button"
+                        );
+
+                    play.className =
+                        "music-row-button music-row-play";
+
+                    play.type =
+                        "button";
+
+                    play.textContent =
+                        "▶";
+
+                    play.setAttribute(
+                        "aria-label",
+                        `„${playlist.name}“ abspielen`
+                    );
+
+                    play.addEventListener(
+                        "click",
+                        async event => {
+                            event.stopPropagation();
+
+                            try {
+                                await spotifyPlayContext(
+                                    playlist.uri
+                                );
+                            } catch (error) {
+                                spotifySetText(
+                                    el.spotifyPlaylistsStatus,
+                                    error.message
+                                );
+                            }
+                        }
+                    );
+
+                    actions.appendChild(
+                        play
+                    );
+                }
+
+                const external =
+                    makeSpotifyExternalLink(
+                        playlist?.external_urls?.spotify,
+                        `„${playlist?.name ?? "Playlist"}“ in Spotify öffnen`
+                    );
+
+                if (external) {
+                    actions.appendChild(
+                        external
+                    );
+                }
+
+                const open =
+                    () =>
+                        openSpotifyPlaylist(
+                            playlist
+                        );
+
+                row.addEventListener(
+                    "click",
+                    open
+                );
+
+                row.addEventListener(
+                    "keydown",
+                    event => {
+                        if (
+                            event.key
+                            ===
+                            "Enter"
+                            ||
+                            event.key
+                            ===
+                            " "
+                        ) {
+                            event.preventDefault();
+                            open();
+                        }
+                    }
+                );
+
+                row.append(
+                    art,
+                    main,
+                    actions
+                );
+
+                el.spotifyPlaylistsList.appendChild(
+                    row
+                );
+            }
+        );
+    }
+
+
+    async function loadSpotifyPlaylists(
+        force = false
+    ) {
+        if (
+            spotifyPlaylists.length
+            &&
+            !force
+        ) {
+            renderSpotifyPlaylists();
+            return spotifyPlaylists;
+        }
+
+        spotifySetText(
+            el.spotifyPlaylistsStatus,
+            "Playlists werden geladen …"
+        );
+
+        const data =
+            await spotifyApi(
+                "/me/playlists?limit=50"
+            );
+
+        spotifyPlaylists =
+            Array.isArray(
+                data?.items
+            )
+                ? data.items.filter(
+                    Boolean
+                )
+                : [];
+
+        renderSpotifyPlaylists();
+
+        return spotifyPlaylists;
+    }
+
+
+    async function openSpotifyPlaylist(
+        playlist
+    ) {
+        if (
+            !playlist?.id
+        ) {
+            return;
+        }
+
+        el.spotifyPlaylistsList.classList.add(
+            "hidden"
+        );
+
+        el.spotifyNewPlaylistButton.classList.add(
+            "hidden"
+        );
+
+        el.spotifyPlaylistDetail.classList.remove(
+            "hidden"
+        );
+
+        el.spotifyPlaylistDetailHead.replaceChildren();
+        el.spotifyPlaylistTracks.replaceChildren();
+
+        const title =
+            document.createElement(
+                "h2"
+            );
+
+        title.textContent =
+            playlist.name
+            ??
+            "Playlist";
+
+        const description =
+            document.createElement(
+                "p"
+            );
+
+        description.textContent =
+            playlist.description
+            ||
+            `${spotifyPlaylistItemCount(playlist)} Titel`;
+
+        el.spotifyPlaylistDetailHead.append(
+            title,
+            description
+        );
+
+        spotifySetText(
+            el.spotifyPlaylistsStatus,
+            "Titel werden geladen …"
+        );
+
+        try {
+            const data =
+                await spotifyApi(
+                    `/playlists/${encodeURIComponent(playlist.id)}/items?limit=50`
+                );
+
+            const rows =
+                Array.isArray(
+                    data?.items
+                )
+                    ? data.items
+                    : [];
+
+            const tracks =
+                rows
+                .map(
+                    entry =>
+                        entry?.item
+                        ??
+                        entry?.track
+                        ??
+                        entry
+                )
+                .filter(
+                    item =>
+                        item?.type
+                        ===
+                        "track"
+                        ||
+                        item?.uri?.startsWith(
+                            "spotify:track:"
+                        )
+                );
+
+            tracks.forEach(
+                track =>
+                    el.spotifyPlaylistTracks.appendChild(
+                        makeSpotifyTrackRow(
+                            track,
+                            {
+                                allowAdd:
+                                    false
+                            }
+                        )
+                    )
+            );
+
+            spotifySetText(
+                el.spotifyPlaylistsStatus,
+                tracks.length
+                    ? `${tracks.length} Titel`
+                    : "Diese Playlist ist leer."
+            );
+        } catch (error) {
+            spotifySetText(
+                el.spotifyPlaylistsStatus,
+                error.message
+            );
+        }
+    }
+
+
+    function closeSpotifyPlaylistDetail() {
+        el.spotifyPlaylistDetail.classList.add(
+            "hidden"
+        );
+
+        el.spotifyPlaylistsList.classList.remove(
+            "hidden"
+        );
+
+        el.spotifyNewPlaylistButton.classList.remove(
+            "hidden"
+        );
+
+        renderSpotifyPlaylists();
+    }
+
+
+    async function loadSpotifyLibrary() {
+        spotifySetText(
+            el.spotifyLibraryStatus,
+            "Mediathek wird geladen …"
+        );
+
+        el.spotifyLibraryList.replaceChildren();
+
+        const data =
+            await spotifyApi(
+                "/me/tracks?limit=50"
+            );
+
+        const tracks =
+            Array.isArray(
+                data?.items
+            )
+                ? data.items
+                    .map(
+                        entry =>
+                            entry?.track
+                            ??
+                            entry?.item
+                            ??
+                            entry
+                    )
+                    .filter(
+                        Boolean
+                    )
+                : [];
+
+        tracks.forEach(
+            track =>
+                el.spotifyLibraryList.appendChild(
+                    makeSpotifyTrackRow(
+                        track
+                    )
+                )
+        );
+
+        spotifySetText(
+            el.spotifyLibraryStatus,
+            tracks.length
+                ? `${tracks.length} gespeicherte Titel`
+                : "Noch keine gespeicherten Titel."
+        );
+    }
+
+
+    async function saveSpotifyTrackToLibrary(
+        track
+    ) {
+        if (!track?.uri) {
+            return;
+        }
+
+        const params =
+            new URLSearchParams({
+                uris:
+                    track.uri
+            });
+
+        await spotifyApi(
+            `/me/library?${params.toString()}`,
+            {
+                method:
+                    "PUT"
+            }
+        );
+    }
+
+
+    function showMusicTab(
+        tab
+    ) {
+        const valid = [
+            "search",
+            "playlists",
+            "library"
+        ];
+
+        spotifyActiveTab =
+            valid.includes(
+                tab
+            )
+                ? tab
+                : "search";
+
+        el.musicTabs
+            .querySelectorAll(
+                "[data-music-tab]"
+            )
+            .forEach(
+                button =>
+                    button.classList.toggle(
+                        "active",
+                        button.dataset.musicTab
+                        ===
+                        spotifyActiveTab
+                    )
+            );
+
+        el.musicSearchPanel.classList.toggle(
+            "hidden",
+            spotifyActiveTab
+            !==
+            "search"
+        );
+
+        el.musicPlaylistsPanel.classList.toggle(
+            "hidden",
+            spotifyActiveTab
+            !==
+            "playlists"
+        );
+
+        el.musicLibraryPanel.classList.toggle(
+            "hidden",
+            spotifyActiveTab
+            !==
+            "library"
+        );
+
+        if (
+            spotifyActiveTab
+            ===
+            "playlists"
+        ) {
+            void loadSpotifyPlaylists().catch(
+                error =>
+                    spotifySetText(
+                        el.spotifyPlaylistsStatus,
+                        error.message
+                    )
+            );
+        }
+
+        if (
+            spotifyActiveTab
+            ===
+            "library"
+        ) {
+            void loadSpotifyLibrary().catch(
+                error =>
+                    spotifySetText(
+                        el.spotifyLibraryStatus,
+                        error.message
+                    )
+            );
+        }
+    }
+
+
+    function openSpotifyPlaylistPicker(
+        track
+    ) {
+        spotifyPendingTrack =
+            track;
+
+        el.spotifyPlaylistPicker.classList.remove(
+            "hidden"
+        );
+
+        el.spotifyPlaylistPickerList.replaceChildren();
+
+        const render =
+            () => {
+                el.spotifyPlaylistPickerList.replaceChildren();
+
+                spotifyPlaylists.forEach(
+                    playlist => {
+                        const button =
+                            document.createElement(
+                                "button"
+                            );
+
+                        button.className =
+                            "music-sheet-playlist";
+
+                        button.type =
+                            "button";
+
+                        button.textContent =
+                            playlist.name
+                            ??
+                            "Playlist";
+
+                        button.addEventListener(
+                            "click",
+                            async () => {
+                                try {
+                                    spotifySetText(
+                                        el.spotifySearchStatus,
+                                        `Füge zu „${playlist.name}“ hinzu …`
+                                    );
+
+                                    await spotifyApi(
+                                        `/playlists/${encodeURIComponent(playlist.id)}/items`,
+                                        {
+                                            method:
+                                                "POST",
+                                            body:
+                                                JSON.stringify({
+                                                    uris: [
+                                                        track.uri
+                                                    ]
+                                                })
+                                        }
+                                    );
+
+                                    closeSpotifyPlaylistPicker();
+
+                                    spotifySetText(
+                                        el.spotifySearchStatus,
+                                        `Zu „${playlist.name}“ hinzugefügt.`
+                                    );
+
+                                    spotifyPlaylists =
+                                        [];
+                                } catch (error) {
+                                    spotifySetText(
+                                        el.spotifySearchStatus,
+                                        error.message
+                                    );
+                                }
+                            }
+                        );
+
+                        el.spotifyPlaylistPickerList.appendChild(
+                            button
+                        );
+                    }
+                );
+            };
+
+        if (
+            spotifyPlaylists.length
+        ) {
+            render();
+        } else {
+            const loading =
+                document.createElement(
+                    "div"
+                );
+
+            loading.className =
+                "music-status";
+
+            loading.textContent =
+                "Playlists werden geladen …";
+
+            el.spotifyPlaylistPickerList.appendChild(
+                loading
+            );
+
+            void loadSpotifyPlaylists()
+                .then(
+                    render
+                )
+                .catch(
+                    error => {
+                        loading.textContent =
+                            error.message;
+                    }
+                );
+        }
+    }
+
+
+    function closeSpotifyPlaylistPicker() {
+        el.spotifyPlaylistPicker.classList.add(
+            "hidden"
+        );
+
+        spotifyPendingTrack =
+            null;
+    }
+
+
+    function openSpotifyPlaylistComposer(
+        afterCreate = null
+    ) {
+        spotifyPlaylistAfterCreate =
+            afterCreate;
+
+        el.spotifyPlaylistName.value =
+            "";
+
+        el.spotifyPlaylistDescription.value =
+            "";
+
+        el.spotifyPlaylistPublic.checked =
+            false;
+
+        spotifySetText(
+            el.spotifyPlaylistComposerStatus,
+            ""
+        );
+
+        el.spotifyPlaylistComposer.classList.remove(
+            "hidden"
+        );
+
+        requestAnimationFrame(
+            () =>
+                el.spotifyPlaylistName.focus()
+        );
+    }
+
+
+    function closeSpotifyPlaylistComposer() {
+        el.spotifyPlaylistComposer.classList.add(
+            "hidden"
+        );
+
+        spotifyPlaylistAfterCreate =
+            null;
+    }
+
+
+    async function createSpotifyPlaylist(
+        name,
+        description,
+        isPublic
+    ) {
+        const playlist =
+            await spotifyApi(
+                "/me/playlists",
+                {
+                    method:
+                        "POST",
+                    body:
+                        JSON.stringify({
+                            name,
+                            description,
+                            public:
+                                Boolean(
+                                    isPublic
+                                )
+                        })
+                }
+            );
+
+        spotifyPlaylists =
+            [];
+
+        return playlist;
+    }
+
+
+    function loadSpotifySdk() {
+        if (
+            window.Spotify?.Player
+        ) {
+            return Promise.resolve();
+        }
+
+        if (spotifySdkPromise) {
+            return spotifySdkPromise;
+        }
+
+        spotifySdkPromise =
+            new Promise(
+                (
+                    resolve,
+                    reject
+                ) => {
+                    const timeout =
+                        window.setTimeout(
+                            () =>
+                                reject(
+                                    new Error(
+                                        "Spotify-Player konnte nicht geladen werden."
+                                    )
+                                ),
+                            15000
+                        );
+
+                    window.onSpotifyWebPlaybackSDKReady =
+                        () => {
+                            clearTimeout(
+                                timeout
+                            );
+                            resolve();
+                        };
+
+                    const existing =
+                        document.querySelector(
+                            'script[src="https://sdk.scdn.co/spotify-player.js"]'
+                        );
+
+                    if (!existing) {
+                        const script =
+                            document.createElement(
+                                "script"
+                            );
+
+                        script.src =
+                            "https://sdk.scdn.co/spotify-player.js";
+
+                        script.async =
+                            true;
+
+                        script.addEventListener(
+                            "error",
+                            () => {
+                                clearTimeout(
+                                    timeout
+                                );
+
+                                reject(
+                                    new Error(
+                                        "Spotify-Player konnte nicht geladen werden."
+                                    )
+                                );
+                            }
+                        );
+
+                        document.head.appendChild(
+                            script
+                        );
+                    }
+                }
+            );
+
+        return spotifySdkPromise;
+    }
+
+
+    async function ensureSpotifyPlayer() {
+        if (spotifyPlayer) {
+            return spotifyPlayer;
+        }
+
+        await loadSpotifySdk();
+
+        spotifyPlayerReadyPromise =
+            new Promise(
+                resolve => {
+                    spotifyPlayerReadyResolve =
+                        resolve;
+                }
+            );
+
+        spotifyPlayer =
+            new window.Spotify.Player({
+                name:
+                    "Planer · Musik",
+                getOAuthToken:
+                    callback => {
+                        void getSpotifyAccessToken()
+                            .then(
+                                token => {
+                                    if (token) {
+                                        callback(
+                                            token
+                                        );
+                                    }
+                                }
+                            );
+                    },
+                volume:
+                    0.72,
+                enableMediaSession:
+                    true
+            });
+
+        spotifyPlayer.addListener(
+            "ready",
+            ({
+                device_id
+            }) => {
+                spotifyPlayerDeviceId =
+                    device_id;
+
+                if (
+                    spotifyPlayerReadyResolve
+                ) {
+                    spotifyPlayerReadyResolve(
+                        device_id
+                    );
+
+                    spotifyPlayerReadyResolve =
+                        null;
+                }
+            }
+        );
+
+        spotifyPlayer.addListener(
+            "not_ready",
+            ({
+                device_id
+            }) => {
+                if (
+                    spotifyPlayerDeviceId
+                    ===
+                    device_id
+                ) {
+                    spotifyPlayerDeviceId =
+                        "";
+                }
+            }
+        );
+
+        spotifyPlayer.addListener(
+            "player_state_changed",
+            state => {
+                spotifyPlayerState =
+                    state;
+
+                renderSpotifyPlayerState(
+                    state
+                );
+            }
+        );
+
+        [
+            "initialization_error",
+            "authentication_error",
+            "account_error",
+            "playback_error"
+        ].forEach(
+            eventName =>
+                spotifyPlayer.addListener(
+                    eventName,
+                    ({
+                        message
+                    }) => {
+                        spotifySetText(
+                            el.spotifySearchStatus,
+                            message
+                            ||
+                            "Spotify-Playerfehler"
+                        );
+                    }
+                )
+        );
+
+        spotifyPlayer.addListener(
+            "autoplay_failed",
+            () => {
+                spotifySetText(
+                    el.spotifySearchStatus,
+                    "Tippe einmal auf Play, damit der Browser die Wiedergabe freigibt."
+                );
+            }
+        );
+
+        const connected =
+            await spotifyPlayer.connect();
+
+        if (!connected) {
+            throw new Error(
+                "Spotify-Player konnte nicht verbunden werden."
+            );
+        }
+
+        return spotifyPlayer;
+    }
+
+
+    async function spotifyDeviceId() {
+        await ensureSpotifyPlayer();
+
+        if (
+            spotifyPlayerDeviceId
+        ) {
+            return spotifyPlayerDeviceId;
+        }
+
+        return Promise.race([
+            spotifyPlayerReadyPromise,
+            new Promise(
+                (
+                    _,
+                    reject
+                ) =>
+                    setTimeout(
+                        () =>
+                            reject(
+                                new Error(
+                                    "Spotify-Player ist noch nicht bereit. Bitte erneut versuchen."
+                                )
+                            ),
+                        9000
+                    )
+            )
+        ]);
+    }
+
+
+    async function spotifyActivatePlayer() {
+        const player =
+            await ensureSpotifyPlayer();
+
+        if (
+            typeof player.activateElement
+            ===
+            "function"
+        ) {
+            try {
+                await player.activateElement();
+            } catch {
+                // Browser may not require it.
+            }
+        }
+
+        return player;
+    }
+
+
+    async function spotifyPlayTrack(
+        track
+    ) {
+        if (!track?.uri) {
+            return;
+        }
+
+        await spotifyActivatePlayer();
+
+        const deviceId =
+            await spotifyDeviceId();
+
+        await spotifyApi(
+            `/me/player/play?device_id=${encodeURIComponent(deviceId)}`,
+            {
+                method:
+                    "PUT",
+                body:
+                    JSON.stringify({
+                        uris: [
+                            track.uri
+                        ]
+                    })
+            }
+        );
+
+        renderSpotifyPlayerFallback(
+            track
+        );
+    }
+
+
+    async function spotifyPlayContext(
+        contextUri
+    ) {
+        if (!contextUri) {
+            return;
+        }
+
+        await spotifyActivatePlayer();
+
+        const deviceId =
+            await spotifyDeviceId();
+
+        await spotifyApi(
+            `/me/player/play?device_id=${encodeURIComponent(deviceId)}`,
+            {
+                method:
+                    "PUT",
+                body:
+                    JSON.stringify({
+                        context_uri:
+                            contextUri
+                    })
+            }
+        );
+    }
+
+
+    function renderSpotifyPlayerFallback(
+        track
+    ) {
+        const artwork =
+            spotifyImageUrl(
+                track?.album?.images
+            );
+
+        if (artwork) {
+            el.spotifyPlayerArtwork.src =
+                artwork;
+
+            el.spotifyPlayerArtwork.classList.remove(
+                "hidden"
+            );
+        } else {
+            el.spotifyPlayerArtwork.removeAttribute(
+                "src"
+            );
+        }
+
+        spotifySetText(
+            el.spotifyPlayerTitle,
+            track?.name
+            ??
+            "Spotify"
+        );
+
+        spotifySetText(
+            el.spotifyPlayerArtist,
+            spotifyArtistsText(
+                track?.artists
+            )
+        );
+
+        el.spotifyPlayerBar.classList.remove(
+            "hidden"
+        );
+
+        el.spotifyPlayPauseButton.textContent =
+            "Ⅱ";
+
+        el.spotifyPlayPauseButton.setAttribute(
+            "aria-label",
+            "Wiedergabe pausieren"
+        );
+    }
+
+
+    function renderSpotifyPlayerState(
+        state
+    ) {
+        if (!state) {
+            return;
+        }
+
+        const track =
+            state.track_window?.current_track;
+
+        if (!track) {
+            return;
+        }
+
+        const artwork =
+            spotifyImageUrl(
+                track.album?.images
+            );
+
+        if (artwork) {
+            el.spotifyPlayerArtwork.src =
+                artwork;
+        }
+
+        spotifySetText(
+            el.spotifyPlayerTitle,
+            track.name
+            ??
+            "Spotify"
+        );
+
+        spotifySetText(
+            el.spotifyPlayerArtist,
+            spotifyArtistsText(
+                track.artists
+            )
+        );
+
+        el.spotifyPlayerBar.classList.remove(
+            "hidden"
+        );
+
+        const paused =
+            Boolean(
+                state.paused
+            );
+
+        el.spotifyPlayPauseButton.textContent =
+            paused
+                ? "▶"
+                : "Ⅱ";
+
+        el.spotifyPlayPauseButton.setAttribute(
+            "aria-label",
+            paused
+                ? "Wiedergabe fortsetzen"
+                : "Wiedergabe pausieren"
+        );
+    }
+
+
+    function hideSpotifyAccountMenu() {
+        el.spotifyAccountMenu.classList.add(
+            "hidden"
+        );
+
+        el.spotifyAccountButton.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+    }
+
+
+    function toggleSpotifyAccountMenu() {
+        const open =
+            el.spotifyAccountMenu.classList.contains(
+                "hidden"
+            );
+
+        el.spotifyAccountMenu.classList.toggle(
+            "hidden",
+            !open
+        );
+
+        el.spotifyAccountButton.setAttribute(
+            "aria-expanded",
+            String(
+                open
+            )
+        );
+    }
+
+
+    async function openMusicPortal() {
+        hideSpotifyAccountMenu();
+        renderSpotifyAuthState();
+        showScreen(
+            screens.music
+        );
+
+        if (
+            !spotifyTokens?.refreshToken
+        ) {
+            return;
+        }
+
+        spotifySetText(
+            el.spotifyConnectStatus,
+            ""
+        );
+
+        try {
+            await loadSpotifyProfile();
+            await ensureSpotifyPlayer();
+            showMusicTab(
+                spotifyActiveTab
+            );
+        } catch (error) {
+            spotifySetText(
+                el.spotifySearchStatus,
+                error.message
+            );
+        }
+    }
+
+
+    async function initializeSpotifyOnLoad() {
+        renderSpotifyAuthState();
+
+        const params =
+            new URLSearchParams(
+                window.location.search
+            );
+
+        const code =
+            params.get(
+                "code"
+            );
+
+        const state =
+            params.get(
+                "state"
+            );
+
+        const authError =
+            params.get(
+                "error"
+            );
+
+        if (
+            !code
+            &&
+            !authError
+        ) {
+            return;
+        }
+
+        showScreen(
+            screens.music
+        );
+
+        if (authError) {
+            cleanSpotifyCallbackUrl();
+            spotifySetText(
+                el.spotifyConnectStatus,
+                authError
+                ===
+                "access_denied"
+                    ? "Spotify-Verbindung wurde abgebrochen."
+                    : `Spotify-Anmeldung: ${authError}`
+            );
+            return;
+        }
+
+        spotifySetText(
+            el.spotifyConnectStatus,
+            "Spotify wird verbunden …"
+        );
+
+        try {
+            await exchangeSpotifyCode(
+                code,
+                state
+            );
+
+            cleanSpotifyCallbackUrl();
+            renderSpotifyAuthState();
+            await loadSpotifyProfile();
+            await ensureSpotifyPlayer();
+            showMusicTab(
+                "search"
+            );
+            spotifySetText(
+                el.spotifySearchStatus,
+                "Verbunden. Suche nach Musik oder öffne deine Playlists."
+            );
+        } catch (error) {
+            cleanSpotifyCallbackUrl();
+            clearSpotifyTokens();
+            renderSpotifyAuthState();
+            spotifySetText(
+                el.spotifyConnectStatus,
+                error.message
+            );
+        }
+    }
+
+
+    el.mapRoomPianoHotspot.addEventListener(
+        "click",
+        openMusicPortal
+    );
+
+
+    el.backFromMusic.addEventListener(
+        "click",
+        () => {
+            hideSpotifyAccountMenu();
+
+            if (
+                !el.spotifyPlaylistComposer.classList.contains(
+                    "hidden"
+                )
+            ) {
+                closeSpotifyPlaylistComposer();
+                return;
+            }
+
+            if (
+                !el.spotifyPlaylistPicker.classList.contains(
+                    "hidden"
+                )
+            ) {
+                closeSpotifyPlaylistPicker();
+                return;
+            }
+
+            if (
+                !el.spotifyPlaylistDetail.classList.contains(
+                    "hidden"
+                )
+            ) {
+                closeSpotifyPlaylistDetail();
+                return;
+            }
+
+            showScreen(
+                screens.mapRoom
+            );
+        }
+    );
+
+
+    el.spotifyConnectButton.addEventListener(
+        "click",
+        () => {
+            void beginSpotifyAuthorization()
+                .catch(
+                    error =>
+                        spotifySetText(
+                            el.spotifyConnectStatus,
+                            error.message
+                        )
+                );
+        }
+    );
+
+
+    el.spotifyAccountButton.addEventListener(
+        "click",
+        event => {
+            event.stopPropagation();
+            toggleSpotifyAccountMenu();
+        }
+    );
+
+
+    el.spotifyDisconnectButton.addEventListener(
+        "click",
+        () => {
+            hideSpotifyAccountMenu();
+
+            if (spotifyPlayer) {
+                try {
+                    spotifyPlayer.disconnect();
+                } catch {
+                    // already disconnected
+                }
+            }
+
+            spotifyPlayer =
+                null;
+
+            spotifyPlayerDeviceId =
+                "";
+
+            spotifyPlaylists =
+                [];
+
+            clearSpotifyTokens();
+            renderSpotifyAuthState();
+            spotifySetText(
+                el.spotifyConnectStatus,
+                "Spotify wurde getrennt."
+            );
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        event => {
+            if (
+                !el.spotifyAccountMenu.classList.contains(
+                    "hidden"
+                )
+                &&
+                !el.spotifyAccountMenu.contains(
+                    event.target
+                )
+                &&
+                event.target
+                !==
+                el.spotifyAccountButton
+            ) {
+                hideSpotifyAccountMenu();
+            }
+        }
+    );
+
+
+    el.musicTabs.addEventListener(
+        "click",
+        event => {
+            const button =
+                event.target.closest(
+                    "[data-music-tab]"
+                );
+
+            if (!button) {
+                return;
+            }
+
+            showMusicTab(
+                button.dataset.musicTab
+            );
+        }
+    );
+
+
+    el.spotifySearchForm.addEventListener(
+        "submit",
+        event => {
+            event.preventDefault();
+
+            void searchSpotify(
+                el.spotifySearchInput.value
+            ).catch(
+                error =>
+                    spotifySetText(
+                        el.spotifySearchStatus,
+                        error.message
+                    )
+            );
+        }
+    );
+
+
+    el.spotifyNewPlaylistButton.addEventListener(
+        "click",
+        () =>
+            openSpotifyPlaylistComposer()
+    );
+
+
+    el.spotifyPlaylistDetailBack.addEventListener(
+        "click",
+        closeSpotifyPlaylistDetail
+    );
+
+
+    el.spotifyLibraryRefresh.addEventListener(
+        "click",
+        () => {
+            void loadSpotifyLibrary().catch(
+                error =>
+                    spotifySetText(
+                        el.spotifyLibraryStatus,
+                        error.message
+                    )
+            );
+        }
+    );
+
+
+    el.spotifyPlaylistPickerCancel.addEventListener(
+        "click",
+        closeSpotifyPlaylistPicker
+    );
+
+
+    el.spotifyPickerNewPlaylist.addEventListener(
+        "click",
+        () => {
+            const track =
+                spotifyPendingTrack;
+
+            el.spotifyPlaylistPicker.classList.add(
+                "hidden"
+            );
+
+            openSpotifyPlaylistComposer(
+                async playlist => {
+                    if (
+                        track?.uri
+                        &&
+                        playlist?.id
+                    ) {
+                        await spotifyApi(
+                            `/playlists/${encodeURIComponent(playlist.id)}/items`,
+                            {
+                                method:
+                                    "POST",
+                                body:
+                                    JSON.stringify({
+                                        uris: [
+                                            track.uri
+                                        ]
+                                    })
+                            }
+                        );
+
+                        spotifySetText(
+                            el.spotifySearchStatus,
+                            `„${track.name}“ wurde zu „${playlist.name}“ hinzugefügt.`
+                        );
+                    }
+                }
+            );
+        }
+    );
+
+
+    el.spotifyPlaylistComposerCancel.addEventListener(
+        "click",
+        closeSpotifyPlaylistComposer
+    );
+
+
+    el.spotifyPlaylistComposerForm.addEventListener(
+        "submit",
+        event => {
+            event.preventDefault();
+
+            const name =
+                el.spotifyPlaylistName.value.trim();
+
+            const description =
+                el.spotifyPlaylistDescription.value.trim();
+
+            if (!name) {
+                spotifySetText(
+                    el.spotifyPlaylistComposerStatus,
+                    "Bitte gib der Playlist einen Namen."
+                );
+                return;
+            }
+
+            const afterCreate =
+                spotifyPlaylistAfterCreate;
+
+            spotifySetText(
+                el.spotifyPlaylistComposerStatus,
+                "Playlist wird erstellt …"
+            );
+
+            void createSpotifyPlaylist(
+                name,
+                description,
+                el.spotifyPlaylistPublic.checked
+            )
+            .then(
+                async playlist => {
+                    if (
+                        typeof afterCreate
+                        ===
+                        "function"
+                    ) {
+                        await afterCreate(
+                            playlist
+                        );
+                    }
+
+                    closeSpotifyPlaylistComposer();
+                    spotifyPlaylists =
+                        [];
+
+                    if (
+                        spotifyActiveTab
+                        ===
+                        "playlists"
+                    ) {
+                        await loadSpotifyPlaylists(
+                            true
+                        );
+                    }
+                }
+            )
+            .catch(
+                error =>
+                    spotifySetText(
+                        el.spotifyPlaylistComposerStatus,
+                        error.message
+                    )
+            );
+        }
+    );
+
+
+    el.spotifyPlayPauseButton.addEventListener(
+        "click",
+        () => {
+            void spotifyActivatePlayer()
+                .then(
+                    player =>
+                        player.togglePlay()
+                )
+                .catch(
+                    error =>
+                        spotifySetText(
+                            el.spotifySearchStatus,
+                            error.message
+                        )
+                );
+        }
+    );
+
+
+    el.spotifyPreviousButton.addEventListener(
+        "click",
+        () => {
+            void spotifyActivatePlayer()
+                .then(
+                    player =>
+                        player.previousTrack()
+                )
+                .catch(
+                    error =>
+                        spotifySetText(
+                            el.spotifySearchStatus,
+                            error.message
+                        )
+                );
+        }
+    );
+
+
+    el.spotifyNextButton.addEventListener(
+        "click",
+        () => {
+            void spotifyActivatePlayer()
+                .then(
+                    player =>
+                        player.nextTrack()
+                )
+                .catch(
+                    error =>
+                        spotifySetText(
+                            el.spotifySearchStatus,
+                            error.message
+                        )
+                );
+        }
+    );
 
 
     function normalizeNewsFeed(
@@ -28711,6 +31820,8 @@
     initializeV20ThemeDefault();
 
     applyTheme();
+
+    void initializeSpotifyOnLoad();
 
     openTimelineEditFromLocation();
     saveState();

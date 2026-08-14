@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=52">
+    <link rel="stylesheet" href="style.css?v=53">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=52" defer></script>
+    <script src="app.js?v=53" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -1250,6 +1250,14 @@ body.youtube-player-open {
         aria-label="Nachrichten über die Weltkarte öffnen"
     ></button>
 
+    <!-- Der Flügel öffnet die persönliche Spotify-Musikanwendung. -->
+    <button
+        id="mapRoomPianoHotspot"
+        class="map-room-hotspot map-room-piano-hotspot"
+        type="button"
+        aria-label="Musik über den Flügel öffnen"
+    ></button>
+
     <!-- Links herum zurück zum Filmraum. -->
     <button
         id="mapRoomLeftHotspot"
@@ -1265,6 +1273,125 @@ body.youtube-player-open {
         type="button"
         aria-label="Zum Studienzimmer weiterdrehen"
     ></button>
+</section>
+
+
+<!-- ==================================================
+     MUSIK — SPOTIFY
+================================================== -->
+
+<section id="musicScreen" class="screen wikipedia-screen music-screen">
+    <header class="wiki-topbar music-topbar">
+        <button id="backFromMusic" class="wiki-back-button" type="button" aria-label="Zurück">‹</button>
+        <div class="wiki-room-title music-room-title">Musik</div>
+        <button id="spotifyAccountButton" class="music-account-button" type="button" aria-label="Spotify-Verbindung" aria-haspopup="true" aria-expanded="false">···</button>
+    </header>
+
+    <div id="spotifyAccountMenu" class="music-account-menu hidden" role="menu" aria-label="Spotify-Konto">
+        <a class="music-account-option" href="https://open.spotify.com/" target="_blank" rel="noopener noreferrer">Spotify öffnen ↗</a>
+        <button id="spotifyDisconnectButton" class="music-account-option music-account-option-danger" type="button">Verbindung trennen</button>
+    </div>
+
+    <main class="music-shell">
+        <section id="spotifyConnectView" class="music-connect-view">
+            <div class="music-connect-mark" aria-hidden="true">♪</div>
+            <h1>Spotify verbinden</h1>
+            <p>Suche Musik, verwalte deine Playlists und höre direkt im Planer.</p>
+            <button id="spotifyConnectButton" class="music-connect-button" type="button">Mit Spotify verbinden</button>
+            <div id="spotifyConnectStatus" class="music-connect-status" aria-live="polite"></div>
+        </section>
+
+        <section id="spotifyAppView" class="music-app-view hidden">
+            <nav id="musicTabs" class="music-tabs" aria-label="Musikbereiche">
+                <button class="music-tab active" type="button" data-music-tab="search">Suchen</button>
+                <button class="music-tab" type="button" data-music-tab="playlists">Playlists</button>
+                <button class="music-tab" type="button" data-music-tab="library">Mediathek</button>
+            </nav>
+
+            <section id="musicSearchPanel" class="music-panel">
+                <form id="spotifySearchForm" class="music-search-form" role="search">
+                    <input id="spotifySearchInput" class="music-search-input" type="search" inputmode="search" autocomplete="off" autocapitalize="sentences" spellcheck="true" placeholder="Musik suchen" aria-label="Spotify durchsuchen">
+                    <button class="music-search-button" type="submit" aria-label="Suchen">⌕</button>
+                </form>
+                <div id="spotifySearchStatus" class="music-status" aria-live="polite"></div>
+                <div id="spotifySearchResults" class="music-results"></div>
+            </section>
+
+            <section id="musicPlaylistsPanel" class="music-panel hidden">
+                <div class="music-panel-heading">
+                    <div>
+                        <div class="music-eyebrow">DEINE SAMMLUNG</div>
+                        <h2>Playlists</h2>
+                    </div>
+                    <button id="spotifyNewPlaylistButton" class="music-round-add" type="button" aria-label="Neue Playlist">+</button>
+                </div>
+                <div id="spotifyPlaylistsStatus" class="music-status" aria-live="polite"></div>
+                <div id="spotifyPlaylistsList" class="music-playlist-list"></div>
+                <section id="spotifyPlaylistDetail" class="music-playlist-detail hidden">
+                    <button id="spotifyPlaylistDetailBack" class="music-inline-back" type="button">‹ Playlists</button>
+                    <div id="spotifyPlaylistDetailHead" class="music-playlist-detail-head"></div>
+                    <div id="spotifyPlaylistTracks" class="music-results"></div>
+                </section>
+            </section>
+
+            <section id="musicLibraryPanel" class="music-panel hidden">
+                <div class="music-panel-heading">
+                    <div>
+                        <div class="music-eyebrow">GESPEICHERT</div>
+                        <h2>Mediathek</h2>
+                    </div>
+                    <button id="spotifyLibraryRefresh" class="music-refresh-button" type="button" aria-label="Mediathek aktualisieren">↻</button>
+                </div>
+                <div id="spotifyLibraryStatus" class="music-status" aria-live="polite"></div>
+                <div id="spotifyLibraryList" class="music-results"></div>
+            </section>
+
+            <div class="spotify-attribution">
+                <a href="https://open.spotify.com/" target="_blank" rel="noopener noreferrer">In Spotify öffnen ↗</a>
+            </div>
+        </section>
+    </main>
+
+    <div id="spotifyPlayerBar" class="spotify-player-bar hidden" aria-live="polite">
+        <img id="spotifyPlayerArtwork" class="spotify-player-artwork" alt="">
+        <div class="spotify-player-copy">
+            <div id="spotifyPlayerTitle" class="spotify-player-title">—</div>
+            <div id="spotifyPlayerArtist" class="spotify-player-artist"></div>
+        </div>
+        <div class="spotify-player-controls">
+            <button id="spotifyPreviousButton" type="button" aria-label="Vorheriger Titel">‹</button>
+            <button id="spotifyPlayPauseButton" class="spotify-play-pause" type="button" aria-label="Wiedergabe starten">▶</button>
+            <button id="spotifyNextButton" type="button" aria-label="Nächster Titel">›</button>
+        </div>
+    </div>
+
+    <div id="spotifyPlaylistPicker" class="music-sheet-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="spotifyPlaylistPickerTitle">
+        <div class="music-sheet">
+            <div class="music-sheet-handle" aria-hidden="true"></div>
+            <div id="spotifyPlaylistPickerTitle" class="music-sheet-title">Zu Playlist hinzufügen</div>
+            <div id="spotifyPlaylistPickerList" class="music-sheet-list"></div>
+            <button id="spotifyPickerNewPlaylist" class="music-sheet-primary" type="button">+ Neue Playlist</button>
+            <button id="spotifyPlaylistPickerCancel" class="music-sheet-cancel" type="button">Abbrechen</button>
+        </div>
+    </div>
+
+    <div id="spotifyPlaylistComposer" class="music-sheet-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="spotifyPlaylistComposerTitle">
+        <form id="spotifyPlaylistComposerForm" class="music-sheet music-composer-sheet">
+            <div class="music-sheet-handle" aria-hidden="true"></div>
+            <div id="spotifyPlaylistComposerTitle" class="music-sheet-title">Neue Playlist</div>
+            <label class="music-field-label" for="spotifyPlaylistName">Name</label>
+            <input id="spotifyPlaylistName" class="music-field" type="text" maxlength="100" autocomplete="off" placeholder="Playlistname" required>
+            <label class="music-field-label" for="spotifyPlaylistDescription">Beschreibung</label>
+            <input id="spotifyPlaylistDescription" class="music-field" type="text" maxlength="300" autocomplete="off" placeholder="Optional">
+            <label class="music-switch-row">
+                <span>Öffentlich</span>
+                <input id="spotifyPlaylistPublic" type="checkbox">
+            </label>
+            <div id="spotifyPlaylistComposerStatus" class="music-connect-status" aria-live="polite"></div>
+            <button class="music-sheet-primary" type="submit">Erstellen</button>
+            <button id="spotifyPlaylistComposerCancel" class="music-sheet-cancel" type="button">Abbrechen</button>
+        </form>
+    </div>
 </section>
 
 
