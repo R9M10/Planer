@@ -7078,11 +7078,17 @@
 
 
     // ==================================================
-    // V43 — SCHWARZES-LOCH-UHR
+    // V44 — VERFEINERTE SCHWARZES-LOCH-UHR
     //
-    // Die Session kennt weiterhin nur einen normierten Fortschritt p∈[0,1].
-    // Dadurch dauert dieselbe kosmische Entwicklung bei einem 5-Minuten-
-    // Element 5 Minuten und bei einem 60-Minuten-Element 60 Minuten.
+    // Änderungen gegenüber v43:
+    // - keine explizit gemalte Akkretionsscheibe mehr
+    // - kein heller / weißer Ring um den Ereignishorizont
+    // - realistischere zeitliche Skalierung: vollständige Schwärze
+    //   erst ganz am Ende
+    // - Objekte beginnen in der Nähe des Lochs thermisch zu glühen;
+    //   dadurch entsteht die Scheibenanmutung organisch aus dem Einfall
+    // - jede Session-Einheit erhält nun bei jedem Start neue
+    //   zufällige Startpositionen der Objekte
     // ==================================================
 
     function clamp01(
@@ -7118,44 +7124,6 @@
                 *
                 t
             )
-        );
-    }
-
-
-    function hashCosmicSeed(
-        text
-    ) {
-        let hash =
-            2166136261;
-
-        const source =
-            String(
-                text
-                ??
-                ""
-            );
-
-        for (
-            let index = 0;
-            index < source.length;
-            index += 1
-        ) {
-            hash ^=
-                source.charCodeAt(
-                    index
-                );
-
-            hash =
-                Math.imul(
-                    hash,
-                    16777619
-                );
-        }
-
-        return (
-            hash
-            >>>
-            0
         );
     }
 
@@ -7227,19 +7195,15 @@
     function cosmicGaussian(
         random
     ) {
-        let u =
-            0;
-
-        let v =
-            0;
+        let u = 0;
+        let v = 0;
 
         while (
             u
             ===
             0
         ) {
-            u =
-                random();
+            u = random();
         }
 
         while (
@@ -7247,8 +7211,7 @@
             ===
             0
         ) {
-            v =
-                random();
+            v = random();
         }
 
         return (
@@ -7271,573 +7234,175 @@
     }
 
 
+    function randomSceneSeed() {
+        if (
+            typeof crypto !== "undefined"
+            &&
+            typeof crypto.getRandomValues === "function"
+        ) {
+            const values =
+                new Uint32Array(
+                    1
+                );
+
+            crypto.getRandomValues(
+                values
+            );
+
+            return values[0] >>> 0;
+        }
+
+        return (
+            (
+                Date.now()
+                ^
+                Math.floor(
+                    Math.random()
+                    *
+                    0xFFFFFFFF
+                )
+            )
+            >>>
+            0
+        );
+    }
+
+
     function createGalaxySprite(
         random,
         index
     ) {
-        const size =
-            256;
+        const size = 256;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
 
-        const canvas =
-            document.createElement(
-                "canvas"
-            );
-
-        canvas.width =
-            size;
-
-        canvas.height =
-            size;
-
-        const context =
-            canvas.getContext(
-                "2d"
-            );
-
-        const center =
-            size
-            /
-            2;
+        const context = canvas.getContext("2d");
+        const center = size / 2;
 
         const arms =
-            index
-            %
-            3
-            ===
-            2
-                ? 3
-                : 2;
+            index % 3 === 2 ? 3 : 2;
 
         const flatten =
-            0.50
-            +
-            random()
-            *
-            0.22;
+            0.48 + random() * 0.24;
 
         const twist =
-            0.050
-            +
-            random()
-            *
-            0.030;
+            0.045 + random() * 0.03;
 
         const palettes = [
-            {
-                core:
-                    "255,235,196",
-                warm:
-                    "244,192,126",
-                cool:
-                    "167,196,255"
-            },
-            {
-                core:
-                    "255,246,220",
-                warm:
-                    "235,174,116",
-                cool:
-                    "142,185,255"
-            },
-            {
-                core:
-                    "242,235,213",
-                warm:
-                    "215,170,122",
-                cool:
-                    "169,199,237"
-            }
+            { core: "255,235,196", warm: "244,192,126", cool: "167,196,255" },
+            { core: "255,246,220", warm: "235,174,116", cool: "142,185,255" },
+            { core: "242,235,213", warm: "215,170,122", cool: "169,199,237" }
         ];
 
-        const palette =
-            palettes[
-                index
-                %
-                palettes.length
-            ];
+        const palette = palettes[index % palettes.length];
 
-        context.clearRect(
+        context.clearRect(0, 0, size, size);
+        context.globalCompositeOperation = "lighter";
+
+        const halo = context.createRadialGradient(
+            center,
+            center,
             0,
-            0,
-            size,
-            size
+            center,
+            center,
+            center * 0.94
         );
 
-        context.globalCompositeOperation =
-            "lighter";
+        halo.addColorStop(0, `rgba(${palette.core},0.64)`);
+        halo.addColorStop(0.14, `rgba(${palette.warm},0.25)`);
+        halo.addColorStop(0.52, `rgba(${palette.cool},0.05)`);
+        halo.addColorStop(1, "rgba(0,0,0,0)");
 
-        const halo =
-            context.createRadialGradient(
-                center,
-                center,
-                0,
-                center,
-                center,
-                center
-                *
-                0.92
-            );
-
-        halo.addColorStop(
-            0,
-            `rgba(${palette.core},0.66)`
-        );
-
-        halo.addColorStop(
-            0.13,
-            `rgba(${palette.warm},0.25)`
-        );
-
-        halo.addColorStop(
-            0.52,
-            `rgba(${palette.cool},0.055)`
-        );
-
-        halo.addColorStop(
-            1,
-            "rgba(0,0,0,0)"
-        );
-
-        context.fillStyle =
-            halo;
-
+        context.fillStyle = halo;
         context.beginPath();
-
-        context.arc(
-            center,
-            center,
-            center
-            *
-            0.92,
-            0,
-            Math.PI
-            *
-            2
-        );
-
+        context.arc(center, center, center * 0.94, 0, Math.PI * 2);
         context.fill();
 
-        const starCount =
-            1250;
+        const starCount = 1320;
 
-        for (
-            let particleIndex = 0;
-            particleIndex < starCount;
-            particleIndex += 1
-        ) {
-            const radius =
-                Math.pow(
-                    random(),
-                    0.58
-                )
-                *
-                center
-                *
-                0.80;
-
-            const arm =
-                particleIndex
-                %
-                arms;
-
-            const armAngle =
-                arm
-                *
-                (
-                    Math.PI
-                    *
-                    2
-                    /
-                    arms
-                );
-
-            const scatter =
-                cosmicGaussian(
-                    random
-                )
-                *
-                (
-                    0.12
-                    +
-                    radius
-                    /
-                    center
-                    *
-                    0.20
-                );
-
-            const angle =
-                armAngle
-                +
-                radius
-                *
-                twist
-                +
-                scatter;
-
-            const radialJitter =
-                cosmicGaussian(
-                    random
-                )
-                *
-                3.2;
-
-            const rr =
-                Math.max(
-                    0,
-                    radius
-                    +
-                    radialJitter
-                );
-
-            const x =
-                center
-                +
-                Math.cos(
-                    angle
-                )
-                *
-                rr;
-
-            const y =
-                center
-                +
-                Math.sin(
-                    angle
-                )
-                *
-                rr
-                *
-                flatten;
-
-            const normalized =
-                rr
-                /
-                (
-                    center
-                    *
-                    0.80
-                );
-
-            const warmChance =
-                random();
-
-            let color =
-                palette.cool;
-
-            if (
-                warmChance
-                <
-                0.34
-            ) {
-                color =
-                    palette.warm;
+        for (let particleIndex = 0; particleIndex < starCount; particleIndex += 1) {
+            const radius = Math.pow(random(), 0.58) * center * 0.82;
+            const arm = particleIndex % arms;
+            const armAngle = arm * (Math.PI * 2 / arms);
+            const scatter = cosmicGaussian(random) * (0.12 + radius / center * 0.22);
+            const angle = armAngle + radius * twist + scatter;
+            const radialJitter = cosmicGaussian(random) * 3.1;
+            const rr = Math.max(0, radius + radialJitter);
+            const x = center + Math.cos(angle) * rr;
+            const y = center + Math.sin(angle) * rr * flatten;
+            const normalized = rr / (center * 0.82);
+            const warmChance = random();
+            let color = palette.cool;
+            if (warmChance < 0.34) {
+                color = palette.warm;
             }
-
-            if (
-                normalized
-                <
-                0.18
-            ) {
-                color =
-                    palette.core;
+            if (normalized < 0.18) {
+                color = palette.core;
             }
-
-            const alpha =
-                (
-                    1
-                    -
-                    normalized
-                )
-                *
-                (
-                    0.25
-                    +
-                    random()
-                    *
-                    0.60
-                );
-
-            const pointSize =
-                0.35
-                +
-                random()
-                *
-                (
-                    normalized
-                    <
-                    0.2
-                        ? 1.2
-                        : 0.7
-                );
-
-            context.fillStyle =
-                `rgba(${color},${alpha})`;
-
+            const alpha = (1 - normalized) * (0.24 + random() * 0.62);
+            const pointSize = 0.35 + random() * (normalized < 0.2 ? 1.2 : 0.7);
+            context.fillStyle = `rgba(${color},${alpha})`;
             context.beginPath();
-
-            context.arc(
-                x,
-                y,
-                pointSize,
-                0,
-                Math.PI
-                *
-                2
-            );
-
+            context.arc(x, y, pointSize, 0, Math.PI * 2);
             context.fill();
         }
 
-        const core =
-            context.createRadialGradient(
-                center,
-                center,
-                0,
-                center,
-                center,
-                28
-            );
+        const core = context.createRadialGradient(center, center, 0, center, center, 28);
+        core.addColorStop(0, `rgba(${palette.core},0.98)`);
+        core.addColorStop(0.18, `rgba(${palette.core},0.72)`);
+        core.addColorStop(1, "rgba(255,255,255,0)");
 
-        core.addColorStop(
-            0,
-            `rgba(${palette.core},0.98)`
-        );
-
-        core.addColorStop(
-            0.18,
-            `rgba(${palette.core},0.72)`
-        );
-
-        core.addColorStop(
-            1,
-            "rgba(255,255,255,0)"
-        );
-
-        context.fillStyle =
-            core;
-
+        context.fillStyle = core;
         context.beginPath();
-
-        context.arc(
-            center,
-            center,
-            28,
-            0,
-            Math.PI
-            *
-            2
-        );
-
+        context.arc(center, center, 28, 0, Math.PI * 2);
         context.fill();
-
-        context.globalCompositeOperation =
-            "source-over";
+        context.globalCompositeOperation = "source-over";
 
         return canvas;
     }
 
 
     function makeBlackHoleScene() {
-        const item =
-            currentSessionItem();
+        const seed = randomSceneSeed();
+        const random = cosmicRng(seed);
+        const stars = [];
+        const starCount = 620;
 
-        const seedText =
-            [
-                sessionPlan?.id
-                ??
-                "plan",
-                item?.id
-                ??
-                item?.name
-                ??
-                sessionIndex,
-                sessionIndex
-            ]
-            .join(
-                ":"
-            );
-
-        const seed =
-            hashCosmicSeed(
-                seedText
-            );
-
-        const random =
-            cosmicRng(
-                seed
-            );
-
-        const stars =
-            [];
-
-        const starCount =
-            560;
-
-        for (
-            let index = 0;
-            index < starCount;
-            index += 1
-        ) {
-            let x =
-                random();
-
-            let y =
-                random();
-
-            const dx =
-                x
-                -
-                0.5;
-
-            const dy =
-                y
-                -
-                0.5;
-
-            const normalizedRadius =
-                Math.min(
-                    1,
-                    Math.hypot(
-                        dx,
-                        dy
-                    )
-                    /
-                    0.72
-                );
+        for (let index = 0; index < starCount; index += 1) {
+            const x = random();
+            const y = random();
+            const dx = x - 0.5;
+            const dy = y - 0.5;
+            const normalizedRadius = Math.min(1, Math.hypot(dx, dy) / 0.72);
 
             stars.push({
                 x,
                 y,
-                captureStart:
-                    clamp01(
-                        0.05
-                        +
-                        normalizedRadius
-                        *
-                        0.66
-                        +
-                        (
-                            random()
-                            -
-                            0.5
-                        )
-                        *
-                        0.17
-                    ),
-                spin:
-                    random()
-                    <
-                    0.5
-                        ? -1
-                        : 1,
-                size:
-                    0.42
-                    +
-                    Math.pow(
-                        random(),
-                        2.2
-                    )
-                    *
-                    1.55,
-                alpha:
-                    0.34
-                    +
-                    random()
-                    *
-                    0.62,
-                phase:
-                    random()
-                    *
-                    Math.PI
-                    *
-                    2,
-                twinkle:
-                    0.35
-                    +
-                    random()
-                    *
-                    1.1,
-                warmth:
-                    random()
+                captureStart: clamp01(0.16 + normalizedRadius * 0.58 + (random() - 0.5) * 0.12),
+                spin: random() < 0.5 ? -1 : 1,
+                size: 0.38 + Math.pow(random(), 2.1) * 1.7,
+                alpha: 0.34 + random() * 0.62,
+                phase: random() * Math.PI * 2,
+                twinkle: 0.35 + random() * 1.1,
+                warmth: random()
             });
         }
 
-        const galaxies =
-            [];
+        const galaxies = [];
+        const galaxyCount = 5;
 
-        const galaxyCount =
-            5;
-
-        for (
-            let index = 0;
-            index < galaxyCount;
-            index += 1
-        ) {
-            const angle =
-                random()
-                *
-                Math.PI
-                *
-                2;
-
-            const radius =
-                0.30
-                +
-                random()
-                *
-                0.35;
-
+        for (let index = 0; index < galaxyCount; index += 1) {
+            const angle = random() * Math.PI * 2;
+            const radius = 0.32 + random() * 0.34;
             galaxies.push({
-                x:
-                    0.5
-                    +
-                    Math.cos(
-                        angle
-                    )
-                    *
-                    radius,
-                y:
-                    0.5
-                    +
-                    Math.sin(
-                        angle
-                    )
-                    *
-                    radius,
-                captureStart:
-                    0.18
-                    +
-                    index
-                    *
-                    0.135
-                    +
-                    random()
-                    *
-                    0.07,
-                spin:
-                    random()
-                    <
-                    0.5
-                        ? -1
-                        : 1,
-                rotation:
-                    random()
-                    *
-                    Math.PI
-                    *
-                    2,
-                scale:
-                    0.58
-                    +
-                    random()
-                    *
-                    0.48,
-                sprite:
-                    createGalaxySprite(
-                        random,
-                        index
-                    )
+                x: 0.5 + Math.cos(angle) * radius,
+                y: 0.5 + Math.sin(angle) * radius,
+                captureStart: clamp01(0.38 + index * 0.10 + random() * 0.08),
+                spin: random() < 0.5 ? -1 : 1,
+                rotation: random() * Math.PI * 2,
+                scale: 0.60 + random() * 0.44,
+                sprite: createGalaxySprite(random, index)
             });
         }
 
@@ -7849,91 +7414,24 @@
             ["110,92,68", "215,194,148"]
         ];
 
-        const planets =
-            [];
+        const planets = [];
+        const planetCount = 6;
 
-        const planetCount =
-            6;
-
-        for (
-            let index = 0;
-            index < planetCount;
-            index += 1
-        ) {
-            const angle =
-                random()
-                *
-                Math.PI
-                *
-                2;
-
-            const radius =
-                0.22
-                +
-                random()
-                *
-                0.43;
-
+        for (let index = 0; index < planetCount; index += 1) {
+            const angle = random() * Math.PI * 2;
+            const radius = 0.25 + random() * 0.40;
             planets.push({
-                x:
-                    0.5
-                    +
-                    Math.cos(
-                        angle
-                    )
-                    *
-                    radius,
-                y:
-                    0.5
-                    +
-                    Math.sin(
-                        angle
-                    )
-                    *
-                    radius,
-                captureStart:
-                    clamp01(
-                        0.24
-                        +
-                        index
-                        *
-                        0.105
-                        +
-                        random()
-                        *
-                        0.08
-                    ),
-                spin:
-                    random()
-                    <
-                    0.5
-                        ? -1
-                        : 1,
-                size:
-                    6
-                    +
-                    random()
-                    *
-                    13,
-                ringed:
-                    index
-                    ===
-                    2,
-                colors:
-                    planetColors[
-                        index
-                        %
-                        planetColors.length
-                    ]
+                x: 0.5 + Math.cos(angle) * radius,
+                y: 0.5 + Math.sin(angle) * radius,
+                captureStart: clamp01(0.44 + index * 0.07 + random() * 0.08),
+                spin: random() < 0.5 ? -1 : 1,
+                size: 6 + random() * 13,
+                ringed: index === 2,
+                colors: planetColors[index % planetColors.length]
             });
         }
 
-        return {
-            seed,
-            stars,
-            galaxies,
-            planets
-        };
+        return { seed, stars, galaxies, planets };
     }
 
 
@@ -7942,44 +7440,20 @@
         width,
         height
     ) {
-        const diagonal =
-            Math.hypot(
-                width,
-                height
-            );
+        const diagonal = Math.hypot(width, height);
+        const base = Math.max(18, Math.min(width, height) * 0.045);
 
-        const base =
-            Math.max(
-                22,
-                Math.min(
-                    width,
-                    height
-                )
-                *
-                0.052
-            );
+        let eased;
 
-        /*
-           Langsames Wachstum über den Großteil des Elements.
-           Erst im letzten Fünftel dominiert der Ereignishorizont.
-        */
-        const growth =
-            Math.pow(
-                smoothstep01(
-                    progress
-                ),
-                2.65
-            );
+        if (progress < 0.92) {
+            const p = progress / 0.92;
+            eased = 0.17 * Math.pow(p, 2.25);
+        } else {
+            const p = (progress - 0.92) / 0.08;
+            eased = 0.17 + 0.83 * Math.pow(clamp01(p), 1.4);
+        }
 
-        return (
-            base
-            +
-            diagonal
-            *
-            0.62
-            *
-            growth
-        );
+        return base + diagonal * 0.82 * eased;
     }
 
 
@@ -7990,148 +7464,39 @@
         height,
         horizonRadius
     ) {
-        const centerX =
-            width
-            /
-            2;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const startX = object.x * width;
+        const startY = object.y * height;
+        const dx = startX - centerX;
+        const dy = startY - centerY;
+        const initialRadius = Math.max(1, Math.hypot(dx, dy));
+        const baseAngle = Math.atan2(dy, dx);
 
-        const centerY =
-            height
-            /
-            2;
+        const local = progress <= object.captureStart
+            ? 0
+            : clamp01((progress - object.captureStart) / (1 - object.captureStart));
 
-        const startX =
-            object.x
-            *
-            width;
+        const plunge = smoothstep01(local);
+        const ambientTurn = object.spin * progress * 0.08;
+        const angle = baseAngle + ambientTurn + object.spin * (local * 0.72 + local * local * 5.5);
 
-        const startY =
-            object.y
-            *
-            height;
+        let radius = initialRadius * (1 - 0.78 * Math.pow(plunge, 1.24));
 
-        const dx =
-            startX
-            -
-            centerX;
+        if (progress > 0.96) {
+            const crush = smoothstep01((progress - 0.96) / 0.04);
+            radius *= (1 - 0.88 * crush);
+        }
 
-        const dy =
-            startY
-            -
-            centerY;
-
-        const initialRadius =
-            Math.max(
-                1,
-                Math.hypot(
-                    dx,
-                    dy
-                )
-            );
-
-        const baseAngle =
-            Math.atan2(
-                dy,
-                dx
-            );
-
-        const local =
-            progress
-            <=
-            object.captureStart
-                ? 0
-                : clamp01(
-                    (
-                        progress
-                        -
-                        object.captureStart
-                    )
-                    /
-                    (
-                        1
-                        -
-                        object.captureStart
-                    )
-                );
-
-        const plunge =
-            smoothstep01(
-                local
-            );
-
-        const ambientTurn =
-            object.spin
-            *
-            progress
-            *
-            0.10;
-
-        const angle =
-            baseAngle
-            +
-            ambientTurn
-            +
-            object.spin
-            *
-            (
-                local
-                *
-                0.85
-                +
-                local
-                *
-                local
-                *
-                6.4
-            );
-
-        const radius =
-            initialRadius
-            *
-            (
-                1
-                -
-                0.93
-                *
-                Math.pow(
-                    plunge,
-                    1.16
-                )
-            );
-
-        const visible =
-            local
-            <
-            0.997
-            &&
-            radius
-            >
-            horizonRadius
-            *
-            1.015;
+        const visible = local < 0.999 && radius > horizonRadius * 0.985;
 
         return {
-            x:
-                centerX
-                +
-                Math.cos(
-                    angle
-                )
-                *
-                radius,
-            y:
-                centerY
-                +
-                Math.sin(
-                    angle
-                )
-                *
-                radius,
+            x: centerX + Math.cos(angle) * radius,
+            y: centerY + Math.sin(angle) * radius,
             angle,
             radius,
             initialRadius,
-            q:
-                local,
+            q: local,
             visible
         };
     }
@@ -8142,89 +7507,77 @@
         width,
         height
     ) {
-        context.fillStyle =
-            "#010204";
+        context.fillStyle = "#010204";
+        context.fillRect(0, 0, width, height);
 
-        context.fillRect(
-            0,
-            0,
-            width,
-            height
-        );
-
-        /*
-           Sehr schwaches galaktisches Staubband; bewusst nicht dominant.
-        */
         context.save();
+        context.translate(width * 0.48, height * 0.49);
+        context.rotate(-0.48);
+        context.scale(1.9, 0.34);
 
-        context.translate(
-            width
-            *
-            0.48,
-            height
-            *
-            0.49
-        );
-
-        context.rotate(
-            -0.48
-        );
-
-        context.scale(
-            1.9,
-            0.34
-        );
-
-        const dust =
-            context.createRadialGradient(
-                0,
-                0,
-                0,
-                0,
-                0,
-                Math.max(
-                    width,
-                    height
-                )
-                *
-                0.48
-            );
-
-        dust.addColorStop(
+        const dust = context.createRadialGradient(
             0,
-            "rgba(88,106,132,0.075)"
+            0,
+            0,
+            0,
+            0,
+            Math.max(width, height) * 0.48
         );
 
-        dust.addColorStop(
-            0.42,
-            "rgba(99,83,111,0.032)"
-        );
+        dust.addColorStop(0, "rgba(88,106,132,0.072)");
+        dust.addColorStop(0.42, "rgba(99,83,111,0.03)");
+        dust.addColorStop(1, "rgba(0,0,0,0)");
 
-        dust.addColorStop(
-            1,
-            "rgba(0,0,0,0)"
-        );
-
-        context.fillStyle =
-            dust;
-
+        context.fillStyle = dust;
         context.beginPath();
+        context.arc(0, 0, Math.max(width, height) * 0.48, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+    }
 
-        context.arc(
-            0,
-            0,
-            Math.max(
-                width,
-                height
-            )
-            *
-            0.48,
-            0,
-            Math.PI
-            *
-            2
-        );
 
+    function drawInfallHeat(
+        context,
+        position,
+        baseRadius,
+        q,
+        strength
+    ) {
+        if (q < 0.60) {
+            return;
+        }
+
+        const heat = smoothstep01((q - 0.60) / 0.40) * strength;
+        const tangent = position.angle + Math.PI / 2;
+
+        context.save();
+        context.translate(position.x, position.y);
+        context.rotate(tangent);
+
+        const hotLength = baseRadius * (1.6 + heat * 4.4);
+        const hotHeight = Math.max(1.2, baseRadius * (0.65 - heat * 0.18));
+
+        context.scale(1 + heat * 2.2, Math.max(0.22, 1 - heat * 0.68));
+
+        const warm = context.createRadialGradient(0, 0, 0, 0, 0, hotLength);
+        warm.addColorStop(0, `rgba(255,250,235,${0.18 * heat})`);
+        warm.addColorStop(0.20, `rgba(255,206,128,${0.32 * heat})`);
+        warm.addColorStop(0.55, `rgba(247,122,48,${0.18 * heat})`);
+        warm.addColorStop(1, "rgba(0,0,0,0)");
+
+        context.fillStyle = warm;
+        context.beginPath();
+        context.ellipse(0, 0, hotLength, hotHeight, 0, 0, Math.PI * 2);
+        context.fill();
+
+        const cool = context.createRadialGradient(0, 0, 0, 0, 0, hotLength * 0.62);
+        cool.addColorStop(0, `rgba(198,222,255,${0.08 * heat})`);
+        cool.addColorStop(0.58, `rgba(102,154,255,${0.06 * heat})`);
+        cool.addColorStop(1, "rgba(0,0,0,0)");
+
+        context.fillStyle = cool;
+        context.beginPath();
+        context.ellipse(0, 0, hotLength * 0.62, hotHeight * 0.68, 0, 0, Math.PI * 2);
         context.fill();
 
         context.restore();
@@ -8238,164 +7591,48 @@
         progress,
         now
     ) {
-        if (
-            !position.visible
-        ) {
+        if (!position.visible) {
             return;
         }
 
-        const q =
-            position.q;
+        const q = position.q;
+        const tangent = position.angle + Math.PI / 2;
+        const stretch = 0.4 + Math.pow(q, 3.4) * 15;
+        const twinkle = 0.86 + 0.14 * Math.sin(now * 0.001 * star.twinkle + star.phase);
+        const fade = 1 - Math.pow(q, 6);
 
-        const tangent =
-            position.angle
-            +
-            Math.PI
-            /
-            2;
-
-        const stretch =
-            0.4
-            +
-            Math.pow(
-                q,
-                3.4
-            )
-            *
-            15;
-
-        const twinkle =
-            0.86
-            +
-            0.14
-            *
-            Math.sin(
-                now
-                *
-                0.001
-                *
-                star.twinkle
-                +
-                star.phase
-            );
-
-        const fade =
-            1
-            -
-            Math.pow(
-                q,
-                6
-            );
-
-        let color =
-            "214,226,255";
-
-        if (
-            star.warmth
-            <
-            0.16
-        ) {
-            color =
-                "255,220,174";
-        } else if (
-            star.warmth
-            >
-            0.88
-        ) {
-            color =
-                "178,205,255";
+        let color = "214,226,255";
+        if (star.warmth < 0.16) {
+            color = "255,220,174";
+        } else if (star.warmth > 0.88) {
+            color = "178,205,255";
         }
 
-        const alpha =
-            star.alpha
-            *
-            twinkle
-            *
-            fade;
+        drawInfallHeat(context, position, Math.max(1.4, star.size * 4.2), q, 0.6);
 
-        context.strokeStyle =
-            `rgba(${color},${alpha})`;
-
-        context.lineWidth =
-            Math.max(
-                0.45,
-                star.size
-                *
-                0.72
-            );
-
+        const alpha = star.alpha * twinkle * fade;
+        context.strokeStyle = `rgba(${color},${alpha})`;
+        context.lineWidth = Math.max(0.45, star.size * 0.72);
         context.beginPath();
-
         context.moveTo(
-            position.x
-            -
-            Math.cos(
-                tangent
-            )
-            *
-            stretch
-            *
-            0.5,
-            position.y
-            -
-            Math.sin(
-                tangent
-            )
-            *
-            stretch
-            *
-            0.5
+            position.x - Math.cos(tangent) * stretch * 0.5,
+            position.y - Math.sin(tangent) * stretch * 0.5
         );
-
         context.lineTo(
-            position.x
-            +
-            Math.cos(
-                tangent
-            )
-            *
-            stretch
-            *
-            0.5,
-            position.y
-            +
-            Math.sin(
-                tangent
-            )
-            *
-            stretch
-            *
-            0.5
+            position.x + Math.cos(tangent) * stretch * 0.5,
+            position.y + Math.sin(tangent) * stretch * 0.5
         );
-
         context.stroke();
 
-        context.fillStyle =
-            `rgba(${color},${Math.min(1, alpha * 1.18)})`;
-
+        context.fillStyle = `rgba(${color},${Math.min(1, alpha * 1.18)})`;
         context.beginPath();
-
         context.arc(
             position.x,
             position.y,
-            Math.max(
-                0.42,
-                star.size
-                *
-                (
-                    1
-                    +
-                    q
-                    *
-                    0.42
-                )
-            ),
+            Math.max(0.42, star.size * (1 + q * 0.42)),
             0,
-            Math.PI
-            *
-            2
+            Math.PI * 2
         );
-
         context.fill();
     }
 
@@ -8405,102 +7642,24 @@
         galaxy,
         position
     ) {
-        if (
-            !position.visible
-        ) {
+        if (!position.visible) {
             return;
         }
 
-        const q =
-            position.q;
+        const q = position.q;
+        const stretch = 1 + Math.pow(q, 3) * 2.1;
+        const compress = Math.max(0.30, 1 - Math.pow(q, 2.7) * 0.58);
+        const fade = 1 - Math.pow(q, 5);
+        const baseSize = Math.min(150, Math.max(72, position.initialRadius * 0.32)) * galaxy.scale;
 
-        const stretch =
-            1
-            +
-            Math.pow(
-                q,
-                3
-            )
-            *
-            1.85;
-
-        const compress =
-            Math.max(
-                0.34,
-                1
-                -
-                Math.pow(
-                    q,
-                    2.7
-                )
-                *
-                0.54
-            );
-
-        const fade =
-            1
-            -
-            Math.pow(
-                q,
-                5
-            );
-
-        const baseSize =
-            Math.min(
-                150,
-                Math.max(
-                    72,
-                    position.initialRadius
-                    *
-                    0.32
-                )
-            )
-            *
-            galaxy.scale;
+        drawInfallHeat(context, position, baseSize * 0.24, q, 1.05);
 
         context.save();
-
-        context.translate(
-            position.x,
-            position.y
-        );
-
-        context.rotate(
-            galaxy.rotation
-            +
-            position.angle
-            *
-            0.10
-            +
-            galaxy.spin
-            *
-            q
-            *
-            1.9
-        );
-
-        context.scale(
-            stretch,
-            compress
-        );
-
-        context.globalAlpha =
-            0.92
-            *
-            fade;
-
-        context.drawImage(
-            galaxy.sprite,
-            -baseSize
-            /
-            2,
-            -baseSize
-            /
-            2,
-            baseSize,
-            baseSize
-        );
-
+        context.translate(position.x, position.y);
+        context.rotate(galaxy.rotation + position.angle * 0.10 + galaxy.spin * q * 1.9);
+        context.scale(stretch, compress);
+        context.globalAlpha = 0.94 * fade;
+        context.drawImage(galaxy.sprite, -baseSize / 2, -baseSize / 2, baseSize, baseSize);
         context.restore();
     }
 
@@ -8510,333 +7669,48 @@
         planet,
         position
     ) {
-        if (
-            !position.visible
-        ) {
+        if (!position.visible) {
             return;
         }
 
-        const q =
-            position.q;
+        const q = position.q;
+        const radius = planet.size * (1 + q * 0.36);
+        const stretch = 1 + Math.pow(q, 3.2) * 1.35;
+        const fade = 1 - Math.pow(q, 5);
 
-        const radius =
-            planet.size
-            *
-            (
-                1
-                +
-                q
-                *
-                0.36
-            );
-
-        const stretch =
-            1
-            +
-            Math.pow(
-                q,
-                3.2
-            )
-            *
-            1.25;
-
-        const fade =
-            1
-            -
-            Math.pow(
-                q,
-                5
-            );
+        drawInfallHeat(context, position, radius * 1.35, q, 0.92);
 
         context.save();
+        context.translate(position.x, position.y);
+        context.rotate(position.angle + Math.PI / 2);
+        context.scale(stretch, Math.max(0.55, 1 - q * 0.34));
 
-        context.translate(
-            position.x,
-            position.y
-        );
-
-        context.rotate(
-            position.angle
-            +
-            Math.PI
-            /
-            2
-        );
-
-        context.scale(
-            stretch,
-            Math.max(
-                0.55,
-                1
-                -
-                q
-                *
-                0.34
-            )
-        );
-
-        if (
-            planet.ringed
-        ) {
-            context.strokeStyle =
-                `rgba(194,176,139,${0.34 * fade})`;
-
-            context.lineWidth =
-                Math.max(
-                    1,
-                    radius
-                    *
-                    0.12
-                );
-
+        if (planet.ringed) {
+            context.strokeStyle = `rgba(194,176,139,${0.34 * fade})`;
+            context.lineWidth = Math.max(1, radius * 0.12);
             context.beginPath();
-
-            context.ellipse(
-                0,
-                0,
-                radius
-                *
-                1.72,
-                radius
-                *
-                0.46,
-                0,
-                0,
-                Math.PI
-                *
-                2
-            );
-
+            context.ellipse(0, 0, radius * 1.72, radius * 0.46, 0, 0, Math.PI * 2);
             context.stroke();
         }
 
-        const gradient =
-            context.createRadialGradient(
-                -radius
-                *
-                0.35,
-                -radius
-                *
-                0.42,
-                radius
-                *
-                0.08,
-                0,
-                0,
-                radius
-                *
-                1.08
-            );
-
-        gradient.addColorStop(
+        const gradient = context.createRadialGradient(
+            -radius * 0.35,
+            -radius * 0.42,
+            radius * 0.08,
             0,
-            `rgba(${planet.colors[1]},${0.98 * fade})`
+            0,
+            radius * 1.08
         );
 
-        gradient.addColorStop(
-            0.48,
-            `rgba(${planet.colors[0]},${0.94 * fade})`
-        );
+        gradient.addColorStop(0, `rgba(${planet.colors[1]},${0.98 * fade})`);
+        gradient.addColorStop(0.48, `rgba(${planet.colors[0]},${0.94 * fade})`);
+        gradient.addColorStop(1, `rgba(3,5,8,${0.98 * fade})`);
 
-        gradient.addColorStop(
-            1,
-            `rgba(3,5,8,${0.98 * fade})`
-        );
-
-        context.fillStyle =
-            gradient;
-
+        context.fillStyle = gradient;
         context.beginPath();
-
-        context.arc(
-            0,
-            0,
-            radius,
-            0,
-            Math.PI
-            *
-            2
-        );
-
+        context.arc(0, 0, radius, 0, Math.PI * 2);
         context.fill();
-
         context.restore();
-    }
-
-
-    function drawAccretionDisk(
-        context,
-        centerX,
-        centerY,
-        horizonRadius,
-        progress
-    ) {
-        const fadeLate =
-            1
-            -
-            smoothstep01(
-                (
-                    progress
-                    -
-                    0.80
-                )
-                /
-                0.20
-            );
-
-        if (
-            fadeLate
-            <=
-            0.002
-        ) {
-            return;
-        }
-
-        const outer =
-            horizonRadius
-            *
-            3.25;
-
-        const inner =
-            horizonRadius
-            *
-            1.12;
-
-        context.save();
-
-        context.translate(
-            centerX,
-            centerY
-        );
-
-        context.rotate(
-            -0.18
-        );
-
-        context.scale(
-            1,
-            0.27
-        );
-
-        context.globalCompositeOperation =
-            "lighter";
-
-        const glow =
-            context.createRadialGradient(
-                0,
-                0,
-                inner,
-                0,
-                0,
-                outer
-            );
-
-        glow.addColorStop(
-            0,
-            `rgba(255,246,218,${0.46 * fadeLate})`
-        );
-
-        glow.addColorStop(
-            0.10,
-            `rgba(255,203,122,${0.74 * fadeLate})`
-        );
-
-        glow.addColorStop(
-            0.32,
-            `rgba(238,135,67,${0.34 * fadeLate})`
-        );
-
-        glow.addColorStop(
-            0.72,
-            `rgba(120,57,39,${0.10 * fadeLate})`
-        );
-
-        glow.addColorStop(
-            1,
-            "rgba(0,0,0,0)"
-        );
-
-        context.fillStyle =
-            glow;
-
-        context.beginPath();
-
-        context.arc(
-            0,
-            0,
-            outer,
-            0,
-            Math.PI
-            *
-            2
-        );
-
-        context.fill();
-
-        const ringCount =
-            10;
-
-        for (
-            let ring = 0;
-            ring < ringCount;
-            ring += 1
-        ) {
-            const fraction =
-                ring
-                /
-                (
-                    ringCount
-                    -
-                    1
-                );
-
-            const radius =
-                inner
-                +
-                (
-                    outer
-                    -
-                    inner
-                )
-                *
-                fraction;
-
-            context.strokeStyle =
-                `rgba(255,${Math.round(236 - fraction * 100)},${Math.round(190 - fraction * 115)},${(0.28 * (1 - fraction) + 0.025) * fadeLate})`;
-
-            context.lineWidth =
-                Math.max(
-                    0.8,
-                    horizonRadius
-                    *
-                    (
-                        0.095
-                        -
-                        fraction
-                        *
-                        0.055
-                    )
-                );
-
-            context.beginPath();
-
-            context.arc(
-                0,
-                0,
-                radius,
-                0,
-                Math.PI
-                *
-                2
-            );
-
-            context.stroke();
-        }
-
-        context.restore();
-
-        context.globalCompositeOperation =
-            "source-over";
     }
 
 
@@ -8847,401 +7721,107 @@
         progress,
         horizonRadius
     ) {
-        const centerX =
-            width
-            /
-            2;
-
-        const centerY =
-            height
-            /
-            2;
-
-        drawAccretionDisk(
-            context,
-            centerX,
-            centerY,
-            horizonRadius,
-            progress
-        );
-
-        /*
-           Photon ring / Linsenbogen.
-        */
-        const ringFade =
-            1
-            -
-            smoothstep01(
-                (
-                    progress
-                    -
-                    0.90
-                )
-                /
-                0.10
-            );
+        const centerX = width / 2;
+        const centerY = height / 2;
 
         context.save();
+        context.translate(centerX, centerY);
 
-        context.translate(
-            centerX,
-            centerY
+        const lens = context.createRadialGradient(
+            0,
+            0,
+            horizonRadius * 0.55,
+            0,
+            0,
+            horizonRadius * 1.9
         );
 
-        context.globalCompositeOperation =
-            "lighter";
+        lens.addColorStop(0, "rgba(0,0,0,0)");
+        lens.addColorStop(0.34, "rgba(0,0,0,0.10)");
+        lens.addColorStop(0.72, "rgba(8,10,14,0.18)");
+        lens.addColorStop(1, "rgba(0,0,0,0)");
 
-        context.strokeStyle =
-            `rgba(255,238,204,${0.52 * ringFade})`;
-
-        context.lineWidth =
-            Math.max(
-                1,
-                horizonRadius
-                *
-                0.045
-            );
-
+        context.fillStyle = lens;
         context.beginPath();
+        context.arc(0, 0, horizonRadius * 1.9, 0, Math.PI * 2);
+        context.fill();
 
-        context.arc(
+        const edge = context.createRadialGradient(
+            -horizonRadius * 0.12,
+            -horizonRadius * 0.10,
+            horizonRadius * 0.10,
             0,
             0,
             horizonRadius
-            *
-            1.055,
-            0,
-            Math.PI
-            *
-            2
         );
 
-        context.stroke();
+        edge.addColorStop(0, "#000000");
+        edge.addColorStop(0.80, "#000000");
+        edge.addColorStop(1, "#010101");
 
-        context.globalCompositeOperation =
-            "source-over";
-
-        /*
-           Ereignishorizont.
-        */
-        const edge =
-            context.createRadialGradient(
-                -horizonRadius
-                *
-                0.12,
-                -horizonRadius
-                *
-                0.10,
-                horizonRadius
-                *
-                0.12,
-                0,
-                0,
-                horizonRadius
-            );
-
-        edge.addColorStop(
-            0,
-            "#000000"
-        );
-
-        edge.addColorStop(
-            0.84,
-            "#000000"
-        );
-
-        edge.addColorStop(
-            0.98,
-            "#010101"
-        );
-
-        edge.addColorStop(
-            1,
-            "#000000"
-        );
-
-        context.fillStyle =
-            edge;
-
+        context.fillStyle = edge;
         context.beginPath();
-
-        context.arc(
-            0,
-            0,
-            horizonRadius,
-            0,
-            Math.PI
-            *
-            2
-        );
-
+        context.arc(0, 0, horizonRadius, 0, Math.PI * 2);
         context.fill();
-
-        /*
-           Vorderer Teil der Akkretionsscheibe liegt optisch vor dem Horizont.
-        */
-        if (
-            ringFade
-            >
-            0.002
-        ) {
-            context.save();
-
-            context.rotate(
-                -0.18
-            );
-
-            context.scale(
-                1,
-                0.27
-            );
-
-            context.strokeStyle =
-                `rgba(255,224,174,${0.62 * ringFade})`;
-
-            context.lineWidth =
-                Math.max(
-                    1.2,
-                    horizonRadius
-                    *
-                    0.11
-                );
-
-            context.beginPath();
-
-            context.arc(
-                0,
-                0,
-                horizonRadius
-                *
-                1.34,
-                0.04,
-                Math.PI
-                -
-                0.04
-            );
-
-            context.stroke();
-
-            context.restore();
-        }
-
         context.restore();
     }
 
 
-    /*
-       Override der alten Generatorfunktion:
-       jede Session-Einheit bekommt ein stabiles, deterministisches Universum.
-    */
     function generateUniverse() {
-        universeSeed =
-            hashCosmicSeed(
-                [
-                    sessionPlan?.id
-                    ??
-                    "plan",
-                    currentSessionItem()?.id
-                    ??
-                    sessionIndex
-                ]
-                .join(
-                    ":"
-                )
-            );
-
-        blackHoleScene =
-            makeBlackHoleScene();
-
-        universeParticles =
-            [];
-
-        universeNodes =
-            [];
-
-        universeLastRendered =
-            [];
+        blackHoleScene = makeBlackHoleScene();
+        universeSeed = blackHoleScene.seed;
+        universeParticles = [];
+        universeNodes = [];
+        universeLastRendered = [];
     }
 
 
-    /*
-       Override der alten Visualisierung.
-    */
     function drawUniverse(
         now
     ) {
-        const canvas =
-            el.universeCanvas;
+        const canvas = el.universeCanvas;
+        const context = canvas.getContext("2d", { alpha: false });
+        const { width, height, dpr } = sizeUniverseCanvas();
 
-        const context =
-            canvas.getContext(
-                "2d",
-                {
-                    alpha:
-                        false
-                }
-            );
+        context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        const {
-            width,
-            height,
-            dpr
-        } =
-            sizeUniverseCanvas();
+        const progress = clamp01(sessionVisualProgress());
 
-        context.setTransform(
-            dpr,
-            0,
-            0,
-            dpr,
-            0,
-            0
-        );
+        drawCosmicBackground(context, width, height);
 
-        const progress =
-            clamp01(
-                sessionVisualProgress()
-            );
-
-        drawCosmicBackground(
-            context,
-            width,
-            height
-        );
-
-        if (
-            !blackHoleScene
-        ) {
-            blackHoleScene =
-                makeBlackHoleScene();
+        if (!blackHoleScene) {
+            blackHoleScene = makeBlackHoleScene();
         }
 
-        const horizonRadius =
-            blackHoleRadius(
-                progress,
-                width,
-                height
-            );
+        const horizonRadius = blackHoleRadius(progress, width, height);
 
-        /*
-           Sterne zuerst: sie bilden den tiefen Hintergrund und werden
-           in der Nähe des Lochs tangential gestreckt.
-        */
-        blackHoleScene.stars.forEach(
-            star => {
-                const position =
-                    cosmicObjectPosition(
-                        star,
-                        progress,
-                        width,
-                        height,
-                        horizonRadius
-                    );
+        blackHoleScene.stars.forEach(star => {
+            const position = cosmicObjectPosition(star, progress, width, height, horizonRadius);
+            drawCapturedStar(context, star, position, progress, now);
+        });
 
-                drawCapturedStar(
-                    context,
-                    star,
-                    position,
-                    progress,
-                    now
-                );
-            }
-        );
+        blackHoleScene.galaxies.forEach(galaxy => {
+            const position = cosmicObjectPosition(galaxy, progress, width, height, horizonRadius);
+            drawCapturedGalaxy(context, galaxy, position);
+        });
 
-        /*
-           Galaxien und Planeten sind seltener und deshalb klar erkennbar.
-        */
-        blackHoleScene.galaxies.forEach(
-            galaxy => {
-                const position =
-                    cosmicObjectPosition(
-                        galaxy,
-                        progress,
-                        width,
-                        height,
-                        horizonRadius
-                    );
+        blackHoleScene.planets.forEach(planet => {
+            const position = cosmicObjectPosition(planet, progress, width, height, horizonRadius);
+            drawCapturedPlanet(context, planet, position);
+        });
 
-                drawCapturedGalaxy(
-                    context,
-                    galaxy,
-                    position
-                );
-            }
-        );
+        drawBlackHole(context, width, height, progress, horizonRadius);
 
-        blackHoleScene.planets.forEach(
-            planet => {
-                const position =
-                    cosmicObjectPosition(
-                        planet,
-                        progress,
-                        width,
-                        height,
-                        horizonRadius
-                    );
+        const finalFade = smoothstep01((progress - 0.988) / 0.012);
 
-                drawCapturedPlanet(
-                    context,
-                    planet,
-                    position
-                );
-            }
-        );
-
-        drawBlackHole(
-            context,
-            width,
-            height,
-            progress,
-            horizonRadius
-        );
-
-        /*
-           In den letzten Prozent wird die Umgebung zusätzlich abgedunkelt.
-           Bei p=1 ist die Anzeige garantiert vollständig schwarz.
-        */
-        const finalFade =
-            smoothstep01(
-                (
-                    progress
-                    -
-                    0.94
-                )
-                /
-                0.06
-            );
-
-        if (
-            finalFade
-            >
-            0
-        ) {
-            context.fillStyle =
-                `rgba(0,0,0,${finalFade})`;
-
-            context.fillRect(
-                0,
-                0,
-                width,
-                height
-            );
+        if (finalFade > 0) {
+            context.fillStyle = `rgba(0,0,0,${finalFade})`;
+            context.fillRect(0, 0, width, height);
         }
 
-        if (
-            progress
-            >=
-            0.9995
-        ) {
-            context.fillStyle =
-                "#000";
-
-            context.fillRect(
-                0,
-                0,
-                width,
-                height
-            );
+        if (progress >= 0.9995) {
+            context.fillStyle = "#000";
+            context.fillRect(0, 0, width, height);
         }
     }
 

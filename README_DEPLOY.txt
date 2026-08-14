@@ -1,45 +1,21 @@
-PLANER v43 — SCHWARZES-LOCH-UHR
+PLANER v44 — VERFEINERTE SCHWARZES-LOCH-UHR
 
-Die bisherige zeitumgekehrte Expansionsvisualisierung der laufenden
-Planelemente wurde durch eine dynamische Schwarzes-Loch-Uhr ersetzt.
+ÄNDERUNGEN GEGENÜBER v43
 
-FUNKTIONSWEISE
+- Die explizit gezeichnete Akkretionsscheibe wurde entfernt.
+- Der weiße / helle Ring um das Schwarze Loch wurde entfernt.
+- Stattdessen beginnen einfallende Sterne, Planeten und Galaxien in
+  Ereignishorizontnähe thermisch zu glühen. Aus der Überlagerung dieser
+  Glühspuren entsteht die Scheibenanmutung organisch.
+- Die zeitliche Skalierung wurde korrigiert: Das Display wird nun deutlich
+  später dunkel; vollständige Schwärze entsteht erst ganz am Ende.
+- Jede Session-Einheit erhält bei jedem Start neue zufällige Startpositionen
+  der kosmischen Objekte.
+- Das Schwarze Loch wächst realistischer: lange relativ klein, erst in den
+  letzten Prozent stark dominierend.
 
-- Die Animation ist KEIN Video.
-- Der aktuelle Fortschritt ist p = vergangene Zeit / Elementdauer.
-- Damit läuft dieselbe Entwicklung automatisch über jede Elementdauer:
-  5 Minuten, 20 Minuten, 60 Minuten usw.
+WEITERE EIGENSCHAFTEN
 
-VISUELLE ENTWICKLUNG
-
-- kleines realistisches Schwarzes Loch in der Bildschirmmitte
-- Akkretionsscheibe und Photon-Ring
-- hunderte Sterne
-- fünf prozedural erzeugte Spiralgalaxien
-- mehrere deutlich erkennbare Planeten
-- Objekte haben unterschiedliche Einfangzeitpunkte
-- beim Einfangen bewegen sie sich auf enger werdenden Spiralbahnen
-- Sterne werden nahe dem Loch tangential gestreckt
-- Galaxien werden beim Fall sichtbar verzogen
-- Ereignishorizont wächst zunächst langsam, gegen Ende stark
-- bei 100 % ist der Bildschirm vollständig schwarz
-
-SESSION-LOGIK
-
-- Pause: Szene friert exakt beim aktuellen Fortschritt ein
-- Fortsetzen: läuft exakt dort weiter
-- Rückkehr in die App: Fortschritt wird aus der echten verbleibenden Zeit
-  rekonstruiert, nicht aus abgespielten Frames
-- vorzeitiges Beenden verwendet weiterhin die vorhandene kurze
-  Abschlussanimation bis 100 %
-
-BEDIENUNG
-
-- Ein Tipp irgendwo auf die Vorderseite öffnet weiterhin dieselbe
-  bestehende Rückseite mit:
-  Titel, exaktem Timer, Notiz, Menü, Pause und Ende.
-- Die alte Funktion zum Antippen einzelner Sterne wurde entfernt.
-- Ein Tipp auf die Rückseite (außer auf Buttons) kehrt wie bisher
-  zur kosmischen Uhr zurück.
-
-Alle übrigen Funktionen der App bleiben erhalten.
+- Rückseite mit Notiz / Pause / Ende bleibt unverändert.
+- Ein Tipp auf die Vorderseite öffnet weiterhin direkt die Rückseite.
+- Pause / Fortsetzen friert die Szene exakt ein bzw. setzt sie exakt fort.
