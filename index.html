@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=55">
+    <link rel="stylesheet" href="style.css?v=56">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=55" defer></script>
+    <script src="app.js?v=56" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -1189,30 +1189,46 @@ body.youtube-player-open {
     <input id="wallpaperImportInput" type="file" accept=".planerwallpaper,application/json" hidden>
 </section>
 
-<section id="wallpaperCreateScreen" class="screen wallpaper-ui-screen">
-    <header class="wallpaper-topbar">
+<section id="wallpaperCreateScreen" class="screen wallpaper-ui-screen wallpaper-create-screen">
+    <header class="wallpaper-topbar wallpaper-create-topbar">
         <button id="backFromWallpaperCreate" class="wallpaper-back-button" type="button" aria-label="Zurück">‹</button>
         <div class="wallpaper-title">Neue Tapete</div>
         <span class="wallpaper-topbar-spacer"></span>
     </header>
 
-    <main class="wallpaper-create-shell">
-        <label class="wallpaper-create-label" for="wallpaperNameInput">Name</label>
-        <input id="wallpaperNameInput" class="wallpaper-name-input" type="text" maxlength="60" autocomplete="off" placeholder="Name der Tapete">
+    <main class="wallpaper-create-scroll">
+        <div class="wallpaper-create-shell">
+            <div class="wallpaper-create-section">
+                <label class="wallpaper-create-label" for="wallpaperNameInput">Name</label>
+                <input id="wallpaperNameInput" class="wallpaper-name-input" type="text" maxlength="60" autocomplete="off" placeholder="z. B. Wohnzimmer">
+            </div>
 
-        <div class="wallpaper-photo-choice">
-            <button id="wallpaperCameraButton" class="wallpaper-photo-button" type="button">Foto aufnehmen</button>
-            <button id="wallpaperGalleryButton" class="wallpaper-photo-button" type="button">Aus Mediathek</button>
+            <div class="wallpaper-create-section">
+                <div class="wallpaper-create-label">Hintergrundfoto</div>
+                <div class="wallpaper-photo-choice">
+                    <button id="wallpaperCameraButton" class="wallpaper-photo-button" type="button">
+                        <span class="wallpaper-photo-button-icon">◎</span>
+                        <span>Foto aufnehmen</span>
+                    </button>
+                    <button id="wallpaperGalleryButton" class="wallpaper-photo-button" type="button">
+                        <span class="wallpaper-photo-button-icon">▧</span>
+                        <span>Aus Mediathek</span>
+                    </button>
+                </div>
+
+                <div id="wallpaperCreatePreviewWrap" class="wallpaper-create-preview-wrap hidden">
+                    <img id="wallpaperCreatePreview" class="wallpaper-create-preview" alt="Ausgewähltes Foto">
+                    <button id="wallpaperReplacePhotoButton" class="wallpaper-replace-photo-button" type="button">Foto ändern</button>
+                </div>
+            </div>
+
+            <div id="wallpaperCreateStatus" class="wallpaper-create-status" aria-live="polite">Name eingeben und ein Foto auswählen.</div>
         </div>
-
-        <div id="wallpaperCreatePreviewWrap" class="wallpaper-create-preview-wrap hidden">
-            <img id="wallpaperCreatePreview" class="wallpaper-create-preview" alt="Ausgewähltes Foto">
-        </div>
-
-        <div id="wallpaperCreateStatus" class="wallpaper-create-status" aria-live="polite"></div>
-
-        <button id="wallpaperCreateContinue" class="wallpaper-primary-button" type="button" disabled>Weiter</button>
     </main>
+
+    <footer class="wallpaper-create-footer">
+        <button id="wallpaperCreateContinue" class="wallpaper-primary-button" type="button" disabled>Weiter</button>
+    </footer>
 
     <input id="wallpaperCameraInput" type="file" accept="image/*" capture="environment" hidden>
     <input id="wallpaperGalleryInput" type="file" accept="image/*" hidden>
@@ -1223,14 +1239,17 @@ body.youtube-player-open {
     <div id="wallpaperEditorMarkers" class="wallpaper-editor-markers"></div>
 
     <header class="wallpaper-editor-topbar">
-        <button id="backFromWallpaperEditor" class="wallpaper-editor-nav" type="button">‹</button>
+        <button id="backFromWallpaperEditor" class="wallpaper-editor-nav" type="button" aria-label="Zurück">‹</button>
         <div id="wallpaperEditorSceneLabel" class="wallpaper-editor-scene-label"></div>
         <button id="finishWallpaperEditor" class="wallpaper-editor-done" type="button">Fertig</button>
     </header>
 
     <div id="wallpaperEditorHint" class="wallpaper-editor-hint">
-        Tippe auf das Bild, um einen unsichtbaren Link zu platzieren.
+        Tippe auf eine Stelle im Foto und wähle, was dort geöffnet werden soll.
     </div>
+
+    <input id="wallpaperSceneCameraInput" type="file" accept="image/*" capture="environment" hidden>
+    <input id="wallpaperSceneGalleryInput" type="file" accept="image/*" hidden>
 </section>
 
 <div id="wallpaperTargetSheet" class="wallpaper-sheet-backdrop hidden" role="dialog" aria-modal="true">

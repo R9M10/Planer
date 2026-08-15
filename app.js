@@ -23,6 +23,10 @@
         chessRoom: $("chessRoomScreen"),
         filmRoom: $("filmRoomScreen"),
         mapRoom: $("mapRoomScreen"),
+        wallpaperRuntime: $("wallpaperRuntimeScreen"),
+        wallpaperList: $("wallpaperListScreen"),
+        wallpaperCreate: $("wallpaperCreateScreen"),
+        wallpaperEditor: $("wallpaperEditorScreen"),
         music: $("musicScreen"),
         news: $("newsScreen"),
         wikipedia: $("wikipediaScreen"),
@@ -987,8 +991,8 @@
         screen,
         animate = true
     ) {
-        Object.values(
-            screens
+        document.querySelectorAll(
+            ".screen"
         ).forEach(
             item => {
                 item.classList.remove(
@@ -31902,6 +31906,9 @@
     let wallpaperEditingHotspotId =
         null;
 
+    let wallpaperRepositionHotspotId =
+        null;
+
     let wallpaperPendingSceneSource =
         null;
 
@@ -32678,7 +32685,7 @@
             null;
 
         $("wallpaperCreateStatus").textContent =
-            "";
+            "Name eingeben und ein Foto auswählen.";
 
         $("wallpaperCreateContinue").disabled =
             true;
@@ -32705,12 +32712,40 @@
 
 
     function updateWallpaperCreateContinue() {
-        $("wallpaperCreateContinue").disabled =
-            !(
+        const hasName =
+            Boolean(
                 $("wallpaperNameInput").value.trim()
-                &&
+            );
+
+        const hasPhoto =
+            Boolean(
                 wallpaperPendingCreateFile
             );
+
+        $("wallpaperCreateContinue").disabled =
+            !(hasName && hasPhoto);
+
+        if (
+            hasName
+            &&
+            hasPhoto
+        ) {
+            $("wallpaperCreateStatus").textContent =
+                "Bereit. Mit „Weiter“ öffnest du den Vollbild-Editor.";
+        } else if (
+            hasName
+        ) {
+            $("wallpaperCreateStatus").textContent =
+                "Jetzt noch ein Foto auswählen.";
+        } else if (
+            hasPhoto
+        ) {
+            $("wallpaperCreateStatus").textContent =
+                "Jetzt noch einen Namen eingeben.";
+        } else {
+            $("wallpaperCreateStatus").textContent =
+                "Name eingeben und ein Foto auswählen.";
+        }
     }
 
 
@@ -32749,9 +32784,6 @@
         $("wallpaperCreatePreviewWrap").classList.remove(
             "hidden"
         );
-
-        $("wallpaperCreateStatus").textContent =
-            "";
 
         updateWallpaperCreateContinue();
     }
@@ -32823,6 +32855,9 @@
             wallpaperEditingHotspotId =
                 null;
 
+            wallpaperRepositionHotspotId =
+                null;
+
             resetWallpaperCreateForm();
 
             await renderWallpaperEditorScene();
@@ -32872,7 +32907,7 @@
             `Foto ${wallpaperEditorWallpaper.scenes.findIndex(item => item.id === scene.id) + 1} / ${wallpaperEditorWallpaper.scenes.length}`;
 
         wallpaperEditorHint.textContent =
-            "Tippe auf das Bild, um einen unsichtbaren Link zu platzieren.";
+            "Tippe auf eine Stelle im Foto und wähle, was dort geöffnet werden soll.";
 
         const redraw =
             () => renderWallpaperEditorMarkers();
@@ -33062,6 +33097,109 @@
         if (
             editing
         ) {
+            const scene =
+                wallpaperScene(
+                    wallpaperEditorWallpaper,
+                    wallpaperEditorSceneId
+                );
+
+            const currentHotspot =
+                scene?.hotspots?.find(
+                    item =>
+                        item.id
+                        ===
+                        wallpaperEditingHotspotId
+                );
+
+            if (
+                currentHotspot?.type
+                ===
+                "scene"
+                &&
+                currentHotspot.targetValue
+            ) {
+                const openLinked =
+                    document.createElement(
+                        "button"
+                    );
+
+                openLinked.type =
+                    "button";
+
+                openLinked.className =
+                    "wallpaper-target-option";
+
+                openLinked.textContent =
+                    "Verknüpftes Foto öffnen";
+
+                openLinked.addEventListener(
+                    "click",
+                    async () => {
+                        wallpaperTargetSheet.classList.add(
+                            "hidden"
+                        );
+
+                        wallpaperEditorHistory.push(
+                            wallpaperEditorSceneId
+                        );
+
+                        wallpaperEditorSceneId =
+                            currentHotspot.targetValue;
+
+                        wallpaperEditingHotspotId =
+                            null;
+
+                        wallpaperPendingPoint =
+                            null;
+
+                        await renderWallpaperEditorScene();
+                    }
+                );
+
+                wallpaperTargetList.prepend(
+                    openLinked
+                );
+            }
+
+            const reposition =
+                document.createElement(
+                    "button"
+                );
+
+            reposition.type =
+                "button";
+
+            reposition.className =
+                "wallpaper-target-option";
+
+            reposition.textContent =
+                "Position ändern";
+
+            reposition.addEventListener(
+                "click",
+                () => {
+                    wallpaperTargetSheet.classList.add(
+                        "hidden"
+                    );
+
+                    wallpaperRepositionHotspotId =
+                        wallpaperEditingHotspotId;
+
+                    wallpaperEditingHotspotId =
+                        null;
+
+                    wallpaperPendingPoint =
+                        null;
+
+                    wallpaperEditorHint.textContent =
+                        "Tippe auf die neue Position des Links.";
+                }
+            );
+
+            wallpaperTargetList.appendChild(
+                reposition
+            );
+
             const remove =
                 document.createElement(
                     "button"
@@ -33483,6 +33621,9 @@
 
         wallpaperEditorHistory =
             [];
+
+        wallpaperRepositionHotspotId =
+            null;
 
         await renderWallpaperEditorScene();
 
@@ -34302,24 +34443,15 @@
         () => $("wallpaperGalleryInput").click()
     );
 
+    $("wallpaperReplacePhotoButton").addEventListener(
+        "click",
+        () => $("wallpaperGalleryInput").click()
+    );
+
 
     $("wallpaperCameraInput").addEventListener(
         "change",
         event => {
-            if (
-                event.currentTarget.dataset.sceneHandled
-                ===
-                "1"
-            ) {
-                event.currentTarget.dataset.sceneHandled =
-                    "";
-
-                event.target.value =
-                    "";
-
-                return;
-            }
-
             selectWallpaperCreateFile(
                 event.target.files?.[0]
             );
@@ -34333,20 +34465,6 @@
     $("wallpaperGalleryInput").addEventListener(
         "change",
         event => {
-            if (
-                event.currentTarget.dataset.sceneHandled
-                ===
-                "1"
-            ) {
-                event.currentTarget.dataset.sceneHandled =
-                    "";
-
-                event.target.value =
-                    "";
-
-                return;
-            }
-
             selectWallpaperCreateFile(
                 event.target.files?.[0]
             );
@@ -34384,13 +34502,54 @@
                 return;
             }
 
-            wallpaperPendingPoint =
+            const point =
                 pointFromClient(
                     wallpaperEditorImage,
                     wallpaperEditorScreen,
                     event.clientX,
                     event.clientY
                 );
+
+            if (
+                wallpaperRepositionHotspotId
+            ) {
+                const scene =
+                    wallpaperScene(
+                        wallpaperEditorWallpaper,
+                        wallpaperEditorSceneId
+                    );
+
+                const hotspot =
+                    scene?.hotspots?.find(
+                        item =>
+                            item.id
+                            ===
+                            wallpaperRepositionHotspotId
+                    );
+
+                if (
+                    hotspot
+                ) {
+                    hotspot.x =
+                        point.x;
+
+                    hotspot.y =
+                        point.y;
+                }
+
+                wallpaperRepositionHotspotId =
+                    null;
+
+                wallpaperEditorHint.textContent =
+                    "Position geändert. Tippe auf eine Stelle für einen weiteren Link.";
+
+                renderWallpaperEditorMarkers();
+
+                return;
+            }
+
+            wallpaperPendingPoint =
+                point;
 
             wallpaperEditingHotspotId =
                 null;
@@ -34466,10 +34625,7 @@
                 "hidden"
             );
 
-            $("wallpaperCameraInput").dataset.sceneMode =
-                "1";
-
-            $("wallpaperCameraInput").click();
+            $("wallpaperSceneCameraInput").click();
         }
     );
 
@@ -34481,64 +34637,40 @@
                 "hidden"
             );
 
-            $("wallpaperGalleryInput").dataset.sceneMode =
-                "1";
-
-            $("wallpaperGalleryInput").click();
+            $("wallpaperSceneGalleryInput").click();
         }
     );
 
 
-    // Replace create-file handlers for scene mode after the original handlers run.
-    $("wallpaperCameraInput").addEventListener(
+    $("wallpaperSceneCameraInput").addEventListener(
         "change",
         event => {
-            if (
-                event.currentTarget.dataset.sceneMode
-                ===
-                "1"
-            ) {
-                event.currentTarget.dataset.sceneMode =
-                    "";
+            const file =
+                event.target.files?.[0];
 
-                event.currentTarget.dataset.sceneHandled =
-                    "1";
+            event.target.value =
+                "";
 
-                const sceneFile =
-                    event.target.files?.[0];
-
-                void addWallpaperSceneFromFile(
-                    sceneFile
-                );
-            }
-        },
-        true
+            void addWallpaperSceneFromFile(
+                file
+            );
+        }
     );
 
 
-    $("wallpaperGalleryInput").addEventListener(
+    $("wallpaperSceneGalleryInput").addEventListener(
         "change",
         event => {
-            if (
-                event.currentTarget.dataset.sceneMode
-                ===
-                "1"
-            ) {
-                event.currentTarget.dataset.sceneMode =
-                    "";
+            const file =
+                event.target.files?.[0];
 
-                event.currentTarget.dataset.sceneHandled =
-                    "1";
+            event.target.value =
+                "";
 
-                const sceneFile =
-                    event.target.files?.[0];
-
-                void addWallpaperSceneFromFile(
-                    sceneFile
-                );
-            }
-        },
-        true
+            void addWallpaperSceneFromFile(
+                file
+            );
+        }
     );
 
 

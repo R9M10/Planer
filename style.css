@@ -9228,3 +9228,204 @@ html[data-theme="dark"] .music-connect-button:hover {
     }
 }
 
+
+
+/* ==================================================
+   V56 — TAPETENWECHSEL REBUILD
+   Echte getrennte Vollbild-Ansichten + stabiler Editor
+================================================== */
+
+#wallpaperListScreen,
+#wallpaperCreateScreen,
+#wallpaperEditorScreen,
+#wallpaperRuntimeScreen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    z-index: 80000 !important;
+}
+
+#wallpaperListScreen,
+#wallpaperCreateScreen {
+    overflow: hidden !important;
+    background: var(--bg) !important;
+}
+
+#wallpaperListScreen:not(.active),
+#wallpaperCreateScreen:not(.active),
+#wallpaperEditorScreen:not(.active),
+#wallpaperRuntimeScreen:not(.active) {
+    display: none !important;
+}
+
+#wallpaperListScreen.active,
+#wallpaperCreateScreen.active,
+#wallpaperEditorScreen.active,
+#wallpaperRuntimeScreen.active {
+    display: block !important;
+}
+
+#wallpaperListScreen .wallpaper-list-shell {
+    position: absolute;
+    inset: calc(58px + env(safe-area-inset-top)) 0 0 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 18px max(20px, env(safe-area-inset-right)) 110px max(20px, env(safe-area-inset-left));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.wallpaper-create-scroll {
+    position: absolute;
+    top: calc(58px + env(safe-area-inset-top));
+    left: 0;
+    right: 0;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.wallpaper-create-shell {
+    width: min(620px, calc(100vw - 40px));
+    margin: 0 auto;
+    padding: 34px 0 32px;
+}
+
+.wallpaper-create-section + .wallpaper-create-section {
+    margin-top: 34px;
+}
+
+.wallpaper-photo-choice {
+    margin-top: 10px;
+    gap: 10px;
+}
+
+.wallpaper-photo-button {
+    display: flex;
+    min-height: 78px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border-radius: 15px;
+    font-size: 13px;
+}
+
+.wallpaper-photo-button-icon {
+    color: var(--muted);
+    font-size: 20px;
+    line-height: 1;
+}
+
+.wallpaper-create-preview-wrap {
+    position: relative;
+    margin-top: 14px;
+    border-radius: 16px;
+    overflow: hidden;
+    min-height: 180px;
+    background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.wallpaper-create-preview {
+    width: 100%;
+    height: min(42vh, 390px);
+    max-height: none;
+    object-fit: cover;
+}
+
+.wallpaper-replace-photo-button {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    min-height: 35px;
+    padding: 0 13px;
+    border: 1px solid rgba(255,255,255,.20);
+    border-radius: 999px;
+    background: rgba(0,0,0,.48);
+    color: #fff;
+    font-size: 11px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.wallpaper-create-status {
+    margin-top: 17px;
+    min-height: 20px;
+    text-align: center;
+}
+
+.wallpaper-create-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 12px max(20px, env(safe-area-inset-right)) max(14px, calc(env(safe-area-inset-bottom) + 8px)) max(20px, env(safe-area-inset-left));
+    border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+    background: color-mix(in srgb, var(--bg) 96%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.wallpaper-create-footer .wallpaper-primary-button {
+    display: block !important;
+    width: min(620px, 100%);
+    min-height: 50px;
+    margin: 0 auto !important;
+    opacity: 1;
+    visibility: visible;
+}
+
+.wallpaper-create-footer .wallpaper-primary-button:disabled {
+    opacity: .32;
+}
+
+#wallpaperEditorScreen {
+    overflow: hidden !important;
+    background: #080808 !important;
+}
+
+#wallpaperEditorImage {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+}
+
+#wallpaperEditorMarkers {
+    z-index: 10;
+}
+
+.wallpaper-editor-topbar {
+    z-index: 50;
+}
+
+.wallpaper-editor-hint {
+    z-index: 45;
+}
+
+.wallpaper-sheet-backdrop {
+    z-index: 180000 !important;
+}
+
+@media (max-width: 520px) {
+    .wallpaper-create-shell {
+        width: calc(100vw - 30px);
+    }
+
+    .wallpaper-photo-choice {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .wallpaper-photo-button {
+        min-height: 72px;
+    }
+}
