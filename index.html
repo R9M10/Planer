@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=54">
+    <link rel="stylesheet" href="style.css?v=55">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=54" defer></script>
+    <script src="app.js?v=55" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -1130,6 +1130,7 @@ body.youtube-player-open {
 
         <div class="texts-study-menu-content">
             <button id="timelineButton" class="menu-link" type="button">Zeitstrahl</button>
+            <button id="openWallpaperManagerButton" class="menu-link" type="button">Tapetenwechsel</button>
             <button id="backupButton" class="menu-link" type="button">Backup</button>
             <button id="restoreButton" class="menu-link" type="button">Wiederherstellen</button>
             <button id="themeButton" class="menu-link" type="button">Nacht</button>
@@ -1138,24 +1139,6 @@ body.youtube-player-open {
 
     <main class="texts-study-shell">
         <div class="texts-study-background" aria-hidden="true"></div>
-
-        <!-- V54: subtile, rein dekorative Raumbewegungen. -->
-        <div class="room-ambient study-room-ambient" aria-hidden="true">
-            <div class="ambient-stars study-star-field" data-ambient-kind="star" data-ambient-count="34"></div>
-            <div class="ambient-dust study-dust-field" data-ambient-kind="dust" data-ambient-count="18"></div>
-
-            <div class="study-planetarium-motion">
-                <span class="planetarium-ring planetarium-ring-a"></span>
-                <span class="planetarium-ring planetarium-ring-b"></span>
-                <span class="planetarium-orbit-dot"></span>
-            </div>
-
-            <div class="ambient-candle study-candle">
-                <span class="candle-glow"></span>
-                <span class="candle-flame"></span>
-                <span class="candle-smoke"></span>
-            </div>
-        </div>
 
         <button id="openBooksButton" class="texts-study-hotspot texts-hotspot-books" type="button" aria-label="Bücher"></button>
         <button id="openPhysicsButton" class="texts-study-hotspot texts-hotspot-physics" type="button" aria-label="Physik"></button>
@@ -1181,18 +1164,122 @@ body.youtube-player-open {
 
 
 
+
+<!-- ==================================================
+     TAPETENWECHSEL — VISUELLER HOME-SCREEN-EDITOR
+================================================== -->
+
+<section id="wallpaperRuntimeScreen" class="screen wallpaper-runtime-screen">
+    <img id="wallpaperRuntimeImage" class="wallpaper-runtime-image" alt="" draggable="false">
+    <div id="wallpaperRuntimeHotspots" class="wallpaper-runtime-hotspots"></div>
+</section>
+
+<section id="wallpaperListScreen" class="screen wallpaper-ui-screen">
+    <header class="wallpaper-topbar">
+        <button id="backFromWallpaperList" class="wallpaper-back-button" type="button" aria-label="Zurück">‹</button>
+        <div class="wallpaper-title">Tapetenwechsel</div>
+        <button id="wallpaperImportButton" class="wallpaper-import-button" type="button">Importieren</button>
+    </header>
+
+    <main class="wallpaper-list-shell">
+        <div id="wallpaperList" class="wallpaper-list"></div>
+    </main>
+
+    <button id="addWallpaperButton" class="wallpaper-floating-add" type="button" aria-label="Neue Tapete">+</button>
+    <input id="wallpaperImportInput" type="file" accept=".planerwallpaper,application/json" hidden>
+</section>
+
+<section id="wallpaperCreateScreen" class="screen wallpaper-ui-screen">
+    <header class="wallpaper-topbar">
+        <button id="backFromWallpaperCreate" class="wallpaper-back-button" type="button" aria-label="Zurück">‹</button>
+        <div class="wallpaper-title">Neue Tapete</div>
+        <span class="wallpaper-topbar-spacer"></span>
+    </header>
+
+    <main class="wallpaper-create-shell">
+        <label class="wallpaper-create-label" for="wallpaperNameInput">Name</label>
+        <input id="wallpaperNameInput" class="wallpaper-name-input" type="text" maxlength="60" autocomplete="off" placeholder="Name der Tapete">
+
+        <div class="wallpaper-photo-choice">
+            <button id="wallpaperCameraButton" class="wallpaper-photo-button" type="button">Foto aufnehmen</button>
+            <button id="wallpaperGalleryButton" class="wallpaper-photo-button" type="button">Aus Mediathek</button>
+        </div>
+
+        <div id="wallpaperCreatePreviewWrap" class="wallpaper-create-preview-wrap hidden">
+            <img id="wallpaperCreatePreview" class="wallpaper-create-preview" alt="Ausgewähltes Foto">
+        </div>
+
+        <div id="wallpaperCreateStatus" class="wallpaper-create-status" aria-live="polite"></div>
+
+        <button id="wallpaperCreateContinue" class="wallpaper-primary-button" type="button" disabled>Weiter</button>
+    </main>
+
+    <input id="wallpaperCameraInput" type="file" accept="image/*" capture="environment" hidden>
+    <input id="wallpaperGalleryInput" type="file" accept="image/*" hidden>
+</section>
+
+<section id="wallpaperEditorScreen" class="screen wallpaper-editor-screen">
+    <img id="wallpaperEditorImage" class="wallpaper-editor-image" alt="" draggable="false">
+    <div id="wallpaperEditorMarkers" class="wallpaper-editor-markers"></div>
+
+    <header class="wallpaper-editor-topbar">
+        <button id="backFromWallpaperEditor" class="wallpaper-editor-nav" type="button">‹</button>
+        <div id="wallpaperEditorSceneLabel" class="wallpaper-editor-scene-label"></div>
+        <button id="finishWallpaperEditor" class="wallpaper-editor-done" type="button">Fertig</button>
+    </header>
+
+    <div id="wallpaperEditorHint" class="wallpaper-editor-hint">
+        Tippe auf das Bild, um einen unsichtbaren Link zu platzieren.
+    </div>
+</section>
+
+<div id="wallpaperTargetSheet" class="wallpaper-sheet-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="wallpaper-sheet">
+        <div class="wallpaper-sheet-title">Verknüpfen mit</div>
+        <div id="wallpaperTargetList" class="wallpaper-target-list"></div>
+        <button id="wallpaperTargetCancel" class="wallpaper-sheet-cancel" type="button">Abbrechen</button>
+    </div>
+</div>
+
+<div id="wallpaperPhotoSheet" class="wallpaper-sheet-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="wallpaper-sheet">
+        <div class="wallpaper-sheet-title">Neues Foto</div>
+        <button id="wallpaperSceneCameraButton" class="wallpaper-sheet-row" type="button">Foto aufnehmen</button>
+        <button id="wallpaperSceneGalleryButton" class="wallpaper-sheet-row" type="button">Aus Mediathek</button>
+        <button id="wallpaperPhotoSheetCancel" class="wallpaper-sheet-cancel" type="button">Abbrechen</button>
+    </div>
+</div>
+
+<div id="wallpaperItemSheet" class="wallpaper-sheet-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="wallpaper-sheet">
+        <div id="wallpaperItemSheetTitle" class="wallpaper-sheet-title"></div>
+        <button class="wallpaper-sheet-row" type="button" data-wallpaper-item-action="activate">Aktivieren</button>
+        <button class="wallpaper-sheet-row" type="button" data-wallpaper-item-action="edit">Bearbeiten</button>
+        <button class="wallpaper-sheet-row" type="button" data-wallpaper-item-action="rename">Umbenennen</button>
+        <button class="wallpaper-sheet-row" type="button" data-wallpaper-item-action="duplicate">Duplizieren</button>
+        <button class="wallpaper-sheet-row" type="button" data-wallpaper-item-action="export">Exportieren</button>
+        <button class="wallpaper-sheet-row wallpaper-danger-row" type="button" data-wallpaper-item-action="delete">Löschen</button>
+        <button id="wallpaperItemSheetCancel" class="wallpaper-sheet-cancel" type="button">Abbrechen</button>
+    </div>
+</div>
+
+<div id="customWallpaperMenuPanel" class="custom-wallpaper-menu hidden">
+    <button id="closeCustomWallpaperMenu" class="custom-wallpaper-menu-close" type="button" aria-label="Menü schließen">‹</button>
+    <div class="custom-wallpaper-menu-content">
+        <button id="customWallpaperTimeline" class="menu-link" type="button">Zeitstrahl</button>
+        <button id="customWallpaperManage" class="menu-link" type="button">Tapetenwechsel</button>
+        <button id="customWallpaperBackup" class="menu-link" type="button">Backup</button>
+        <button id="customWallpaperRestore" class="menu-link" type="button">Wiederherstellen</button>
+        <button id="customWallpaperTheme" class="menu-link" type="button">Tag / Nacht</button>
+    </div>
+</div>
+
 <!-- ==================================================
      SCHACHRAUM
 ================================================== -->
 
 <section id="chessRoomScreen" class="screen chess-room-screen">
     <div class="chess-room-background" aria-hidden="true"></div>
-
-    <div class="room-ambient chess-room-ambient" aria-hidden="true">
-        <div class="ambient-foliage-clone chess-foliage-left"></div>
-        <div class="ambient-foliage-clone chess-foliage-right"></div>
-        <div class="ambient-dust chess-dust-field" data-ambient-kind="dust" data-ambient-count="15"></div>
-    </div>
 
     <button
         id="chessRoomBoardHotspot"
@@ -1234,12 +1321,6 @@ body.youtube-player-open {
 <section id="filmRoomScreen" class="screen film-room-screen">
     <div class="film-room-background" aria-hidden="true"></div>
 
-    <div class="room-ambient film-room-ambient" aria-hidden="true">
-        <div class="ambient-foliage-clone film-foliage-main"></div>
-        <div class="ambient-foliage-clone film-foliage-edge"></div>
-        <div class="ambient-dust film-dust-field" data-ambient-kind="dust" data-ambient-count="16"></div>
-    </div>
-
     <!-- Nur das untere lose Filmband öffnet die Filme-/YouTube-Anwendung. -->
     <button
         id="filmRoomCameraHotspot"
@@ -1271,21 +1352,6 @@ body.youtube-player-open {
 
 <section id="mapRoomScreen" class="screen map-room-screen">
     <div class="map-room-background" aria-hidden="true"></div>
-
-    <div class="room-ambient map-room-ambient" aria-hidden="true">
-        <div class="ambient-dust map-dust-field" data-ambient-kind="dust" data-ambient-count="17"></div>
-
-        <div class="ambient-candle map-candle">
-            <span class="candle-glow"></span>
-            <span class="candle-flame"></span>
-            <span class="candle-smoke"></span>
-        </div>
-
-        <div class="piano-resonance"></div>
-        <div class="music-room-indicator" aria-hidden="true">
-            <span></span><span></span><span></span>
-        </div>
-    </div>
 
     <!-- Die alte Weltkarte öffnet Nachrichten. -->
     <button

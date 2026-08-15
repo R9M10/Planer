@@ -1302,6 +1302,29 @@
     function showScreen(
         screen
     ) {
+        if (
+            wallpaperSystemReady
+            &&
+            activeWallpaperId
+            !==
+            SYSTEM_WALLPAPER_ID
+            &&
+            (
+                screen === screens.textsHub
+                ||
+                screen === screens.chessRoom
+                ||
+                screen === screens.filmRoom
+                ||
+                screen === screens.mapRoom
+            )
+            &&
+            !wallpaperBypassRoomRedirect
+        ) {
+            renderActiveWallpaperRoot();
+            screen = wallpaperRuntimeScreen;
+        }
+
         const current =
             activeScreen();
 
@@ -15183,10 +15206,6 @@
                 ) {
                     spotifyPlayerDeviceId =
                         "";
-
-                    setMusicRoomPlaybackActive(
-                        false
-                    );
                 }
             }
         );
@@ -15357,18 +15376,6 @@
     }
 
 
-    function setMusicRoomPlaybackActive(
-        active
-    ) {
-        screens.mapRoom.classList.toggle(
-            "music-is-playing",
-            Boolean(
-                active
-            )
-        );
-    }
-
-
     function renderSpotifyPlayerFallback(
         track
     ) {
@@ -15414,10 +15421,6 @@
         el.spotifyPlayPauseButton.setAttribute(
             "aria-label",
             "Wiedergabe pausieren"
-        );
-
-        setMusicRoomPlaybackActive(
-            true
         );
     }
 
@@ -15479,10 +15482,6 @@
             paused
                 ? "Wiedergabe fortsetzen"
                 : "Wiedergabe pausieren"
-        );
-
-        setMusicRoomPlaybackActive(
-            !paused
         );
     }
 
@@ -15721,10 +15720,6 @@
 
             spotifyPlayerDeviceId =
                 "";
-
-            setMusicRoomPlaybackActive(
-                false
-            );
 
             spotifyPlaylists =
                 [];
@@ -31835,214 +31830,3016 @@
     );
 
 
+
     // ==================================================
-    // V54 — LEBENDIGE RÄUME
+    // V55 — TAPETENWECHSEL
     // ==================================================
 
-    function ambientRandomFactory(
-        seed
+    const SYSTEM_WALLPAPER_ID =
+        "system-study";
+
+    const WALLPAPER_ACTIVE_KEY =
+        "planner_active_wallpaper_v1";
+
+    const WALLPAPER_DB_NAME =
+        "planner_wallpapers_v1";
+
+    const WALLPAPER_DB_VERSION =
+        1;
+
+    const WALLPAPER_STORE =
+        "wallpapers";
+
+    let wallpaperDb =
+        null;
+
+    let wallpaperSystemReady =
+        false;
+
+    let wallpaperBypassRoomRedirect =
+        false;
+
+    let activeWallpaperId =
+        localStorage.getItem(
+            WALLPAPER_ACTIVE_KEY
+        )
+        ||
+        SYSTEM_WALLPAPER_ID;
+
+    let wallpaperRuntimeWallpaper =
+        null;
+
+    let wallpaperRuntimeSceneId =
+        null;
+
+    let wallpaperRuntimeHistory =
+        [];
+
+    let wallpaperRuntimeObjectUrl =
+        null;
+
+    let wallpaperEditorWallpaper =
+        null;
+
+    let wallpaperEditorSceneId =
+        null;
+
+    let wallpaperEditorHistory =
+        [];
+
+    let wallpaperEditorObjectUrl =
+        null;
+
+    let wallpaperPendingCreateFile =
+        null;
+
+    let wallpaperPendingCreatePreviewUrl =
+        null;
+
+    let wallpaperPendingPoint =
+        null;
+
+    let wallpaperEditingHotspotId =
+        null;
+
+    let wallpaperPendingSceneSource =
+        null;
+
+    let wallpaperSelectedItemId =
+        null;
+
+    const wallpaperRuntimeScreen =
+        $("wallpaperRuntimeScreen");
+
+    const wallpaperRuntimeImage =
+        $("wallpaperRuntimeImage");
+
+    const wallpaperRuntimeHotspots =
+        $("wallpaperRuntimeHotspots");
+
+    const wallpaperListScreen =
+        $("wallpaperListScreen");
+
+    const wallpaperList =
+        $("wallpaperList");
+
+    const wallpaperCreateScreen =
+        $("wallpaperCreateScreen");
+
+    const wallpaperEditorScreen =
+        $("wallpaperEditorScreen");
+
+    const wallpaperEditorImage =
+        $("wallpaperEditorImage");
+
+    const wallpaperEditorMarkers =
+        $("wallpaperEditorMarkers");
+
+    const wallpaperEditorSceneLabel =
+        $("wallpaperEditorSceneLabel");
+
+    const wallpaperEditorHint =
+        $("wallpaperEditorHint");
+
+    const wallpaperTargetSheet =
+        $("wallpaperTargetSheet");
+
+    const wallpaperTargetList =
+        $("wallpaperTargetList");
+
+    const wallpaperPhotoSheet =
+        $("wallpaperPhotoSheet");
+
+    const wallpaperItemSheet =
+        $("wallpaperItemSheet");
+
+    const wallpaperItemSheetTitle =
+        $("wallpaperItemSheetTitle");
+
+    const customWallpaperMenuPanel =
+        $("customWallpaperMenuPanel");
+
+    const WALLPAPER_TARGETS = [
+        ["books", "Bücher"],
+        ["planner", "Planer"],
+        ["dreams", "Träume"],
+        ["days", "Tage"],
+        ["thoughts", "Philosophie"],
+        ["physics", "Physik"],
+        ["notes", "Notizen"],
+        ["films", "Filme"],
+        ["wikipedia", "Wikipedia"],
+        ["news", "Nachrichten"],
+        ["music", "Musik"],
+        ["chess", "Schach"],
+        ["menu", "Menü"],
+        ["back", "Zurück"],
+        ["scene", "Neues Foto"]
+    ];
+
+
+    function wallpaperUid(
+        prefix = "id"
     ) {
-        let value =
-            seed
-            >>> 0;
+        if (
+            crypto?.randomUUID
+        ) {
+            return `${prefix}-${crypto.randomUUID()}`;
+        }
 
-        return () => {
-            value =
-                (
-                    Math.imul(
-                        value,
-                        1664525
-                    )
-                    +
-                    1013904223
+        return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+
+    function openWallpaperDb() {
+        return new Promise(
+            (
+                resolve,
+                reject
+            ) => {
+                const request =
+                    indexedDB.open(
+                        WALLPAPER_DB_NAME,
+                        WALLPAPER_DB_VERSION
+                    );
+
+                request.onupgradeneeded =
+                    () => {
+                        const db =
+                            request.result;
+
+                        if (
+                            !db.objectStoreNames.contains(
+                                WALLPAPER_STORE
+                            )
+                        ) {
+                            db.createObjectStore(
+                                WALLPAPER_STORE,
+                                {
+                                    keyPath:
+                                        "id"
+                                }
+                            );
+                        }
+                    };
+
+                request.onsuccess =
+                    () => resolve(
+                        request.result
+                    );
+
+                request.onerror =
+                    () => reject(
+                        request.error
+                    );
+            }
+        );
+    }
+
+
+    function wallpaperStoreRequest(
+        mode,
+        operation
+    ) {
+        return new Promise(
+            (
+                resolve,
+                reject
+            ) => {
+                const tx =
+                    wallpaperDb.transaction(
+                        WALLPAPER_STORE,
+                        mode
+                    );
+
+                const store =
+                    tx.objectStore(
+                        WALLPAPER_STORE
+                    );
+
+                let request;
+
+                try {
+                    request =
+                        operation(
+                            store
+                        );
+                } catch (
+                    error
+                ) {
+                    reject(
+                        error
+                    );
+                    return;
+                }
+
+                request.onsuccess =
+                    () => resolve(
+                        request.result
+                    );
+
+                request.onerror =
+                    () => reject(
+                        request.error
+                    );
+            }
+        );
+    }
+
+
+    function getAllWallpapers() {
+        return wallpaperStoreRequest(
+            "readonly",
+            store =>
+                store.getAll()
+        );
+    }
+
+
+    function getWallpaper(
+        id
+    ) {
+        return wallpaperStoreRequest(
+            "readonly",
+            store =>
+                store.get(
+                    id
                 )
-                >>> 0;
+        );
+    }
 
-            return value
-                /
-                4294967296;
+
+    function putWallpaper(
+        wallpaper
+    ) {
+        wallpaper.updatedAt =
+            new Date().toISOString();
+
+        return wallpaperStoreRequest(
+            "readwrite",
+            store =>
+                store.put(
+                    wallpaper
+                )
+        );
+    }
+
+
+    function deleteWallpaper(
+        id
+    ) {
+        return wallpaperStoreRequest(
+            "readwrite",
+            store =>
+                store.delete(
+                    id
+                )
+        );
+    }
+
+
+    function setActiveWallpaper(
+        id
+    ) {
+        activeWallpaperId =
+            id;
+
+        localStorage.setItem(
+            WALLPAPER_ACTIVE_KEY,
+            id
+        );
+    }
+
+
+    function revokeWallpaperUrl(
+        kind
+    ) {
+        if (
+            kind === "runtime"
+            &&
+            wallpaperRuntimeObjectUrl
+        ) {
+            URL.revokeObjectURL(
+                wallpaperRuntimeObjectUrl
+            );
+
+            wallpaperRuntimeObjectUrl =
+                null;
+        }
+
+        if (
+            kind === "editor"
+            &&
+            wallpaperEditorObjectUrl
+        ) {
+            URL.revokeObjectURL(
+                wallpaperEditorObjectUrl
+            );
+
+            wallpaperEditorObjectUrl =
+                null;
+        }
+    }
+
+
+    function wallpaperScene(
+        wallpaper,
+        sceneId
+    ) {
+        return wallpaper?.scenes?.find(
+            scene =>
+                scene.id
+                ===
+                sceneId
+        )
+        ??
+        null;
+    }
+
+
+    function imageCoverGeometry(
+        image,
+        container
+    ) {
+        const rect =
+            container.getBoundingClientRect();
+
+        const iw =
+            image.naturalWidth
+            ||
+            1;
+
+        const ih =
+            image.naturalHeight
+            ||
+            1;
+
+        const scale =
+            Math.max(
+                rect.width / iw,
+                rect.height / ih
+            );
+
+        const dw =
+            iw * scale;
+
+        const dh =
+            ih * scale;
+
+        return {
+            rect,
+            iw,
+            ih,
+            scale,
+            offsetX:
+                (rect.width - dw) / 2,
+            offsetY:
+                (rect.height - dh) / 2
         };
     }
 
 
-    function seedAmbientParticles() {
-        const layers =
-            document.querySelectorAll(
-                "[data-ambient-kind][data-ambient-count]"
+    function pointFromClient(
+        image,
+        container,
+        clientX,
+        clientY
+    ) {
+        const g =
+            imageCoverGeometry(
+                image,
+                container
             );
 
-        layers.forEach(
+        const x =
             (
-                layer,
-                layerIndex
+                clientX
+                -
+                g.rect.left
+                -
+                g.offsetX
+            )
+            /
+            g.scale
+            /
+            g.iw;
+
+        const y =
+            (
+                clientY
+                -
+                g.rect.top
+                -
+                g.offsetY
+            )
+            /
+            g.scale
+            /
+            g.ih;
+
+        return {
+            x:
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        x
+                    )
+                ),
+            y:
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        y
+                    )
+                )
+        };
+    }
+
+
+    function clientPointFromNormalized(
+        image,
+        container,
+        x,
+        y
+    ) {
+        const g =
+            imageCoverGeometry(
+                image,
+                container
+            );
+
+        return {
+            left:
+                g.offsetX
+                +
+                x
+                *
+                g.iw
+                *
+                g.scale,
+            top:
+                g.offsetY
+                +
+                y
+                *
+                g.ih
+                *
+                g.scale
+        };
+    }
+
+
+    function loadImageFile(
+        file
+    ) {
+        return new Promise(
+            (
+                resolve,
+                reject
             ) => {
-                if (
-                    layer.dataset.ambientReady
-                    ===
-                    "true"
-                ) {
-                    return;
-                }
-
-                const kind =
-                    layer.dataset.ambientKind;
-
-                const count =
-                    Math.max(
-                        0,
-                        Math.min(
-                            64,
-                            Number(
-                                layer.dataset.ambientCount
-                            )
-                            ||
-                            0
-                        )
+                const url =
+                    URL.createObjectURL(
+                        file
                     );
 
-                const random =
-                    ambientRandomFactory(
-                        0x54A11CE
-                        +
-                        layerIndex
-                        *
-                        7919
-                    );
+                const image =
+                    new Image();
 
-                const fragment =
-                    document.createDocumentFragment();
-
-                for (
-                    let i = 0;
-                    i < count;
-                    i += 1
-                ) {
-                    const particle =
-                        document.createElement(
-                            "span"
+                image.onload =
+                    () => {
+                        URL.revokeObjectURL(
+                            url
                         );
 
-                    if (
-                        kind
-                        ===
-                        "star"
-                    ) {
-                        particle.className =
-                            "ambient-star";
+                        resolve(
+                            image
+                        );
+                    };
 
-                        const size =
-                            .55
-                            +
-                            random()
-                            *
-                            1.35;
-
-                        particle.style.setProperty(
-                            "--ambient-x",
-                            `${(random() * 100).toFixed(2)}%`
+                image.onerror =
+                    () => {
+                        URL.revokeObjectURL(
+                            url
                         );
 
-                        particle.style.setProperty(
-                            "--ambient-y",
-                            `${(random() * 100).toFixed(2)}%`
-                        );
-
-                        particle.style.setProperty(
-                            "--ambient-size",
-                            `${size.toFixed(2)}px`
-                        );
-
-                        particle.style.setProperty(
-                            "--ambient-opacity",
-                            (
-                                .22
-                                +
-                                random()
-                                *
-                                .62
-                            ).toFixed(
-                                2
+                        reject(
+                            new Error(
+                                "Bild konnte nicht gelesen werden."
                             )
                         );
+                    };
 
-                        particle.style.setProperty(
-                            "--ambient-duration",
-                            `${(2.7 + random() * 6.4).toFixed(2)}s`
-                        );
-
-                        particle.style.setProperty(
-                            "--ambient-delay",
-                            `${(-random() * 8.0).toFixed(2)}s`
-                        );
-                    } else {
-                        particle.className =
-                            "ambient-dust-speck";
-
-                        const size =
-                            .65
-                            +
-                            random()
-                            *
-                            1.65;
-
-                        particle.style.setProperty(
-                            "--ambient-x",
-                            `${(random() * 100).toFixed(2)}%`
-                        );
-
-                        particle.style.setProperty(
-                            "--ambient-y",
-                            `${(random() * 100).toFixed(2)}%`
-                        );
-
-                        particle.style.setProperty(
-                            "--ambient-size",
-                            `${size.toFixed(2)}px`
-                        );
-
-                        particle.style.setProperty(
-                            "--ambient-opacity",
-                            (
-                                .10
-                                +
-                                random()
-                                *
-                                .28
-                            ).toFixed(
-                                2
-                            )
-                        );
-
-                        particle.style.setProperty(
-                            "--ambient-duration",
-                            `${(9.0 + random() * 14.0).toFixed(2)}s`
-                        );
-
-                        particle.style.setProperty(
-                            "--ambient-delay",
-                            `${(-random() * 18.0).toFixed(2)}s`
-                        );
-
-                        particle.style.setProperty(
-                            "--ambient-drift",
-                            `${(-8 + random() * 16).toFixed(2)}px`
-                        );
-                    }
-
-                    fragment.appendChild(
-                        particle
-                    );
-                }
-
-                layer.appendChild(
-                    fragment
-                );
-
-                layer.dataset.ambientReady =
-                    "true";
+                image.src =
+                    url;
             }
         );
     }
+
+
+    async function compressWallpaperImage(
+        file
+    ) {
+        const image =
+            await loadImageFile(
+                file
+            );
+
+        const maxEdge =
+            2400;
+
+        const ratio =
+            Math.min(
+                1,
+                maxEdge
+                /
+                Math.max(
+                    image.naturalWidth,
+                    image.naturalHeight
+                )
+            );
+
+        const width =
+            Math.max(
+                1,
+                Math.round(
+                    image.naturalWidth
+                    *
+                    ratio
+                )
+            );
+
+        const height =
+            Math.max(
+                1,
+                Math.round(
+                    image.naturalHeight
+                    *
+                    ratio
+                )
+            );
+
+        const canvas =
+            document.createElement(
+                "canvas"
+            );
+
+        canvas.width =
+            width;
+
+        canvas.height =
+            height;
+
+        const ctx =
+            canvas.getContext(
+                "2d",
+                {
+                    alpha:
+                        false
+                }
+            );
+
+        ctx.drawImage(
+            image,
+            0,
+            0,
+            width,
+            height
+        );
+
+        const blob =
+            await new Promise(
+                (
+                    resolve,
+                    reject
+                ) => {
+                    canvas.toBlob(
+                        result => {
+                            if (
+                                result
+                            ) {
+                                resolve(
+                                    result
+                                );
+                            } else {
+                                reject(
+                                    new Error(
+                                        "Bild konnte nicht gespeichert werden."
+                                    )
+                                );
+                            }
+                        },
+                        "image/jpeg",
+                        0.88
+                    );
+                }
+            );
+
+        return {
+            blob,
+            width,
+            height
+        };
+    }
+
+
+    async function renderWallpaperList() {
+        const wallpapers =
+            (
+                await getAllWallpapers()
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    (
+                        b.updatedAt
+                        ??
+                        ""
+                    )
+                    .localeCompare(
+                        a.updatedAt
+                        ??
+                        ""
+                    )
+            );
+
+        wallpaperList.innerHTML =
+            "";
+
+        const rows = [
+            {
+                id:
+                    SYSTEM_WALLPAPER_ID,
+                name:
+                    "Studienzimmer",
+                system:
+                    true
+            },
+            ...wallpapers
+        ];
+
+        rows.forEach(
+            item => {
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+                row.className =
+                    "wallpaper-row";
+
+                const main =
+                    document.createElement(
+                        "button"
+                    );
+
+                main.type =
+                    "button";
+
+                main.className =
+                    "wallpaper-row-main";
+
+                const name =
+                    document.createElement(
+                        "span"
+                    );
+
+                name.className =
+                    "wallpaper-row-name";
+
+                name.textContent =
+                    item.name;
+
+                const subtitle =
+                    document.createElement(
+                        "span"
+                    );
+
+                subtitle.className =
+                    "wallpaper-row-subtitle";
+
+                subtitle.textContent =
+                    item.system
+                        ? "Standard · nicht löschbar"
+                        : `${item.scenes?.length ?? 1} Foto${(item.scenes?.length ?? 1) === 1 ? "" : "s"}`;
+
+                main.append(
+                    name,
+                    subtitle
+                );
+
+                main.addEventListener(
+                    "click",
+                    () => {
+                        if (
+                            item.system
+                        ) {
+                            setActiveWallpaper(
+                                SYSTEM_WALLPAPER_ID
+                            );
+
+                            renderWallpaperList();
+                            return;
+                        }
+
+                        wallpaperSelectedItemId =
+                            item.id;
+
+                        wallpaperItemSheetTitle.textContent =
+                            item.name;
+
+                        wallpaperItemSheet.classList.remove(
+                            "hidden"
+                        );
+                    }
+                );
+
+                const heart =
+                    document.createElement(
+                        "button"
+                    );
+
+                heart.type =
+                    "button";
+
+                heart.className =
+                    "wallpaper-heart";
+
+                heart.classList.toggle(
+                    "active",
+                    activeWallpaperId
+                    ===
+                    item.id
+                );
+
+                heart.textContent =
+                    activeWallpaperId
+                    ===
+                    item.id
+                        ? "♥"
+                        : "♡";
+
+                heart.setAttribute(
+                    "aria-label",
+                    `${item.name} aktivieren`
+                );
+
+                heart.addEventListener(
+                    "click",
+                    async event => {
+                        event.stopPropagation();
+
+                        setActiveWallpaper(
+                            item.id
+                        );
+
+                        await renderWallpaperList();
+                    }
+                );
+
+                row.append(
+                    main,
+                    heart
+                );
+
+                wallpaperList.appendChild(
+                    row
+                );
+            }
+        );
+    }
+
+
+    async function openWallpaperManager() {
+        customWallpaperMenuPanel.classList.add(
+            "hidden"
+        );
+
+        el.textsMenuPanel.classList.add(
+            "hidden"
+        );
+
+        await renderWallpaperList();
+
+        showScreen(
+            wallpaperListScreen
+        );
+    }
+
+
+    function resetWallpaperCreateForm() {
+        $("wallpaperNameInput").value =
+            "";
+
+        wallpaperPendingCreateFile =
+            null;
+
+        $("wallpaperCreateStatus").textContent =
+            "";
+
+        $("wallpaperCreateContinue").disabled =
+            true;
+
+        $("wallpaperCreatePreviewWrap").classList.add(
+            "hidden"
+        );
+
+        if (
+            wallpaperPendingCreatePreviewUrl
+        ) {
+            URL.revokeObjectURL(
+                wallpaperPendingCreatePreviewUrl
+            );
+
+            wallpaperPendingCreatePreviewUrl =
+                null;
+        }
+
+        $("wallpaperCreatePreview").removeAttribute(
+            "src"
+        );
+    }
+
+
+    function updateWallpaperCreateContinue() {
+        $("wallpaperCreateContinue").disabled =
+            !(
+                $("wallpaperNameInput").value.trim()
+                &&
+                wallpaperPendingCreateFile
+            );
+    }
+
+
+    function selectWallpaperCreateFile(
+        file
+    ) {
+        if (
+            !file
+            ||
+            !file.type.startsWith(
+                "image/"
+            )
+        ) {
+            return;
+        }
+
+        wallpaperPendingCreateFile =
+            file;
+
+        if (
+            wallpaperPendingCreatePreviewUrl
+        ) {
+            URL.revokeObjectURL(
+                wallpaperPendingCreatePreviewUrl
+            );
+        }
+
+        wallpaperPendingCreatePreviewUrl =
+            URL.createObjectURL(
+                file
+            );
+
+        $("wallpaperCreatePreview").src =
+            wallpaperPendingCreatePreviewUrl;
+
+        $("wallpaperCreatePreviewWrap").classList.remove(
+            "hidden"
+        );
+
+        $("wallpaperCreateStatus").textContent =
+            "";
+
+        updateWallpaperCreateContinue();
+    }
+
+
+    async function startNewWallpaperEditor() {
+        const name =
+            $("wallpaperNameInput").value.trim();
+
+        if (
+            !name
+            ||
+            !wallpaperPendingCreateFile
+        ) {
+            return;
+        }
+
+        $("wallpaperCreateContinue").disabled =
+            true;
+
+        $("wallpaperCreateStatus").textContent =
+            "Foto wird vorbereitet …";
+
+        try {
+            const image =
+                await compressWallpaperImage(
+                    wallpaperPendingCreateFile
+                );
+
+            const sceneId =
+                wallpaperUid(
+                    "scene"
+                );
+
+            wallpaperEditorWallpaper = {
+                id:
+                    wallpaperUid(
+                        "wallpaper"
+                    ),
+                name,
+                rootSceneId:
+                    sceneId,
+                scenes: [
+                    {
+                        id:
+                            sceneId,
+                        image:
+                            image.blob,
+                        width:
+                            image.width,
+                        height:
+                            image.height,
+                        hotspots:
+                            []
+                    }
+                ],
+                createdAt:
+                    new Date().toISOString(),
+                updatedAt:
+                    new Date().toISOString()
+            };
+
+            wallpaperEditorSceneId =
+                sceneId;
+
+            wallpaperEditorHistory =
+                [];
+
+            wallpaperEditingHotspotId =
+                null;
+
+            resetWallpaperCreateForm();
+
+            await renderWallpaperEditorScene();
+
+            showScreen(
+                wallpaperEditorScreen
+            );
+        } catch (
+            error
+        ) {
+            $("wallpaperCreateStatus").textContent =
+                error?.message
+                ??
+                "Foto konnte nicht vorbereitet werden.";
+
+            updateWallpaperCreateContinue();
+        }
+    }
+
+
+    async function renderWallpaperEditorScene() {
+        const scene =
+            wallpaperScene(
+                wallpaperEditorWallpaper,
+                wallpaperEditorSceneId
+            );
+
+        if (
+            !scene
+        ) {
+            return;
+        }
+
+        revokeWallpaperUrl(
+            "editor"
+        );
+
+        wallpaperEditorObjectUrl =
+            URL.createObjectURL(
+                scene.image
+            );
+
+        wallpaperEditorImage.src =
+            wallpaperEditorObjectUrl;
+
+        wallpaperEditorSceneLabel.textContent =
+            `Foto ${wallpaperEditorWallpaper.scenes.findIndex(item => item.id === scene.id) + 1} / ${wallpaperEditorWallpaper.scenes.length}`;
+
+        wallpaperEditorHint.textContent =
+            "Tippe auf das Bild, um einen unsichtbaren Link zu platzieren.";
+
+        const redraw =
+            () => renderWallpaperEditorMarkers();
+
+        if (
+            wallpaperEditorImage.complete
+        ) {
+            requestAnimationFrame(
+                redraw
+            );
+        } else {
+            wallpaperEditorImage.onload =
+                redraw;
+        }
+    }
+
+
+    function wallpaperTargetLabel(
+        hotspot
+    ) {
+        if (
+            hotspot.type
+            ===
+            "scene"
+        ) {
+            return "↗";
+        }
+
+        if (
+            hotspot.type
+            ===
+            "menu"
+        ) {
+            return "≡";
+        }
+
+        if (
+            hotspot.type
+            ===
+            "back"
+        ) {
+            return "‹";
+        }
+
+        const entry =
+            WALLPAPER_TARGETS.find(
+                item =>
+                    item[0]
+                    ===
+                    hotspot.type
+            );
+
+        return entry
+            ? entry[1].slice(
+                0,
+                1
+            )
+            : "•";
+    }
+
+
+    function renderWallpaperEditorMarkers() {
+        wallpaperEditorMarkers.innerHTML =
+            "";
+
+        const scene =
+            wallpaperScene(
+                wallpaperEditorWallpaper,
+                wallpaperEditorSceneId
+            );
+
+        if (
+            !scene
+            ||
+            !wallpaperEditorImage.naturalWidth
+        ) {
+            return;
+        }
+
+        scene.hotspots.forEach(
+            hotspot => {
+                const point =
+                    clientPointFromNormalized(
+                        wallpaperEditorImage,
+                        wallpaperEditorScreen,
+                        hotspot.x,
+                        hotspot.y
+                    );
+
+                const marker =
+                    document.createElement(
+                        "button"
+                    );
+
+                marker.type =
+                    "button";
+
+                marker.className =
+                    "wallpaper-editor-marker";
+
+                marker.style.left =
+                    `${point.left}px`;
+
+                marker.style.top =
+                    `${point.top}px`;
+
+                marker.textContent =
+                    wallpaperTargetLabel(
+                        hotspot
+                    );
+
+                marker.title =
+                    hotspot.label
+                    ??
+                    hotspot.type;
+
+                marker.addEventListener(
+                    "click",
+                    event => {
+                        event.stopPropagation();
+
+                        wallpaperPendingPoint = {
+                            x:
+                                hotspot.x,
+                            y:
+                                hotspot.y
+                        };
+
+                        wallpaperEditingHotspotId =
+                            hotspot.id;
+
+                        openWallpaperTargetSheet(
+                            true
+                        );
+                    }
+                );
+
+                wallpaperEditorMarkers.appendChild(
+                    marker
+                );
+            }
+        );
+    }
+
+
+    function openWallpaperTargetSheet(
+        editing = false
+    ) {
+        wallpaperTargetList.innerHTML =
+            "";
+
+        WALLPAPER_TARGETS.forEach(
+            (
+                [
+                    type,
+                    label
+                ]
+            ) => {
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "wallpaper-target-option";
+
+                button.textContent =
+                    label;
+
+                button.addEventListener(
+                    "click",
+                    () => chooseWallpaperTarget(
+                        type,
+                        label
+                    )
+                );
+
+                wallpaperTargetList.appendChild(
+                    button
+                );
+            }
+        );
+
+        if (
+            editing
+        ) {
+            const remove =
+                document.createElement(
+                    "button"
+                );
+
+            remove.type =
+                "button";
+
+            remove.className =
+                "wallpaper-target-option wallpaper-danger-row";
+
+            remove.textContent =
+                "Link löschen";
+
+            remove.addEventListener(
+                "click",
+                () => {
+                    const scene =
+                        wallpaperScene(
+                            wallpaperEditorWallpaper,
+                            wallpaperEditorSceneId
+                        );
+
+                    scene.hotspots =
+                        scene.hotspots.filter(
+                            item =>
+                                item.id
+                                !==
+                                wallpaperEditingHotspotId
+                        );
+
+                    wallpaperEditingHotspotId =
+                        null;
+
+                    wallpaperTargetSheet.classList.add(
+                        "hidden"
+                    );
+
+                    renderWallpaperEditorMarkers();
+                }
+            );
+
+            wallpaperTargetList.appendChild(
+                remove
+            );
+        }
+
+        wallpaperTargetSheet.classList.remove(
+            "hidden"
+        );
+    }
+
+
+    function createOrUpdateWallpaperHotspot(
+        type,
+        label,
+        targetValue = null
+    ) {
+        const scene =
+            wallpaperScene(
+                wallpaperEditorWallpaper,
+                wallpaperEditorSceneId
+            );
+
+        if (
+            !scene
+            ||
+            !wallpaperPendingPoint
+        ) {
+            return;
+        }
+
+        const existing =
+            scene.hotspots.find(
+                item =>
+                    item.id
+                    ===
+                    wallpaperEditingHotspotId
+            );
+
+        if (
+            existing
+        ) {
+            existing.type =
+                type;
+
+            existing.label =
+                label;
+
+            existing.targetValue =
+                targetValue;
+
+            existing.x =
+                wallpaperPendingPoint.x;
+
+            existing.y =
+                wallpaperPendingPoint.y;
+        } else {
+            scene.hotspots.push(
+                {
+                    id:
+                        wallpaperUid(
+                            "hotspot"
+                        ),
+                    x:
+                        wallpaperPendingPoint.x,
+                    y:
+                        wallpaperPendingPoint.y,
+                    type,
+                    label,
+                    targetValue
+                }
+            );
+        }
+
+        wallpaperEditingHotspotId =
+            null;
+
+        wallpaperPendingPoint =
+            null;
+
+        renderWallpaperEditorMarkers();
+    }
+
+
+    function chooseWallpaperTarget(
+        type,
+        label
+    ) {
+        wallpaperTargetSheet.classList.add(
+            "hidden"
+        );
+
+        if (
+            type
+            ===
+            "scene"
+        ) {
+            wallpaperPendingSceneSource = {
+                fromSceneId:
+                    wallpaperEditorSceneId,
+                editingHotspotId:
+                    wallpaperEditingHotspotId,
+                point:
+                    wallpaperPendingPoint
+            };
+
+            wallpaperPhotoSheet.classList.remove(
+                "hidden"
+            );
+
+            return;
+        }
+
+        createOrUpdateWallpaperHotspot(
+            type,
+            label
+        );
+    }
+
+
+    async function addWallpaperSceneFromFile(
+        file
+    ) {
+        if (
+            !file
+            ||
+            !file.type.startsWith(
+                "image/"
+            )
+            ||
+            !wallpaperPendingSceneSource
+        ) {
+            return;
+        }
+
+        wallpaperPhotoSheet.classList.add(
+            "hidden"
+        );
+
+        wallpaperEditorHint.textContent =
+            "Foto wird vorbereitet …";
+
+        try {
+            const image =
+                await compressWallpaperImage(
+                    file
+                );
+
+            const newSceneId =
+                wallpaperUid(
+                    "scene"
+                );
+
+            wallpaperEditorWallpaper.scenes.push(
+                {
+                    id:
+                        newSceneId,
+                    image:
+                        image.blob,
+                    width:
+                        image.width,
+                    height:
+                        image.height,
+                    hotspots:
+                        []
+                }
+            );
+
+            const source =
+                wallpaperScene(
+                    wallpaperEditorWallpaper,
+                    wallpaperPendingSceneSource.fromSceneId
+                );
+
+            const existing =
+                source.hotspots.find(
+                    item =>
+                        item.id
+                        ===
+                        wallpaperPendingSceneSource.editingHotspotId
+                );
+
+            if (
+                existing
+            ) {
+                existing.type =
+                    "scene";
+
+                existing.label =
+                    "Neues Foto";
+
+                existing.targetValue =
+                    newSceneId;
+
+                existing.x =
+                    wallpaperPendingSceneSource.point.x;
+
+                existing.y =
+                    wallpaperPendingSceneSource.point.y;
+            } else {
+                source.hotspots.push(
+                    {
+                        id:
+                            wallpaperUid(
+                                "hotspot"
+                            ),
+                        x:
+                            wallpaperPendingSceneSource.point.x,
+                        y:
+                            wallpaperPendingSceneSource.point.y,
+                        type:
+                            "scene",
+                        label:
+                            "Neues Foto",
+                        targetValue:
+                            newSceneId
+                    }
+                );
+            }
+
+            wallpaperEditorHistory.push(
+                wallpaperPendingSceneSource.fromSceneId
+            );
+
+            wallpaperEditorSceneId =
+                newSceneId;
+
+            wallpaperPendingSceneSource =
+                null;
+
+            wallpaperPendingPoint =
+                null;
+
+            wallpaperEditingHotspotId =
+                null;
+
+            await renderWallpaperEditorScene();
+        } catch (
+            error
+        ) {
+            wallpaperEditorHint.textContent =
+                error?.message
+                ??
+                "Foto konnte nicht hinzugefügt werden.";
+        }
+    }
+
+
+    function validateWallpaperEditor() {
+        const root =
+            wallpaperScene(
+                wallpaperEditorWallpaper,
+                wallpaperEditorWallpaper.rootSceneId
+            );
+
+        if (
+            !root?.hotspots.some(
+                item =>
+                    item.type
+                    ===
+                    "menu"
+            )
+        ) {
+            return {
+                ok:
+                    false,
+                sceneId:
+                    root?.id,
+                message:
+                    "Auf dem Hauptfoto muss mindestens ein Link „Menü“ vorhanden sein."
+            };
+        }
+
+        for (
+            const scene
+            of
+            wallpaperEditorWallpaper.scenes
+        ) {
+            if (
+                scene.id
+                ===
+                wallpaperEditorWallpaper.rootSceneId
+            ) {
+                continue;
+            }
+
+            const hasExit =
+                scene.hotspots.some(
+                    item =>
+                        item.type
+                        ===
+                        "menu"
+                        ||
+                        item.type
+                        ===
+                        "back"
+                );
+
+            if (
+                !hasExit
+            ) {
+                return {
+                    ok:
+                        false,
+                    sceneId:
+                        scene.id,
+                    message:
+                        "Jedes zusätzliche Foto braucht mindestens „Zurück“ oder „Menü“, damit keine Sackgasse entsteht."
+                };
+            }
+        }
+
+        return {
+            ok:
+                true
+        };
+    }
+
+
+    async function finishWallpaperEditor() {
+        const validation =
+            validateWallpaperEditor();
+
+        if (
+            !validation.ok
+        ) {
+            wallpaperEditorSceneId =
+                validation.sceneId
+                ||
+                wallpaperEditorWallpaper.rootSceneId;
+
+            await renderWallpaperEditorScene();
+
+            wallpaperEditorHint.textContent =
+                validation.message;
+
+            return;
+        }
+
+        await putWallpaper(
+            wallpaperEditorWallpaper
+        );
+
+        wallpaperEditorWallpaper =
+            null;
+
+        revokeWallpaperUrl(
+            "editor"
+        );
+
+        await renderWallpaperList();
+
+        showScreen(
+            wallpaperListScreen
+        );
+    }
+
+
+    async function editWallpaper(
+        id
+    ) {
+        const wallpaper =
+            await getWallpaper(
+                id
+            );
+
+        if (
+            !wallpaper
+        ) {
+            return;
+        }
+
+        wallpaperEditorWallpaper =
+            wallpaper;
+
+        wallpaperEditorSceneId =
+            wallpaper.rootSceneId;
+
+        wallpaperEditorHistory =
+            [];
+
+        await renderWallpaperEditorScene();
+
+        showScreen(
+            wallpaperEditorScreen
+        );
+    }
+
+
+    async function renderActiveWallpaperRoot() {
+        if (
+            activeWallpaperId
+            ===
+            SYSTEM_WALLPAPER_ID
+        ) {
+            return;
+        }
+
+        const wallpaper =
+            await getWallpaper(
+                activeWallpaperId
+            );
+
+        if (
+            !wallpaper
+        ) {
+            setActiveWallpaper(
+                SYSTEM_WALLPAPER_ID
+            );
+
+            return;
+        }
+
+        wallpaperRuntimeWallpaper =
+            wallpaper;
+
+        wallpaperRuntimeHistory =
+            [];
+
+        await renderWallpaperRuntimeScene(
+            wallpaper.rootSceneId
+        );
+    }
+
+
+    async function renderWallpaperRuntimeScene(
+        sceneId
+    ) {
+        const scene =
+            wallpaperScene(
+                wallpaperRuntimeWallpaper,
+                sceneId
+            );
+
+        if (
+            !scene
+        ) {
+            return;
+        }
+
+        wallpaperRuntimeSceneId =
+            sceneId;
+
+        revokeWallpaperUrl(
+            "runtime"
+        );
+
+        wallpaperRuntimeObjectUrl =
+            URL.createObjectURL(
+                scene.image
+            );
+
+        wallpaperRuntimeImage.src =
+            wallpaperRuntimeObjectUrl;
+
+        const redraw =
+            () => renderWallpaperRuntimeHotspots();
+
+        if (
+            wallpaperRuntimeImage.complete
+        ) {
+            requestAnimationFrame(
+                redraw
+            );
+        } else {
+            wallpaperRuntimeImage.onload =
+                redraw;
+        }
+    }
+
+
+    function renderWallpaperRuntimeHotspots() {
+        wallpaperRuntimeHotspots.innerHTML =
+            "";
+
+        const scene =
+            wallpaperScene(
+                wallpaperRuntimeWallpaper,
+                wallpaperRuntimeSceneId
+            );
+
+        if (
+            !scene
+            ||
+            !wallpaperRuntimeImage.naturalWidth
+        ) {
+            return;
+        }
+
+        scene.hotspots.forEach(
+            hotspot => {
+                const point =
+                    clientPointFromNormalized(
+                        wallpaperRuntimeImage,
+                        wallpaperRuntimeScreen,
+                        hotspot.x,
+                        hotspot.y
+                    );
+
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "wallpaper-runtime-hotspot";
+
+                button.style.left =
+                    `${point.left}px`;
+
+                button.style.top =
+                    `${point.top}px`;
+
+                button.setAttribute(
+                    "aria-label",
+                    hotspot.label
+                    ??
+                    hotspot.type
+                );
+
+                button.addEventListener(
+                    "click",
+                    event => {
+                        event.stopPropagation();
+
+                        void activateWallpaperHotspot(
+                            hotspot
+                        );
+                    }
+                );
+
+                wallpaperRuntimeHotspots.appendChild(
+                    button
+                );
+            }
+        );
+    }
+
+
+    async function activateWallpaperHotspot(
+        hotspot
+    ) {
+        if (
+            hotspot.type
+            ===
+            "scene"
+        ) {
+            wallpaperRuntimeHistory.push(
+                wallpaperRuntimeSceneId
+            );
+
+            await renderWallpaperRuntimeScene(
+                hotspot.targetValue
+            );
+
+            return;
+        }
+
+        if (
+            hotspot.type
+            ===
+            "back"
+        ) {
+            const previous =
+                wallpaperRuntimeHistory.pop();
+
+            if (
+                previous
+            ) {
+                await renderWallpaperRuntimeScene(
+                    previous
+                );
+            } else if (
+                wallpaperRuntimeWallpaper
+            ) {
+                await renderWallpaperRuntimeScene(
+                    wallpaperRuntimeWallpaper.rootSceneId
+                );
+            }
+
+            return;
+        }
+
+        if (
+            hotspot.type
+            ===
+            "menu"
+        ) {
+            customWallpaperMenuPanel.classList.remove(
+                "hidden"
+            );
+
+            return;
+        }
+
+        launchWallpaperApplication(
+            hotspot.type
+        );
+    }
+
+
+    function launchWallpaperApplication(
+        type
+    ) {
+        customWallpaperMenuPanel.classList.add(
+            "hidden"
+        );
+
+        switch (
+            type
+        ) {
+            case "planner":
+                showScreen(
+                    screens.plannerHub
+                );
+                break;
+
+            case "books":
+                el.openBooksButton.click();
+                break;
+
+            case "dreams":
+                el.openDreamsButton.click();
+                break;
+
+            case "days":
+                el.openDaysButton.click();
+                break;
+
+            case "thoughts":
+                el.openThoughtsButton.click();
+                break;
+
+            case "physics":
+                el.openPhysicsButton.click();
+                break;
+
+            case "notes":
+                el.openNotesButton.click();
+                break;
+
+            case "films":
+                openYoutubePortal();
+                break;
+
+            case "wikipedia":
+                openWikipediaPortal();
+                break;
+
+            case "news":
+                openNewsPortal();
+                break;
+
+            case "music":
+                void openMusicPortal();
+                break;
+
+            case "chess":
+                openChessSetup();
+                break;
+        }
+    }
+
+
+    async function activateWallpaperAndGoHome(
+        id
+    ) {
+        setActiveWallpaper(
+            id
+        );
+
+        if (
+            id
+            ===
+            SYSTEM_WALLPAPER_ID
+        ) {
+            wallpaperBypassRoomRedirect =
+                true;
+
+            showScreen(
+                screens.textsHub
+            );
+
+            wallpaperBypassRoomRedirect =
+                false;
+
+            return;
+        }
+
+        await renderActiveWallpaperRoot();
+
+        showScreen(
+            wallpaperRuntimeScreen
+        );
+    }
+
+
+    function blobToDataUrl(
+        blob
+    ) {
+        return new Promise(
+            (
+                resolve,
+                reject
+            ) => {
+                const reader =
+                    new FileReader();
+
+                reader.onload =
+                    () => resolve(
+                        reader.result
+                    );
+
+                reader.onerror =
+                    () => reject(
+                        reader.error
+                    );
+
+                reader.readAsDataURL(
+                    blob
+                );
+            }
+        );
+    }
+
+
+    async function dataUrlToBlob(
+        dataUrl
+    ) {
+        const response =
+            await fetch(
+                dataUrl
+            );
+
+        return response.blob();
+    }
+
+
+    async function exportWallpaper(
+        id
+    ) {
+        const wallpaper =
+            await getWallpaper(
+                id
+            );
+
+        if (
+            !wallpaper
+        ) {
+            return;
+        }
+
+        const exported = {
+            format:
+                "planerwallpaper",
+            version:
+                1,
+            wallpaper: {
+                ...wallpaper,
+                scenes:
+                    []
+            }
+        };
+
+        for (
+            const scene
+            of
+            wallpaper.scenes
+        ) {
+            exported.wallpaper.scenes.push(
+                {
+                    ...scene,
+                    image:
+                        await blobToDataUrl(
+                            scene.image
+                        )
+                }
+            );
+        }
+
+        const blob =
+            new Blob(
+                [
+                    JSON.stringify(
+                        exported
+                    )
+                ],
+                {
+                    type:
+                        "application/json"
+                }
+            );
+
+        const url =
+            URL.createObjectURL(
+                blob
+            );
+
+        const a =
+            document.createElement(
+                "a"
+            );
+
+        a.href =
+            url;
+
+        a.download =
+            `${wallpaper.name.replace(/[^\p{L}\p{N}_-]+/gu, "_") || "Tapete"}.planerwallpaper`;
+
+        document.body.appendChild(
+            a
+        );
+
+        a.click();
+
+        a.remove();
+
+        setTimeout(
+            () => URL.revokeObjectURL(
+                url
+            ),
+            1000
+        );
+    }
+
+
+    async function importWallpaperFile(
+        file
+    ) {
+        if (
+            !file
+        ) {
+            return;
+        }
+
+        try {
+            const parsed =
+                JSON.parse(
+                    await file.text()
+                );
+
+            if (
+                parsed?.format
+                !==
+                "planerwallpaper"
+                ||
+                !parsed?.wallpaper?.scenes?.length
+            ) {
+                throw new Error(
+                    "Keine gültige Tapeten-Datei."
+                );
+            }
+
+            const imported =
+                parsed.wallpaper;
+
+            imported.id =
+                wallpaperUid(
+                    "wallpaper"
+                );
+
+            imported.name =
+                `${imported.name || "Importierte Tapete"}`;
+
+            const sceneIdMap =
+                new Map();
+
+            imported.scenes.forEach(
+                scene => {
+                    const oldId =
+                        scene.id;
+
+                    const newId =
+                        wallpaperUid(
+                            "scene"
+                        );
+
+                    sceneIdMap.set(
+                        oldId,
+                        newId
+                    );
+
+                    scene.id =
+                        newId;
+                }
+            );
+
+            imported.rootSceneId =
+                sceneIdMap.get(
+                    imported.rootSceneId
+                )
+                ||
+                imported.scenes[0].id;
+
+            for (
+                const scene
+                of
+                imported.scenes
+            ) {
+                scene.image =
+                    await dataUrlToBlob(
+                        scene.image
+                    );
+
+                scene.hotspots =
+                    (
+                        scene.hotspots
+                        ??
+                        []
+                    )
+                    .map(
+                        hotspot => ({
+                            ...hotspot,
+                            id:
+                                wallpaperUid(
+                                    "hotspot"
+                                ),
+                            targetValue:
+                                hotspot.type
+                                ===
+                                "scene"
+                                    ? sceneIdMap.get(
+                                        hotspot.targetValue
+                                    )
+                                    : hotspot.targetValue
+                        })
+                    );
+            }
+
+            imported.createdAt =
+                new Date().toISOString();
+
+            imported.updatedAt =
+                imported.createdAt;
+
+            await putWallpaper(
+                imported
+            );
+
+            await renderWallpaperList();
+        } catch (
+            error
+        ) {
+            alert(
+                error?.message
+                ??
+                "Tapete konnte nicht importiert werden."
+            );
+        }
+    }
+
+
+    async function duplicateWallpaper(
+        id
+    ) {
+        const wallpaper =
+            await getWallpaper(
+                id
+            );
+
+        if (
+            !wallpaper
+        ) {
+            return;
+        }
+
+        const clone =
+            structuredClone(
+                wallpaper
+            );
+
+        const sceneIdMap =
+            new Map();
+
+        clone.scenes.forEach(
+            scene => {
+                const old =
+                    scene.id;
+
+                scene.id =
+                    wallpaperUid(
+                        "scene"
+                    );
+
+                sceneIdMap.set(
+                    old,
+                    scene.id
+                );
+            }
+        );
+
+        clone.scenes.forEach(
+            scene => {
+                scene.hotspots =
+                    scene.hotspots.map(
+                        hotspot => ({
+                            ...hotspot,
+                            id:
+                                wallpaperUid(
+                                    "hotspot"
+                                ),
+                            targetValue:
+                                hotspot.type
+                                ===
+                                "scene"
+                                    ? sceneIdMap.get(
+                                        hotspot.targetValue
+                                    )
+                                    : hotspot.targetValue
+                        })
+                    );
+            }
+        );
+
+        clone.id =
+            wallpaperUid(
+                "wallpaper"
+            );
+
+        clone.rootSceneId =
+            sceneIdMap.get(
+                wallpaper.rootSceneId
+            );
+
+        clone.name =
+            `${wallpaper.name} Kopie`;
+
+        clone.createdAt =
+            new Date().toISOString();
+
+        clone.updatedAt =
+            clone.createdAt;
+
+        await putWallpaper(
+            clone
+        );
+
+        await renderWallpaperList();
+    }
+
+
+    async function initializeWallpaperSystem() {
+        try {
+            wallpaperDb =
+                await openWallpaperDb();
+
+            wallpaperSystemReady =
+                true;
+
+            if (
+                activeWallpaperId
+                !==
+                SYSTEM_WALLPAPER_ID
+            ) {
+                const exists =
+                    await getWallpaper(
+                        activeWallpaperId
+                    );
+
+                if (
+                    !exists
+                ) {
+                    setActiveWallpaper(
+                        SYSTEM_WALLPAPER_ID
+                    );
+                } else {
+                    wallpaperRuntimeWallpaper =
+                        exists;
+
+                    wallpaperRuntimeHistory =
+                        [];
+
+                    await renderWallpaperRuntimeScene(
+                        exists.rootSceneId
+                    );
+
+                    showScreen(
+                        wallpaperRuntimeScreen
+                    );
+                }
+            }
+        } catch (
+            error
+        ) {
+            console.error(
+                "Tapetenwechsel konnte nicht initialisiert werden:",
+                error
+            );
+
+            wallpaperSystemReady =
+                false;
+        }
+    }
+
+
+    // ----- Existing study-room drawer -----
+
+    $("openWallpaperManagerButton").addEventListener(
+        "click",
+        () => {
+            void openWallpaperManager();
+        }
+    );
+
+
+    // ----- Wallpaper list -----
+
+    $("backFromWallpaperList").addEventListener(
+        "click",
+        () => {
+            if (
+                activeWallpaperId
+                ===
+                SYSTEM_WALLPAPER_ID
+            ) {
+                wallpaperBypassRoomRedirect =
+                    true;
+
+                showScreen(
+                    screens.textsHub
+                );
+
+                wallpaperBypassRoomRedirect =
+                    false;
+            } else {
+                void renderActiveWallpaperRoot().then(
+                    () => showScreen(
+                        wallpaperRuntimeScreen
+                    )
+                );
+            }
+        }
+    );
+
+
+    $("addWallpaperButton").addEventListener(
+        "click",
+        () => {
+            resetWallpaperCreateForm();
+
+            showScreen(
+                wallpaperCreateScreen
+            );
+
+            setTimeout(
+                () => $("wallpaperNameInput").focus(),
+                80
+            );
+        }
+    );
+
+
+    $("wallpaperImportButton").addEventListener(
+        "click",
+        () => $("wallpaperImportInput").click()
+    );
+
+
+    $("wallpaperImportInput").addEventListener(
+        "change",
+        event => {
+            void importWallpaperFile(
+                event.target.files?.[0]
+            );
+
+            event.target.value =
+                "";
+        }
+    );
+
+
+    // ----- Create screen -----
+
+    $("backFromWallpaperCreate").addEventListener(
+        "click",
+        () => {
+            resetWallpaperCreateForm();
+
+            showScreen(
+                wallpaperListScreen
+            );
+        }
+    );
+
+
+    $("wallpaperCameraButton").addEventListener(
+        "click",
+        () => $("wallpaperCameraInput").click()
+    );
+
+
+    $("wallpaperGalleryButton").addEventListener(
+        "click",
+        () => $("wallpaperGalleryInput").click()
+    );
+
+
+    $("wallpaperCameraInput").addEventListener(
+        "change",
+        event => {
+            if (
+                event.currentTarget.dataset.sceneHandled
+                ===
+                "1"
+            ) {
+                event.currentTarget.dataset.sceneHandled =
+                    "";
+
+                event.target.value =
+                    "";
+
+                return;
+            }
+
+            selectWallpaperCreateFile(
+                event.target.files?.[0]
+            );
+
+            event.target.value =
+                "";
+        }
+    );
+
+
+    $("wallpaperGalleryInput").addEventListener(
+        "change",
+        event => {
+            if (
+                event.currentTarget.dataset.sceneHandled
+                ===
+                "1"
+            ) {
+                event.currentTarget.dataset.sceneHandled =
+                    "";
+
+                event.target.value =
+                    "";
+
+                return;
+            }
+
+            selectWallpaperCreateFile(
+                event.target.files?.[0]
+            );
+
+            event.target.value =
+                "";
+        }
+    );
+
+
+    $("wallpaperNameInput").addEventListener(
+        "input",
+        updateWallpaperCreateContinue
+    );
+
+
+    $("wallpaperCreateContinue").addEventListener(
+        "click",
+        () => {
+            void startNewWallpaperEditor();
+        }
+    );
+
+
+    // ----- Editor -----
+
+    wallpaperEditorScreen.addEventListener(
+        "click",
+        event => {
+            if (
+                event.target
+                !==
+                wallpaperEditorImage
+            ) {
+                return;
+            }
+
+            wallpaperPendingPoint =
+                pointFromClient(
+                    wallpaperEditorImage,
+                    wallpaperEditorScreen,
+                    event.clientX,
+                    event.clientY
+                );
+
+            wallpaperEditingHotspotId =
+                null;
+
+            openWallpaperTargetSheet(
+                false
+            );
+        }
+    );
+
+
+    window.addEventListener(
+        "resize",
+        () => {
+            if (
+                wallpaperRuntimeScreen.classList.contains(
+                    "active"
+                )
+            ) {
+                renderWallpaperRuntimeHotspots();
+            }
+
+            if (
+                wallpaperEditorScreen.classList.contains(
+                    "active"
+                )
+            ) {
+                renderWallpaperEditorMarkers();
+            }
+        }
+    );
+
+
+    $("wallpaperTargetCancel").addEventListener(
+        "click",
+        () => {
+            wallpaperTargetSheet.classList.add(
+                "hidden"
+            );
+
+            wallpaperPendingPoint =
+                null;
+
+            wallpaperEditingHotspotId =
+                null;
+        }
+    );
+
+
+    $("wallpaperPhotoSheetCancel").addEventListener(
+        "click",
+        () => {
+            wallpaperPhotoSheet.classList.add(
+                "hidden"
+            );
+
+            wallpaperPendingSceneSource =
+                null;
+
+            wallpaperPendingPoint =
+                null;
+
+            wallpaperEditingHotspotId =
+                null;
+        }
+    );
+
+
+    $("wallpaperSceneCameraButton").addEventListener(
+        "click",
+        () => {
+            wallpaperPhotoSheet.classList.add(
+                "hidden"
+            );
+
+            $("wallpaperCameraInput").dataset.sceneMode =
+                "1";
+
+            $("wallpaperCameraInput").click();
+        }
+    );
+
+
+    $("wallpaperSceneGalleryButton").addEventListener(
+        "click",
+        () => {
+            wallpaperPhotoSheet.classList.add(
+                "hidden"
+            );
+
+            $("wallpaperGalleryInput").dataset.sceneMode =
+                "1";
+
+            $("wallpaperGalleryInput").click();
+        }
+    );
+
+
+    // Replace create-file handlers for scene mode after the original handlers run.
+    $("wallpaperCameraInput").addEventListener(
+        "change",
+        event => {
+            if (
+                event.currentTarget.dataset.sceneMode
+                ===
+                "1"
+            ) {
+                event.currentTarget.dataset.sceneMode =
+                    "";
+
+                event.currentTarget.dataset.sceneHandled =
+                    "1";
+
+                const sceneFile =
+                    event.target.files?.[0];
+
+                void addWallpaperSceneFromFile(
+                    sceneFile
+                );
+            }
+        },
+        true
+    );
+
+
+    $("wallpaperGalleryInput").addEventListener(
+        "change",
+        event => {
+            if (
+                event.currentTarget.dataset.sceneMode
+                ===
+                "1"
+            ) {
+                event.currentTarget.dataset.sceneMode =
+                    "";
+
+                event.currentTarget.dataset.sceneHandled =
+                    "1";
+
+                const sceneFile =
+                    event.target.files?.[0];
+
+                void addWallpaperSceneFromFile(
+                    sceneFile
+                );
+            }
+        },
+        true
+    );
+
+
+    $("backFromWallpaperEditor").addEventListener(
+        "click",
+        async event => {
+            event.stopPropagation();
+
+            if (
+                wallpaperEditorHistory.length
+            ) {
+                wallpaperEditorSceneId =
+                    wallpaperEditorHistory.pop();
+
+                await renderWallpaperEditorScene();
+
+                return;
+            }
+
+            if (
+                confirm(
+                    "Bearbeitung verlassen? Nicht gespeicherte Änderungen gehen verloren."
+                )
+            ) {
+                wallpaperEditorWallpaper =
+                    null;
+
+                revokeWallpaperUrl(
+                    "editor"
+                );
+
+                await renderWallpaperList();
+
+                showScreen(
+                    wallpaperListScreen
+                );
+            }
+        }
+    );
+
+
+    $("finishWallpaperEditor").addEventListener(
+        "click",
+        event => {
+            event.stopPropagation();
+
+            void finishWallpaperEditor();
+        }
+    );
+
+
+    // ----- Item actions -----
+
+    $("wallpaperItemSheetCancel").addEventListener(
+        "click",
+        () => {
+            wallpaperItemSheet.classList.add(
+                "hidden"
+            );
+
+            wallpaperSelectedItemId =
+                null;
+        }
+    );
+
+
+    wallpaperItemSheet.addEventListener(
+        "click",
+        async event => {
+            const button =
+                event.target.closest(
+                    "[data-wallpaper-item-action]"
+                );
+
+            if (
+                !button
+                ||
+                !wallpaperSelectedItemId
+            ) {
+                return;
+            }
+
+            const id =
+                wallpaperSelectedItemId;
+
+            const action =
+                button.dataset.wallpaperItemAction;
+
+            wallpaperItemSheet.classList.add(
+                "hidden"
+            );
+
+            wallpaperSelectedItemId =
+                null;
+
+            if (
+                action
+                ===
+                "activate"
+            ) {
+                setActiveWallpaper(
+                    id
+                );
+
+                await renderWallpaperList();
+
+                return;
+            }
+
+            if (
+                action
+                ===
+                "edit"
+            ) {
+                await editWallpaper(
+                    id
+                );
+
+                return;
+            }
+
+            if (
+                action
+                ===
+                "rename"
+            ) {
+                const wallpaper =
+                    await getWallpaper(
+                        id
+                    );
+
+                const name =
+                    prompt(
+                        "Neuer Name",
+                        wallpaper?.name
+                        ??
+                        ""
+                    );
+
+                if (
+                    name?.trim()
+                ) {
+                    wallpaper.name =
+                        name.trim();
+
+                    await putWallpaper(
+                        wallpaper
+                    );
+
+                    await renderWallpaperList();
+                }
+
+                return;
+            }
+
+            if (
+                action
+                ===
+                "duplicate"
+            ) {
+                await duplicateWallpaper(
+                    id
+                );
+
+                return;
+            }
+
+            if (
+                action
+                ===
+                "export"
+            ) {
+                await exportWallpaper(
+                    id
+                );
+
+                return;
+            }
+
+            if (
+                action
+                ===
+                "delete"
+            ) {
+                const wallpaper =
+                    await getWallpaper(
+                        id
+                    );
+
+                if (
+                    wallpaper
+                    &&
+                    confirm(
+                        `„${wallpaper.name}“ wirklich löschen?`
+                    )
+                ) {
+                    await deleteWallpaper(
+                        id
+                    );
+
+                    if (
+                        activeWallpaperId
+                        ===
+                        id
+                    ) {
+                        setActiveWallpaper(
+                            SYSTEM_WALLPAPER_ID
+                        );
+                    }
+
+                    await renderWallpaperList();
+                }
+            }
+        }
+    );
+
+
+    // ----- Custom wallpaper menu -----
+
+    $("closeCustomWallpaperMenu").addEventListener(
+        "click",
+        () => customWallpaperMenuPanel.classList.add(
+            "hidden"
+        )
+    );
+
+
+    $("customWallpaperManage").addEventListener(
+        "click",
+        () => {
+            void openWallpaperManager();
+        }
+    );
+
+
+    $("customWallpaperTimeline").addEventListener(
+        "click",
+        () => {
+            customWallpaperMenuPanel.classList.add(
+                "hidden"
+            );
+
+            el.timelineButton.click();
+        }
+    );
+
+
+    $("customWallpaperBackup").addEventListener(
+        "click",
+        () => {
+            customWallpaperMenuPanel.classList.add(
+                "hidden"
+            );
+
+            el.backupButton.click();
+        }
+    );
+
+
+    $("customWallpaperRestore").addEventListener(
+        "click",
+        () => {
+            customWallpaperMenuPanel.classList.add(
+                "hidden"
+            );
+
+            el.restoreButton.click();
+        }
+    );
+
+
+    $("customWallpaperTheme").addEventListener(
+        "click",
+        () => {
+            customWallpaperMenuPanel.classList.add(
+                "hidden"
+            );
+
+            el.themeButton.click();
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        event => {
+            if (
+                !customWallpaperMenuPanel.classList.contains(
+                    "hidden"
+                )
+                &&
+                !customWallpaperMenuPanel.contains(
+                    event.target
+                )
+            ) {
+                customWallpaperMenuPanel.classList.add(
+                    "hidden"
+                );
+            }
+        }
+    );
 
 
     // ==================================================
@@ -32059,9 +34856,9 @@
 
     applyTheme();
 
-    seedAmbientParticles();
-
     void initializeSpotifyOnLoad();
+
+    void initializeWallpaperSystem();
 
     openTimelineEditFromLocation();
     saveState();

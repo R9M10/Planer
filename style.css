@@ -8794,521 +8794,437 @@ html[data-theme="dark"] .music-connect-button:hover {
 
 
 /* ==================================================
-   V54 — LEBENDIGE RÄUME
-   Subtile atmosphärische Ebenen über den statischen Bildern.
+   V55 — TAPETENWECHSEL / CUSTOM HOME SCENES
+   Keine Animationen: bewusst statisch.
 ================================================== */
 
-.room-ambient {
+.wallpaper-runtime-screen,
+.wallpaper-editor-screen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+    background: #0c0c0b !important;
+}
+
+.wallpaper-runtime-image,
+.wallpaper-editor-image {
     position: absolute;
     inset: 0;
-    z-index: 2;
     width: 100%;
     height: 100%;
-    overflow: hidden;
-    pointer-events: none;
+    object-fit: cover;
     user-select: none;
     -webkit-user-select: none;
-    contain: paint;
+    -webkit-user-drag: none;
 }
 
-/* Unsichtbare Räume verbrauchen keine fortlaufende Animationsarbeit. */
-.room-ambient *,
-.room-ambient *::before,
-.room-ambient *::after {
-    animation-play-state: paused !important;
-}
-
-.screen.active .room-ambient *,
-.screen.active .room-ambient *::before,
-.screen.active .room-ambient *::after {
-    animation-play-state: running !important;
-}
-
-
-/* ---------- Sterne: nur im nächtlichen Studierzimmer ---------- */
-
-.ambient-stars {
-    position: absolute;
-    overflow: hidden;
-}
-
-.study-star-field {
-    left: 27.1%;
-    top: 9.6%;
-    width: 47.4%;
-    height: 34.7%;
-    opacity: 0;
-    transition: opacity .5s ease;
-}
-
-html[data-theme="dark"] .study-star-field {
-    opacity: .62;
-}
-
-.ambient-star {
-    position: absolute;
-    left: var(--ambient-x);
-    top: var(--ambient-y);
-    width: var(--ambient-size);
-    height: var(--ambient-size);
-    border-radius: 50%;
-    background: rgba(244, 239, 220, .78);
-    opacity: var(--ambient-opacity);
-    box-shadow: 0 0 3px rgba(235, 226, 198, .15);
-    animation:
-        ambient-star-twinkle var(--ambient-duration) ease-in-out var(--ambient-delay) infinite alternate,
-        ambient-star-drift calc(var(--ambient-duration) * 3.1) ease-in-out var(--ambient-delay) infinite alternate;
-    will-change: opacity, transform;
-}
-
-@keyframes ambient-star-twinkle {
-    0%   { opacity: calc(var(--ambient-opacity) * .42); transform: scale(.82); }
-    19%  { opacity: calc(var(--ambient-opacity) * .83); transform: scale(.96); }
-    43%  { opacity: calc(var(--ambient-opacity) * .56); transform: scale(.88); }
-    71%  { opacity: var(--ambient-opacity); transform: scale(1.08); }
-    100% { opacity: calc(var(--ambient-opacity) * .62); transform: scale(.92); }
-}
-
-@keyframes ambient-star-drift {
-    from { translate: -0.25px 0; }
-    to   { translate: 0.35px 0.18px; }
-}
-
-
-/* ---------- Staub / Lichtpartikel ---------- */
-
-.ambient-dust {
-    position: absolute;
-    overflow: hidden;
-    opacity: .34;
-    transition: opacity .45s ease;
-    -webkit-mask-image: radial-gradient(ellipse at 50% 45%, #000 0 35%, transparent 78%);
-    mask-image: radial-gradient(ellipse at 50% 45%, #000 0 35%, transparent 78%);
-}
-
-.study-dust-field {
-    left: 18%;
-    top: 18%;
-    width: 67%;
-    height: 58%;
-}
-
-.chess-dust-field {
-    left: 21%;
-    top: 7%;
-    width: 60%;
-    height: 66%;
-}
-
-.film-dust-field {
-    left: 48%;
-    top: 4%;
-    width: 48%;
-    height: 67%;
-}
-
-.map-dust-field {
-    left: 22%;
-    top: 10%;
-    width: 68%;
-    height: 60%;
-}
-
-html[data-theme="dark"] .ambient-dust {
-    opacity: .10;
-}
-
-.ambient-dust-speck {
-    position: absolute;
-    left: var(--ambient-x);
-    top: var(--ambient-y);
-    width: var(--ambient-size);
-    height: var(--ambient-size);
-    border-radius: 50%;
-    background: rgba(235, 222, 191, .72);
-    opacity: var(--ambient-opacity);
-    filter: blur(.15px);
-    animation: ambient-dust-drift var(--ambient-duration) linear var(--ambient-delay) infinite;
-    will-change: transform, opacity;
-}
-
-@keyframes ambient-dust-drift {
-    0% {
-        transform: translate3d(0, 12px, 0) scale(.72);
-        opacity: 0;
-    }
-    13% {
-        opacity: calc(var(--ambient-opacity) * .82);
-    }
-    48% {
-        transform: translate3d(var(--ambient-drift), -11px, 0) scale(1);
-        opacity: var(--ambient-opacity);
-    }
-    86% {
-        opacity: calc(var(--ambient-opacity) * .36);
-    }
-    100% {
-        transform: translate3d(calc(var(--ambient-drift) * 1.7), -32px, 0) scale(.72);
-        opacity: 0;
-    }
-}
-
-
-/* ---------- Pflanzen / Laub: exakte Bildausschnitte bewegen sich minimal ---------- */
-
-.ambient-foliage-clone {
+.wallpaper-runtime-hotspots,
+.wallpaper-editor-markers {
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 100% 100%;
-    opacity: .17;
-    filter: saturate(.92) brightness(.98);
-    will-change: transform;
+    pointer-events: none;
 }
 
-/* Schachraum: Laub links und rechts des Tempelwegs. */
-.chess-foliage-left,
-.chess-foliage-right {
-    background-image: url("./chess-room-day.png");
-}
-
-html[data-theme="dark"] .chess-foliage-left,
-html[data-theme="dark"] .chess-foliage-right {
-    background-image: url("./chess-room-night.png");
-    opacity: .12;
-}
-
-.chess-foliage-left {
-    clip-path: polygon(20% 8%, 43% 7%, 46% 55%, 35% 67%, 20% 64%);
-    transform-origin: 31% 56%;
-    animation: ambient-foliage-left 11.7s ease-in-out infinite alternate;
-}
-
-.chess-foliage-right {
-    clip-path: polygon(58% 7%, 81% 7%, 81% 66%, 68% 66%, 56% 55%);
-    transform-origin: 70% 56%;
-    animation: ambient-foliage-right 13.3s ease-in-out -3.4s infinite alternate;
-}
-
-/* Filmraum: dichteres Grün an der Terrassenöffnung. */
-.film-foliage-main,
-.film-foliage-edge {
-    background-image: url("./film-room-day.png");
-}
-
-html[data-theme="dark"] .film-foliage-main,
-html[data-theme="dark"] .film-foliage-edge {
-    background-image: url("./film-room-night.png");
-    opacity: .10;
-}
-
-.film-foliage-main {
-    clip-path: polygon(58% 3%, 96% 3%, 96% 61%, 76% 59%, 65% 48%, 57% 26%);
-    transform-origin: 75% 58%;
-    animation: ambient-foliage-right 10.8s ease-in-out -1.8s infinite alternate;
-}
-
-.film-foliage-edge {
-    clip-path: polygon(48% 11%, 64% 6%, 66% 57%, 58% 61%, 50% 46%);
-    transform-origin: 58% 58%;
-    opacity: .11;
-    animation: ambient-foliage-left 14.9s ease-in-out -5.2s infinite alternate;
-}
-
-@keyframes ambient-foliage-left {
-    0%   { transform: translate3d(0, 0, 0) rotate(-.035deg) scale(1.0002); }
-    34%  { transform: translate3d(.20px, -.10px, 0) rotate(.018deg) scale(1.0005); }
-    67%  { transform: translate3d(-.18px, .08px, 0) rotate(-.012deg) scale(1.0001); }
-    100% { transform: translate3d(.32px, -.12px, 0) rotate(.045deg) scale(1.0006); }
-}
-
-@keyframes ambient-foliage-right {
-    0%   { transform: translate3d(0, 0, 0) rotate(.026deg) scale(1.0001); }
-    41%  { transform: translate3d(-.24px, .08px, 0) rotate(-.018deg) scale(1.0004); }
-    73%  { transform: translate3d(.12px, -.10px, 0) rotate(.014deg) scale(1.0002); }
-    100% { transform: translate3d(-.30px, -.05px, 0) rotate(-.041deg) scale(1.0005); }
-}
-
-
-/* ---------- Planetarium / Armillarsphäre ---------- */
-
-.study-planetarium-motion {
+.wallpaper-runtime-hotspot {
     position: absolute;
-    left: 7.0%;
-    top: 63.2%;
-    width: 31.2%;
-    height: 13.6%;
-    opacity: .38;
-    filter: drop-shadow(0 0 1px rgba(220, 184, 111, .14));
-}
-
-.planetarium-ring {
-    position: absolute;
-    left: 10%;
-    top: 23%;
-    width: 78%;
-    height: 48%;
-    border: .8px solid rgba(205, 172, 108, .35);
-    border-radius: 50%;
-    transform-origin: 50% 50%;
-    will-change: transform;
-}
-
-.planetarium-ring-a {
-    animation: ambient-armillary-a 58s linear infinite;
-}
-
-.planetarium-ring-b {
-    top: 29%;
-    height: 36%;
-    border-color: rgba(226, 194, 124, .22);
-    animation: ambient-armillary-b 83s linear reverse infinite;
-}
-
-.planetarium-orbit-dot {
-    position: absolute;
-    left: 48%;
-    top: 46%;
-    width: 2.3%;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: rgba(228, 191, 112, .64);
-    box-shadow: 0 0 4px rgba(228, 191, 112, .20);
-    transform-origin: 50% 50%;
-    animation: ambient-armillary-dot 31s linear infinite;
-}
-
-@keyframes ambient-armillary-a {
-    from { transform: rotate(0deg) scaleY(.72); }
-    to   { transform: rotate(360deg) scaleY(.72); }
-}
-
-@keyframes ambient-armillary-b {
-    from { transform: rotate(27deg) scaleY(.48); }
-    to   { transform: rotate(387deg) scaleY(.48); }
-}
-
-@keyframes ambient-armillary-dot {
-    from { transform: rotate(0deg) translateX(56px) rotate(0deg); }
-    to   { transform: rotate(360deg) translateX(56px) rotate(-360deg); }
-}
-
-
-/* ---------- Kerzen: Flamme, Licht und feiner Rauch ---------- */
-
-.ambient-candle {
-    position: absolute;
-    opacity: 0;
-    transition: opacity .45s ease;
-}
-
-html[data-theme="dark"] .ambient-candle {
-    opacity: 1;
-}
-
-.study-candle {
-    left: 79.9%;
-    top: 65.7%;
-    width: 4.2%;
-    height: 8.1%;
-}
-
-.map-candle {
-    left: 59.5%;
-    top: 46.1%;
-    width: 4.4%;
-    height: 7.6%;
-}
-
-.candle-glow {
-    position: absolute;
-    left: 50%;
-    top: 17%;
-    width: 620%;
-    height: 520%;
-    border-radius: 50%;
+    width: 66px;
+    height: 66px;
     transform: translate(-50%, -50%);
-    background: radial-gradient(
-        ellipse,
-        rgba(255, 184, 76, .19) 0%,
-        rgba(238, 134, 43, .08) 35%,
-        rgba(210, 91, 26, 0) 72%
-    );
-    filter: blur(4px);
-    animation: ambient-candle-glow 1.17s ease-in-out infinite alternate;
-    will-change: opacity, transform;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    opacity: 0;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.candle-flame {
+.wallpaper-ui-screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.wallpaper-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: 92px 1fr 92px;
+    align-items: center;
+    min-height: calc(58px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 14px 0;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.wallpaper-title {
+    text-align: center;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    letter-spacing: .02em;
+}
+
+.wallpaper-back-button,
+.wallpaper-import-button {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    min-height: 44px;
+    cursor: pointer;
+}
+
+.wallpaper-back-button {
+    justify-self: start;
+    font-size: 29px;
+    font-weight: 250;
+}
+
+.wallpaper-import-button {
+    justify-self: end;
+    font-size: 12px;
+}
+
+.wallpaper-list-shell {
+    width: min(720px, calc(100vw - 34px));
+    margin: 0 auto;
+    padding: 22px 0 110px;
+}
+
+.wallpaper-list {
+    border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.wallpaper-row {
+    display: grid;
+    grid-template-columns: 1fr 52px;
+    align-items: center;
+    min-height: 65px;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.wallpaper-row-main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 3px;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.wallpaper-row-name {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 18px;
+}
+
+.wallpaper-row-subtitle {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.wallpaper-heart {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: color-mix(in srgb, var(--muted) 68%, transparent);
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.wallpaper-heart.active {
+    color: var(--text);
+}
+
+.wallpaper-floating-add {
+    position: fixed;
+    right: max(24px, env(safe-area-inset-right));
+    bottom: max(26px, calc(env(safe-area-inset-bottom) + 18px));
+    z-index: 40;
+    width: 54px;
+    height: 54px;
+    border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 31px;
+    font-weight: 250;
+    line-height: 1;
+    box-shadow: 0 9px 30px rgba(0,0,0,.10);
+    cursor: pointer;
+}
+
+.wallpaper-create-shell {
+    width: min(620px, calc(100vw - 38px));
+    margin: 0 auto;
+    padding: 42px 0 80px;
+}
+
+.wallpaper-create-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.wallpaper-name-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 2px;
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 20px;
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+.wallpaper-photo-choice {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 32px;
+}
+
+.wallpaper-photo-button,
+.wallpaper-primary-button {
+    min-height: 46px;
+    border: 1px solid color-mix(in srgb, var(--text) 13%, transparent);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.wallpaper-primary-button {
+    width: 100%;
+    margin-top: 26px;
+    background: var(--text);
+    color: var(--bg);
+}
+
+.wallpaper-primary-button:disabled {
+    opacity: .28;
+    cursor: default;
+}
+
+.wallpaper-create-preview-wrap {
+    margin-top: 24px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.wallpaper-create-preview {
+    display: block;
+    width: 100%;
+    max-height: 42vh;
+    object-fit: cover;
+}
+
+.wallpaper-create-status {
+    min-height: 24px;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.wallpaper-editor-topbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    display: grid;
+    grid-template-columns: 70px 1fr 70px;
+    align-items: end;
+    min-height: calc(58px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 14px 8px;
+    background: linear-gradient(to bottom, rgba(0,0,0,.47), rgba(0,0,0,0));
+    pointer-events: none;
+}
+
+.wallpaper-editor-nav,
+.wallpaper-editor-done {
+    border: 0;
+    background: transparent;
+    color: rgba(255,255,255,.94);
+    min-height: 44px;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.wallpaper-editor-nav {
+    justify-self: start;
+    font-size: 29px;
+}
+
+.wallpaper-editor-done {
+    justify-self: end;
+    font-size: 14px;
+}
+
+.wallpaper-editor-scene-label {
+    align-self: center;
+    color: rgba(255,255,255,.76);
+    text-align: center;
+    font-size: 11px;
+}
+
+.wallpaper-editor-hint {
     position: absolute;
     left: 50%;
-    top: 2%;
-    width: 22%;
-    height: 34%;
+    bottom: max(22px, calc(env(safe-area-inset-bottom) + 12px));
+    z-index: 40;
     transform: translateX(-50%);
-    transform-origin: 50% 92%;
-    border-radius: 48% 48% 56% 56% / 68% 68% 37% 37%;
-    background:
-        radial-gradient(ellipse at 50% 69%, rgba(255,255,230,.96) 0 17%, transparent 18%),
-        linear-gradient(to top, rgba(255, 189, 66, .96), rgba(255, 225, 145, .96) 55%, rgba(255,255,236,.88));
-    filter: blur(.15px) drop-shadow(0 0 2px rgba(255, 175, 55, .42));
-    animation:
-        ambient-flame-flicker .31s ease-in-out infinite alternate,
-        ambient-flame-lean 2.23s ease-in-out -.7s infinite;
-    will-change: transform, opacity;
-}
-
-.candle-smoke {
-    position: absolute;
-    left: 51%;
-    top: -19%;
-    width: 34%;
-    height: 46%;
-    border-left: 1px solid rgba(205, 205, 196, .16);
-    border-radius: 50%;
-    filter: blur(1.2px);
-    transform-origin: 50% 100%;
-    opacity: .18;
-    animation: ambient-smoke 4.8s ease-in-out infinite;
-}
-
-@keyframes ambient-flame-flicker {
-    0%   { transform: translateX(-50%) rotate(-1.2deg) scale(.92, 1.03); opacity: .91; }
-    17%  { transform: translateX(-48%) rotate(1.7deg) scale(1.06, .95); opacity: 1; }
-    39%  { transform: translateX(-51%) rotate(-2.1deg) scale(.97, 1.10); opacity: .94; }
-    63%  { transform: translateX(-49%) rotate(.8deg) scale(1.02, 1.00); opacity: .98; }
-    82%  { transform: translateX(-52%) rotate(-.7deg) scale(.94, 1.08); opacity: .92; }
-    100% { transform: translateX(-50%) rotate(1.3deg) scale(1.04, .97); opacity: 1; }
-}
-
-@keyframes ambient-flame-lean {
-    0%, 100% { margin-left: 0; }
-    27%      { margin-left: -.45px; }
-    59%      { margin-left: .38px; }
-    81%      { margin-left: -.18px; }
-}
-
-@keyframes ambient-candle-glow {
-    0%   { opacity: .64; transform: translate(-50%, -50%) scale(.94); }
-    31%  { opacity: .82; transform: translate(-50%, -50%) scale(1.02); }
-    68%  { opacity: .70; transform: translate(-50%, -50%) scale(.98); }
-    100% { opacity: .88; transform: translate(-50%, -50%) scale(1.05); }
-}
-
-@keyframes ambient-smoke {
-    0%   { transform: translate3d(0, 7px, 0) rotate(0deg) scaleX(.72); opacity: 0; }
-    17%  { opacity: .17; }
-    48%  { transform: translate3d(-1px, -4px, 0) rotate(-5deg) scaleX(1); opacity: .12; }
-    79%  { transform: translate3d(1px, -13px, 0) rotate(6deg) scaleX(.83); opacity: .06; }
-    100% { transform: translate3d(-1px, -24px, 0) rotate(-3deg) scaleX(.65); opacity: 0; }
-}
-
-
-/* ---------- Musikraum: Flügel reagiert sehr zurückhaltend auf Wiedergabe ---------- */
-
-.piano-resonance {
-    position: absolute;
-    left: 27.5%;
-    top: 61.2%;
-    width: 45%;
-    height: .18%;
+    max-width: calc(100vw - 42px);
+    padding: 9px 13px;
     border-radius: 999px;
-    opacity: 0;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(236, 198, 124, .36),
-        transparent
-    );
-    filter: blur(.6px);
-    transform-origin: center;
+    background: rgba(12,12,12,.52);
+    color: rgba(255,255,255,.82);
+    font-size: 11px;
+    text-align: center;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
-.music-room-indicator {
+.wallpaper-editor-marker {
     position: absolute;
-    left: 50.4%;
-    top: 63.0%;
+    z-index: 30;
+    width: 34px;
+    height: 34px;
+    transform: translate(-50%, -50%);
+    border: 1px solid rgba(255,255,255,.72);
+    border-radius: 50%;
+    background: rgba(0,0,0,.48);
+    color: white;
+    font-size: 12px;
+    pointer-events: auto;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,.22);
+}
+
+.wallpaper-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 150000;
     display: flex;
     align-items: flex-end;
-    gap: 2px;
-    width: 12px;
-    height: 12px;
-    opacity: 0;
-    transform: translate(-50%, -50%);
+    justify-content: center;
+    padding: 18px max(14px, env(safe-area-inset-right)) max(18px, calc(env(safe-area-inset-bottom) + 10px));
+    background: rgba(0,0,0,.30);
 }
 
-.music-room-indicator span {
-    display: block;
-    width: 1px;
-    height: 4px;
-    border-radius: 999px;
-    background: rgba(231, 216, 183, .56);
+.wallpaper-sheet-backdrop.hidden {
+    display: none !important;
 }
 
-#mapRoomScreen.music-is-playing .piano-resonance {
-    opacity: .18;
-    animation: piano-resonance-breathe 3.6s ease-in-out infinite;
+.wallpaper-sheet {
+    width: min(520px, 100%);
+    max-height: min(78vh, 760px);
+    overflow: auto;
+    padding: 9px;
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    border-radius: 18px;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 24px 72px rgba(0,0,0,.25);
 }
 
-#mapRoomScreen.music-is-playing .music-room-indicator {
-    opacity: .48;
+.wallpaper-sheet-title {
+    padding: 13px 13px 9px;
+    color: var(--muted);
+    font-size: 12px;
 }
 
-#mapRoomScreen.music-is-playing .music-room-indicator span:nth-child(1) {
-    animation: music-indicator-bar 1.13s ease-in-out infinite alternate;
-}
-#mapRoomScreen.music-is-playing .music-room-indicator span:nth-child(2) {
-    animation: music-indicator-bar .83s ease-in-out -.27s infinite alternate;
-}
-#mapRoomScreen.music-is-playing .music-room-indicator span:nth-child(3) {
-    animation: music-indicator-bar 1.31s ease-in-out -.52s infinite alternate;
+.wallpaper-target-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 8px;
 }
 
-html[data-theme="dark"] #mapRoomScreen.music-is-playing .map-candle .candle-glow {
-    animation:
-        ambient-candle-glow 1.17s ease-in-out infinite alternate,
-        music-candle-response 1.84s ease-in-out infinite;
+.wallpaper-sheet-row,
+.wallpaper-target-option,
+.wallpaper-sheet-cancel {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 13px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
 }
 
-html[data-theme="dark"] #mapRoomScreen.music-is-playing .map-candle .candle-flame {
-    filter: blur(.12px) drop-shadow(0 0 3px rgba(255, 175, 55, .54));
+.wallpaper-target-option {
+    min-height: 43px;
 }
 
-@keyframes piano-resonance-breathe {
-    0%, 100% { transform: scaleX(.82); opacity: .08; }
-    50%      { transform: scaleX(1.03); opacity: .21; }
+.wallpaper-sheet-cancel {
+    margin-top: 7px;
+    border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+    border-radius: 0;
+    color: var(--muted);
+    text-align: center;
 }
 
-@keyframes music-indicator-bar {
-    from { height: 3px; opacity: .38; }
-    to   { height: 10px; opacity: .88; }
+.wallpaper-danger-row {
+    color: #b8524d;
 }
 
-@keyframes music-candle-response {
-    0%, 100% { filter: blur(4px); }
-    50%      { filter: blur(4.6px); }
+.custom-wallpaper-menu {
+    position: fixed;
+    z-index: 120000;
+    right: 18px;
+    top: max(18px, calc(env(safe-area-inset-top) + 10px));
+    width: min(270px, calc(100vw - 36px));
+    padding: 12px;
+    border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+    box-shadow: 0 18px 55px rgba(0,0,0,.22);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 }
 
+.custom-wallpaper-menu.hidden {
+    display: none !important;
+}
 
-/* Bewegungsreduktion: Atmosphäre bleibt statisch, kein erzwungener Loop. */
-@media (prefers-reduced-motion: reduce) {
-    .room-ambient *,
-    .room-ambient *::before,
-    .room-ambient *::after {
-        animation: none !important;
-        transition: none !important;
+.custom-wallpaper-menu-close {
+    width: 38px;
+    height: 38px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 27px;
+    cursor: pointer;
+}
+
+.custom-wallpaper-menu-content {
+    padding: 2px 3px 5px;
+}
+
+@media (max-width: 520px) {
+    .wallpaper-target-list {
+        grid-template-columns: 1fr;
     }
-
-    .ambient-foliage-clone {
-        opacity: 0 !important;
-    }
-
-    .music-room-indicator,
-    .piano-resonance {
-        display: none !important;
+    .wallpaper-photo-choice {
+        grid-template-columns: 1fr;
     }
 }
 
