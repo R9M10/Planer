@@ -32,6 +32,9 @@
         wikipedia: $("wikipediaScreen"),
         youtube: $("youtubeScreen"),
         chessSetup: $("chessSetupScreen"),
+        chessLearnList: $("chessLearnListScreen"),
+        chessLearnDetail: $("chessLearnDetailScreen"),
+        chessLearnPractice: $("chessLearnPracticeScreen"),
         chessPlay: $("chessPlayScreen"),
         chessAnalysis: $("chessAnalysisScreen"),
         timeline: $("timelineScreen"),
@@ -337,7 +340,36 @@
         chessSetupEloSlider: $("chessSetupEloSlider"),
         chooseChessWhite: $("chooseChessWhite"),
         chooseChessBlack: $("chooseChessBlack"),
+        openChessLearnButton: $("openChessLearnButton"),
         startChessGameButton: $("startChessGameButton"),
+
+        backFromChessLearnList: $("backFromChessLearnList"),
+        chessLearnOpeningList: $("chessLearnOpeningList"),
+
+        backFromChessLearnDetail: $("backFromChessLearnDetail"),
+        chessLearnDetailTitle: $("chessLearnDetailTitle"),
+        chessLearnDetailSide: $("chessLearnDetailSide"),
+        chessLearnDetailIdea: $("chessLearnDetailIdea"),
+        startChessLearnPractice: $("startChessLearnPractice"),
+        chessLearnBoard: $("chessLearnBoard"),
+        chessLearnEvalBar: $("chessLearnEvalBar"),
+        chessLearnEvalWhite: $("chessLearnEvalWhite"),
+        chessLearnEvalLabel: $("chessLearnEvalLabel"),
+        chessLearnFeedback: $("chessLearnFeedback"),
+        chessLearnPrev: $("chessLearnPrev"),
+        chessLearnNext: $("chessLearnNext"),
+        chessLearnMoveLabel: $("chessLearnMoveLabel"),
+        chessLearnCounter: $("chessLearnCounter"),
+        chessLearnReturnLine: $("chessLearnReturnLine"),
+        chessLearnMoves: $("chessLearnMoves"),
+
+        backFromChessLearnPractice: $("backFromChessLearnPractice"),
+        chessLearnPracticeTitle: $("chessLearnPracticeTitle"),
+        chessLearnPracticeSide: $("chessLearnPracticeSide"),
+        chessLearnPracticePrompt: $("chessLearnPracticePrompt"),
+        chessLearnPracticeBoard: $("chessLearnPracticeBoard"),
+        chessLearnPracticeProgress: $("chessLearnPracticeProgress"),
+        chessLearnPracticeResult: $("chessLearnPracticeResult"),
 
         backFromChessPlay: $("backFromChessPlay"),
         chessPlayBoard: $("chessPlayBoard"),
@@ -19114,6 +19146,2036 @@
             return [];
         }
     }
+
+
+
+    // ==================================================
+    // V57 — SCHACH: ERÖFFNUNGEN LERNEN
+    // ==================================================
+
+    /*
+       Das Repertoire ist absichtlich klein und praktisch:
+       fünf Linien für Weiß, fünf Antworten mit Schwarz.
+       Ziel bei ~1300 Elo ist Wiedererkennen + typische Entwicklung,
+       nicht das Auswendiglernen tiefer Engine-Theorie.
+    */
+    const CHESS_OPENING_LINES = [
+        {
+            id: "italian",
+            name: "Italienische Partie",
+            side: "w",
+            idea: "Schnelle Entwicklung, Druck auf f7, c3–d4 vorbereiten und den König früh rochieren.",
+            san: [
+                "e4", "e5",
+                "Nf3", "Nc6",
+                "Bc4", "Bc5",
+                "c3", "Nf6",
+                "d3", "d6",
+                "O-O", "O-O",
+                "Re1", "a6"
+            ]
+        },
+        {
+            id: "ruy-lopez",
+            name: "Spanische Partie",
+            side: "w",
+            idea: "Den Springer c6 binden, e5 langfristig unter Druck setzen und mit c3 sowie d4 das Zentrum aufbauen.",
+            san: [
+                "e4", "e5",
+                "Nf3", "Nc6",
+                "Bb5", "a6",
+                "Ba4", "Nf6",
+                "O-O", "Be7",
+                "Re1", "b5",
+                "Bb3", "d6",
+                "c3", "O-O"
+            ]
+        },
+        {
+            id: "scotch",
+            name: "Schottische Partie",
+            side: "w",
+            idea: "Das Zentrum sofort mit d4 öffnen und Entwicklungsvorsprung statt langfristiger Manöver suchen.",
+            san: [
+                "e4", "e5",
+                "Nf3", "Nc6",
+                "d4", "exd4",
+                "Nxd4", "Nf6",
+                "Nxc6", "bxc6",
+                "e5", "Qe7",
+                "Qe2", "Nd5"
+            ]
+        },
+        {
+            id: "queens-gambit",
+            name: "Damengambit",
+            side: "w",
+            idea: "Mit c4 das schwarze d5-Zentrum angreifen, Figuren natürlich entwickeln und Raum im Zentrum gewinnen.",
+            san: [
+                "d4", "d5",
+                "c4", "e6",
+                "Nc3", "Nf6",
+                "Nf3", "Be7",
+                "Bg5", "O-O",
+                "e3", "h6",
+                "Bh4", "b6"
+            ]
+        },
+        {
+            id: "london",
+            name: "London-System",
+            side: "w",
+            idea: "Ein stabiles Entwicklungsschema mit Bf4, e3, Bd3 und Nbd2; erst entwickeln, dann den Zentrumsvorstoß vorbereiten.",
+            san: [
+                "d4", "d5",
+                "Nf3", "Nf6",
+                "Bf4", "e6",
+                "e3", "Bd6",
+                "Bg3", "O-O",
+                "Bd3", "c5",
+                "Nbd2", "Nc6"
+            ]
+        },
+        {
+            id: "caro-kann",
+            name: "Caro-Kann-Verteidigung",
+            side: "b",
+            idea: "Das Zentrum mit c6–d5 angreifen und den weißfeldrigen Läufer vor ...e6 aktiv entwickeln.",
+            san: [
+                "e4", "c6",
+                "d4", "d5",
+                "Nc3", "dxe4",
+                "Nxe4", "Bf5",
+                "Ng3", "Bg6",
+                "h4", "h6",
+                "Nf3", "Nd7"
+            ]
+        },
+        {
+            id: "accelerated-dragon",
+            name: "Sizilianisch · Beschleunigter Drache",
+            side: "b",
+            idea: "Asymmetrisch um das Zentrum kämpfen, den Läufer nach g7 fianchettieren und aktives Figurenspiel erzeugen.",
+            san: [
+                "e4", "c5",
+                "Nf3", "Nc6",
+                "d4", "cxd4",
+                "Nxd4", "g6",
+                "Nc3", "Bg7",
+                "Be3", "Nf6",
+                "Bc4", "O-O"
+            ]
+        },
+        {
+            id: "french",
+            name: "Französische Verteidigung",
+            side: "b",
+            idea: "Das weiße e5-Zentrum mit ...c5 und später ...f6 angreifen; die Bauernkette bestimmt den Plan.",
+            san: [
+                "e4", "e6",
+                "d4", "d5",
+                "Nc3", "Nf6",
+                "e5", "Nfd7",
+                "f4", "c5",
+                "Nf3", "Nc6",
+                "Be3", "a6"
+            ]
+        },
+        {
+            id: "slav",
+            name: "Slawische Verteidigung",
+            side: "b",
+            idea: "d5 mit c6 stabilisieren, den Läufer c8 aktiv halten und das Damengambit solide beantworten.",
+            san: [
+                "d4", "d5",
+                "c4", "c6",
+                "Nf3", "Nf6",
+                "Nc3", "dxc4",
+                "a4", "Bf5",
+                "e3", "e6",
+                "Bxc4", "Bb4"
+            ]
+        },
+        {
+            id: "kings-indian",
+            name: "Königsindische Verteidigung",
+            side: "b",
+            idea: "Weiß zunächst das Zentrum besetzen lassen, sicher rochieren und anschließend mit ...e5 Gegenspiel erzeugen.",
+            san: [
+                "d4", "Nf6",
+                "c4", "g6",
+                "Nc3", "Bg7",
+                "e4", "d6",
+                "Nf3", "O-O",
+                "Be2", "e5",
+                "O-O", "Nc6"
+            ]
+        }
+    ];
+
+    const CHESS_OPENING_PROGRESS_KEY =
+        "personalPlannerSuite_chess_openings_v1";
+
+    let chessOpeningProgress =
+        {};
+
+    let chessLearnOpening =
+        null;
+
+    let chessLearnCompiled =
+        null;
+
+    let chessLearnGame =
+        null;
+
+    let chessLearnIndex =
+        0;
+
+    let chessLearnVariation =
+        false;
+
+    let chessLearnSelectedSquare =
+        null;
+
+    let chessLearnLegalMoves =
+        [];
+
+    let chessLearnLastMove =
+        null;
+
+    let chessLearnBaseFen =
+        "";
+
+    let chessLearnEvalToken =
+        0;
+
+    let chessLearnEvalCache =
+        new Map();
+
+    let chessLearnWrongExpectedIndex =
+        null;
+
+    let chessLearnPracticeGame =
+        null;
+
+    let chessLearnPracticePly =
+        0;
+
+    let chessLearnPracticeSelectedSquare =
+        null;
+
+    let chessLearnPracticeLegalMoves =
+        [];
+
+    let chessLearnPracticeLastMove =
+        null;
+
+    let chessLearnPracticeLocked =
+        false;
+
+    let chessLearnPracticeToken =
+        0;
+
+
+    function loadChessOpeningProgress() {
+        try {
+            const parsed =
+                JSON.parse(
+                    localStorage.getItem(
+                        CHESS_OPENING_PROGRESS_KEY
+                    )
+                    ||
+                    "{}"
+                );
+
+            chessOpeningProgress =
+                parsed
+                &&
+                typeof parsed
+                ===
+                "object"
+                    ? parsed
+                    : {};
+        } catch (
+            error
+        ) {
+            chessOpeningProgress =
+                {};
+        }
+    }
+
+
+    function saveChessOpeningProgress() {
+        try {
+            localStorage.setItem(
+                CHESS_OPENING_PROGRESS_KEY,
+                JSON.stringify(
+                    chessOpeningProgress
+                )
+            );
+        } catch (
+            error
+        ) {
+            // Training remains usable without persistent progress.
+        }
+    }
+
+
+    function chessOpeningSideLabel(
+        side
+    ) {
+        return side
+        ===
+        "w"
+            ? "Weiß"
+            : "Schwarz";
+    }
+
+
+    function openingMovePreview(
+        opening
+    ) {
+        const parts =
+            [];
+
+        for (
+            let index = 0;
+            index < Math.min(
+                opening.san.length,
+                8
+            );
+            index += 2
+        ) {
+            const number =
+                index / 2 + 1;
+
+            parts.push(
+                `${number}. ${opening.san[index]} ${opening.san[index + 1] ?? ""}`.trim()
+            );
+        }
+
+        return parts.join(
+            "  "
+        );
+    }
+
+
+    async function compileChessOpening(
+        opening
+    ) {
+        if (
+            opening._compiled
+        ) {
+            return opening._compiled;
+        }
+
+        const Chess =
+            await loadChessLibrary();
+
+        const game =
+            new Chess();
+
+        const fens = [
+            game.fen()
+        ];
+
+        const moves =
+            [];
+
+        for (
+            let index = 0;
+            index < opening.san.length;
+            index += 1
+        ) {
+            const san =
+                opening.san[
+                    index
+                ];
+
+            const beforeMoves =
+                game.moves({
+                    verbose:
+                        true
+                });
+
+            const candidate =
+                beforeMoves.find(
+                    move =>
+                        move.san
+                        ===
+                        san
+                );
+
+            if (
+                !candidate
+            ) {
+                throw new Error(
+                    `Ungültige Eröffnungslinie: ${opening.name}, Zug ${index + 1} (${san})`
+                );
+            }
+
+            const made =
+                game.move(
+                    san
+                );
+
+            moves.push({
+                from:
+                    made.from,
+                to:
+                    made.to,
+                promotion:
+                    made.promotion
+                    ??
+                    undefined,
+                san:
+                    made.san,
+                color:
+                    made.color
+            });
+
+            fens.push(
+                game.fen()
+            );
+        }
+
+        opening._compiled = {
+            fens,
+            moves
+        };
+
+        return opening._compiled;
+    }
+
+
+    function renderChessOpeningList() {
+        loadChessOpeningProgress();
+
+        el.chessLearnOpeningList.innerHTML =
+            "";
+
+        CHESS_OPENING_LINES.forEach(
+            (
+                opening,
+                index
+            ) => {
+                const row =
+                    document.createElement(
+                        "button"
+                    );
+
+                row.type =
+                    "button";
+
+                row.className =
+                    "chess-learn-opening-row";
+
+                const number =
+                    document.createElement(
+                        "span"
+                    );
+
+                number.className =
+                    "chess-learn-opening-number";
+
+                number.textContent =
+                    String(
+                        index + 1
+                    )
+                    .padStart(
+                        2,
+                        "0"
+                    );
+
+                const copy =
+                    document.createElement(
+                        "span"
+                    );
+
+                copy.className =
+                    "chess-learn-opening-copy";
+
+                const name =
+                    document.createElement(
+                        "span"
+                    );
+
+                name.className =
+                    "chess-learn-opening-name";
+
+                name.textContent =
+                    opening.name;
+
+                const preview =
+                    document.createElement(
+                        "span"
+                    );
+
+                preview.className =
+                    "chess-learn-opening-preview";
+
+                preview.textContent =
+                    openingMovePreview(
+                        opening
+                    );
+
+                copy.append(
+                    name,
+                    preview
+                );
+
+                const meta =
+                    document.createElement(
+                        "span"
+                    );
+
+                meta.className =
+                    "chess-learn-opening-meta";
+
+                const side =
+                    document.createElement(
+                        "span"
+                    );
+
+                side.className =
+                    "chess-learn-side-badge";
+
+                side.textContent =
+                    chessOpeningSideLabel(
+                        opening.side
+                    );
+
+                const count =
+                    Number(
+                        chessOpeningProgress[
+                            opening.id
+                        ]
+                        ??
+                        0
+                    );
+
+                const complete =
+                    document.createElement(
+                        "span"
+                    );
+
+                complete.className =
+                    "chess-learn-complete-count";
+
+                complete.textContent =
+                    count > 0
+                        ? `✓ ${count}×`
+                        : "";
+
+                meta.append(
+                    side,
+                    complete
+                );
+
+                row.append(
+                    number,
+                    copy,
+                    meta
+                );
+
+                row.addEventListener(
+                    "click",
+                    () => {
+                        void openChessOpeningDetail(
+                            opening.id
+                        );
+                    }
+                );
+
+                el.chessLearnOpeningList.appendChild(
+                    row
+                );
+            }
+        );
+    }
+
+
+    async function openChessLearnList() {
+        try {
+            await loadChessLibrary();
+
+            preloadChessPieces();
+
+            initChessEngine();
+
+            waitForChessEngine(
+                30000
+            );
+
+            renderChessOpeningList();
+
+            showScreen(
+                screens.chessLearnList
+            );
+        } catch (
+            error
+        ) {
+            console.error(
+                "Opening trainer startup error:",
+                error
+            );
+
+            window.alert(
+                "Der Eröffnungsmodus konnte nicht geladen werden. Bitte lade die Seite einmal neu."
+            );
+        }
+    }
+
+
+    function setChessLearnEvalBar(
+        score
+    ) {
+        if (
+            !score
+        ) {
+            el.chessLearnEvalWhite.style.height =
+                "50%";
+
+            el.chessLearnEvalWhite.style.top =
+                "auto";
+
+            el.chessLearnEvalWhite.style.bottom =
+                "0";
+
+            el.chessLearnEvalLabel.textContent =
+                "–";
+
+            return;
+        }
+
+        let whitePercent =
+            50;
+
+        let label =
+            "0.0";
+
+        if (
+            score.type
+            ===
+            "mate"
+        ) {
+            whitePercent =
+                score.value > 0
+                    ? 99
+                    : 1;
+
+            label =
+                score.value > 0
+                    ? `M${Math.abs(score.value)}`
+                    : `−M${Math.abs(score.value)}`;
+        } else {
+            whitePercent =
+                50
+                +
+                Math.tanh(
+                    score.pawns / 4.4
+                )
+                *
+                48;
+
+            label =
+                score.pawns >= 0
+                    ? `+${score.pawns.toFixed(1)}`
+                    : score.pawns.toFixed(
+                        1
+                    );
+        }
+
+        whitePercent =
+            Math.max(
+                1,
+                Math.min(
+                    99,
+                    whitePercent
+                )
+            );
+
+        if (
+            chessLearnOpening?.side
+            ===
+            "w"
+        ) {
+            el.chessLearnEvalWhite.style.top =
+                "auto";
+
+            el.chessLearnEvalWhite.style.bottom =
+                "0";
+        } else {
+            el.chessLearnEvalWhite.style.bottom =
+                "auto";
+
+            el.chessLearnEvalWhite.style.top =
+                "0";
+        }
+
+        el.chessLearnEvalWhite.style.height =
+            `${whitePercent}%`;
+
+        el.chessLearnEvalLabel.textContent =
+            label;
+    }
+
+
+    async function evaluateChessLearnFen(
+        fen,
+        force = false
+    ) {
+        if (
+            !force
+            &&
+            chessLearnEvalCache.has(
+                fen
+            )
+        ) {
+            return chessLearnEvalCache.get(
+                fen
+            );
+        }
+
+        const result =
+            await runChessEngineTask({
+                fen,
+                commands: [
+                    "setoption name UCI_LimitStrength value false",
+                    "go movetime 220"
+                ],
+                timeout:
+                    8000
+            });
+
+        if (
+            result?.score
+        ) {
+            chessLearnEvalCache.set(
+                fen,
+                result.score
+            );
+
+            return result.score;
+        }
+
+        return null;
+    }
+
+
+    async function openChessOpeningDetail(
+        openingId,
+        index = 0,
+        feedback = ""
+    ) {
+        const opening =
+            CHESS_OPENING_LINES.find(
+                item =>
+                    item.id
+                    ===
+                    openingId
+            );
+
+        if (
+            !opening
+        ) {
+            return;
+        }
+
+        try {
+            chessLearnOpening =
+                opening;
+
+            chessLearnCompiled =
+                await compileChessOpening(
+                    opening
+                );
+
+            chessLearnEvalCache =
+                new Map();
+
+            chessLearnWrongExpectedIndex =
+                feedback
+                    ? index
+                    : null;
+
+            el.chessLearnDetailTitle.textContent =
+                opening.name;
+
+            el.chessLearnDetailSide.textContent =
+                `Repertoire · ${chessOpeningSideLabel(opening.side)}`;
+
+            el.chessLearnDetailIdea.textContent =
+                opening.idea;
+
+            loadChessLearnPosition(
+                index
+            );
+
+            renderChessLearnLine();
+
+            showScreen(
+                screens.chessLearnDetail
+            );
+
+            renderChessLearnDetail();
+
+            if (
+                feedback
+            ) {
+                el.chessLearnFeedback.textContent =
+                    feedback;
+            } else {
+                void updateChessLearnEvaluation();
+            }
+
+        } catch (
+            error
+        ) {
+            console.error(
+                error
+            );
+
+            window.alert(
+                "Diese Eröffnungslinie konnte nicht geladen werden."
+            );
+        }
+    }
+
+
+    function loadChessLearnPosition(
+        index
+    ) {
+        if (
+            !ChessConstructor
+            ||
+            !chessLearnCompiled
+        ) {
+            return;
+        }
+
+        chessLearnIndex =
+            Math.max(
+                0,
+                Math.min(
+                    chessLearnCompiled.fens.length - 1,
+                    index
+                )
+            );
+
+        chessLearnGame =
+            new ChessConstructor(
+                chessLearnCompiled.fens[
+                    chessLearnIndex
+                ]
+            );
+
+        chessLearnVariation =
+            false;
+
+        chessLearnSelectedSquare =
+            null;
+
+        chessLearnLegalMoves =
+            [];
+
+        chessLearnBaseFen =
+            chessLearnGame.fen();
+
+        el.chessLearnReturnLine.classList.add(
+            "hidden"
+        );
+
+        if (
+            chessLearnIndex > 0
+        ) {
+            const last =
+                chessLearnCompiled.moves[
+                    chessLearnIndex - 1
+                ];
+
+            chessLearnLastMove = {
+                from:
+                    last.from,
+                to:
+                    last.to
+            };
+        } else {
+            chessLearnLastMove =
+                null;
+        }
+    }
+
+
+    function renderChessLearnDetail() {
+        if (
+            !chessLearnGame
+            ||
+            !chessLearnOpening
+        ) {
+            return;
+        }
+
+        renderChessBoardInto(
+            el.chessLearnBoard,
+            chessLearnGame,
+            {
+                selectedSquare:
+                    chessLearnSelectedSquare,
+                legalMoves:
+                    chessLearnLegalMoves,
+                lastMove:
+                    chessLearnLastMove,
+                clickHandler:
+                    handleChessLearnSquare,
+                orientation:
+                    chessLearnOpening.side
+            }
+        );
+
+        const total =
+            chessLearnCompiled.moves.length;
+
+        el.chessLearnCounter.textContent =
+            `${chessLearnIndex} / ${total}`;
+
+        if (
+            chessLearnVariation
+        ) {
+            el.chessLearnMoveLabel.textContent =
+                "Alternative";
+
+            el.chessLearnReturnLine.classList.remove(
+                "hidden"
+            );
+        } else if (
+            chessLearnIndex === 0
+        ) {
+            el.chessLearnMoveLabel.textContent =
+                "Ausgangsstellung";
+        } else {
+            const ply =
+                chessLearnIndex;
+
+            const moveNumber =
+                Math.ceil(
+                    ply / 2
+                );
+
+            const side =
+                ply % 2 === 1
+                    ? ""
+                    : " …";
+
+            el.chessLearnMoveLabel.textContent =
+                `${moveNumber}.${side} ${chessLearnOpening.san[ply - 1]}`;
+        }
+
+        el.chessLearnPrev.disabled =
+            chessLearnVariation
+            ||
+            chessLearnIndex <= 0;
+
+        el.chessLearnNext.disabled =
+            chessLearnVariation
+            ||
+            chessLearnIndex >= total;
+
+        renderChessLearnLine();
+    }
+
+
+    function renderChessLearnLine() {
+        if (
+            !chessLearnOpening
+        ) {
+            return;
+        }
+
+        el.chessLearnMoves.innerHTML =
+            "";
+
+        chessLearnOpening.san.forEach(
+            (
+                san,
+                index
+            ) => {
+                if (
+                    index % 2 === 0
+                ) {
+                    const number =
+                        document.createElement(
+                            "span"
+                        );
+
+                    number.className =
+                        "chess-learn-move-number";
+
+                    number.textContent =
+                        `${index / 2 + 1}.`;
+
+                    el.chessLearnMoves.appendChild(
+                        number
+                    );
+                }
+
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "chess-learn-move-button";
+
+                const mover =
+                    index % 2 === 0
+                        ? "w"
+                        : "b";
+
+                if (
+                    mover
+                    ===
+                    chessLearnOpening.side
+                ) {
+                    button.classList.add(
+                        "repertoire-move"
+                    );
+                }
+
+                if (
+                    !chessLearnVariation
+                    &&
+                    chessLearnIndex
+                    ===
+                    index + 1
+                ) {
+                    button.classList.add(
+                        "active"
+                    );
+                }
+
+                if (
+                    chessLearnWrongExpectedIndex
+                    ===
+                    index
+                ) {
+                    button.classList.add(
+                        "expected"
+                    );
+                }
+
+                button.textContent =
+                    san;
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        chessLearnWrongExpectedIndex =
+                            null;
+
+                        loadChessLearnPosition(
+                            index + 1
+                        );
+
+                        renderChessLearnDetail();
+
+                        void updateChessLearnEvaluation();
+                    }
+                );
+
+                el.chessLearnMoves.appendChild(
+                    button
+                );
+            }
+        );
+    }
+
+
+    function handleChessLearnSquare(
+        square
+    ) {
+        if (
+            !chessLearnGame
+            ||
+            chessLearnGame.isGameOver()
+        ) {
+            return;
+        }
+
+        const piece =
+            chessLearnGame.get(
+                square
+            );
+
+        const turn =
+            chessLearnGame.turn();
+
+        if (
+            !chessLearnSelectedSquare
+        ) {
+            if (
+                piece
+                &&
+                piece.color
+                ===
+                turn
+            ) {
+                chessLearnSelectedSquare =
+                    square;
+
+                chessLearnLegalMoves =
+                    movesFromSquare(
+                        chessLearnGame,
+                        square
+                    );
+
+                renderChessLearnDetail();
+            }
+
+            return;
+        }
+
+        if (
+            piece
+            &&
+            piece.color
+            ===
+            turn
+        ) {
+            chessLearnSelectedSquare =
+                square;
+
+            chessLearnLegalMoves =
+                movesFromSquare(
+                    chessLearnGame,
+                    square
+                );
+
+            renderChessLearnDetail();
+
+            return;
+        }
+
+        const candidates =
+            chessLearnLegalMoves.filter(
+                move =>
+                    move.to
+                    ===
+                    square
+            );
+
+        if (
+            candidates.length === 0
+        ) {
+            chessLearnSelectedSquare =
+                null;
+
+            chessLearnLegalMoves =
+                [];
+
+            renderChessLearnDetail();
+
+            return;
+        }
+
+        const chosen =
+            candidates.find(
+                move =>
+                    !move.promotion
+                    ||
+                    move.promotion
+                    ===
+                    "q"
+            )
+            ??
+            candidates[0];
+
+        void makeChessLearnAlternative({
+            from:
+                chosen.from,
+            to:
+                chosen.to,
+            promotion:
+                chosen.promotion
+        });
+    }
+
+
+    async function makeChessLearnAlternative(
+        move
+    ) {
+        if (
+            !chessLearnGame
+        ) {
+            return;
+        }
+
+        const beforeFen =
+            chessLearnGame.fen();
+
+        const mover =
+            chessLearnGame.turn();
+
+        const baseline =
+            await evaluateChessLearnFen(
+                beforeFen
+            );
+
+        let made;
+
+        try {
+            made =
+                chessLearnGame.move(
+                    move
+                );
+        } catch (
+            error
+        ) {
+            return;
+        }
+
+        chessLearnLastMove = {
+            from:
+                made.from,
+            to:
+                made.to
+        };
+
+        chessLearnSelectedSquare =
+            null;
+
+        chessLearnLegalMoves =
+            [];
+
+        chessLearnVariation =
+            true;
+
+        el.chessLearnReturnLine.classList.remove(
+            "hidden"
+        );
+
+        renderChessLearnDetail();
+
+        el.chessLearnFeedback.textContent =
+            "Alternative wird analysiert …";
+
+        const after =
+            await evaluateChessLearnFen(
+                chessLearnGame.fen(),
+                true
+            );
+
+        if (
+            !after
+        ) {
+            el.chessLearnFeedback.textContent =
+                `${made.san} · Bewertung nicht verfügbar`;
+
+            return;
+        }
+
+        setChessLearnEvalBar(
+            after
+        );
+
+        const quality =
+            classifyChessMoveQuality(
+                baseline,
+                after,
+                mover
+            );
+
+        el.chessLearnFeedback.textContent =
+            `${made.san} · ${quality}`;
+    }
+
+
+    async function updateChessLearnEvaluation() {
+        if (
+            !chessLearnGame
+        ) {
+            return;
+        }
+
+        const token =
+            ++chessLearnEvalToken;
+
+        el.chessLearnEvalLabel.classList.add(
+            "pending"
+        );
+
+        if (
+            !chessLearnWrongExpectedIndex
+        ) {
+            el.chessLearnFeedback.textContent =
+                "Stellung wird analysiert …";
+        }
+
+        const score =
+            await evaluateChessLearnFen(
+                chessLearnGame.fen()
+            );
+
+        if (
+            token
+            !==
+            chessLearnEvalToken
+        ) {
+            return;
+        }
+
+        setChessLearnEvalBar(
+            score
+        );
+
+        el.chessLearnEvalLabel.classList.remove(
+            "pending"
+        );
+
+        if (
+            chessLearnVariation
+        ) {
+            return;
+        }
+
+        if (
+            chessLearnWrongExpectedIndex
+            !==
+            null
+        ) {
+            const expected =
+                chessLearnOpening.san[
+                    chessLearnWrongExpectedIndex
+                ];
+
+            el.chessLearnFeedback.textContent =
+                `Falsch · erwartet war ${expected}`;
+
+            return;
+        }
+
+        if (
+            chessLearnIndex === 0
+        ) {
+            el.chessLearnFeedback.textContent =
+                "Ausgangsstellung";
+
+            return;
+        }
+
+        const move =
+            chessLearnOpening.san[
+                chessLearnIndex - 1
+            ];
+
+        el.chessLearnFeedback.textContent =
+            `${move} · Hauptvariante`;
+    }
+
+
+    function uciMatchesOpeningMove(
+        from,
+        to,
+        promotion,
+        expected
+    ) {
+        return (
+            from === expected.from
+            &&
+            to === expected.to
+            &&
+            (
+                (
+                    promotion
+                    ??
+                    undefined
+                )
+                ===
+                (
+                    expected.promotion
+                    ??
+                    undefined
+                )
+                ||
+                (
+                    !expected.promotion
+                    &&
+                    !promotion
+                )
+            )
+        );
+    }
+
+
+    async function startChessOpeningPractice() {
+        if (
+            !chessLearnOpening
+        ) {
+            return;
+        }
+
+        try {
+            chessLearnCompiled =
+                await compileChessOpening(
+                    chessLearnOpening
+                );
+
+            const Chess =
+                await loadChessLibrary();
+
+            chessLearnPracticeGame =
+                new Chess();
+
+            chessLearnPracticePly =
+                0;
+
+            chessLearnPracticeSelectedSquare =
+                null;
+
+            chessLearnPracticeLegalMoves =
+                [];
+
+            chessLearnPracticeLastMove =
+                null;
+
+            chessLearnPracticeLocked =
+                false;
+
+            chessLearnPracticeToken +=
+                1;
+
+            el.chessLearnPracticeResult.classList.add(
+                "hidden"
+            );
+
+            el.chessLearnPracticeTitle.textContent =
+                chessLearnOpening.name;
+
+            el.chessLearnPracticeSide.textContent =
+                `Du spielst ${chessOpeningSideLabel(chessLearnOpening.side)}`;
+
+            el.chessLearnPracticePrompt.textContent =
+                "Spiele die Variante aus dem Gedächtnis.";
+
+            showScreen(
+                screens.chessLearnPractice
+            );
+
+            renderChessLearnPractice();
+
+            void continueChessOpeningPractice();
+
+        } catch (
+            error
+        ) {
+            console.error(
+                error
+            );
+
+            window.alert(
+                "Die Übung konnte nicht gestartet werden."
+            );
+        }
+    }
+
+
+    function renderChessLearnPractice() {
+        if (
+            !chessLearnPracticeGame
+            ||
+            !chessLearnOpening
+        ) {
+            return;
+        }
+
+        renderChessBoardInto(
+            el.chessLearnPracticeBoard,
+            chessLearnPracticeGame,
+            {
+                selectedSquare:
+                    chessLearnPracticeSelectedSquare,
+                legalMoves:
+                    chessLearnPracticeLegalMoves,
+                lastMove:
+                    chessLearnPracticeLastMove,
+                clickHandler:
+                    handleChessLearnPracticeSquare,
+                orientation:
+                    chessLearnOpening.side
+            }
+        );
+
+        const fullMoves =
+            Math.ceil(
+                chessLearnCompiled.moves.length / 2
+            );
+
+        const currentMove =
+            Math.min(
+                fullMoves,
+                Math.floor(
+                    chessLearnPracticePly / 2
+                )
+                +
+                1
+            );
+
+        el.chessLearnPracticeProgress.textContent =
+            `${currentMove} / ${fullMoves}`;
+
+        if (
+            chessLearnPracticePly
+            <
+            chessLearnCompiled.moves.length
+            &&
+            chessLearnCompiled.moves[
+                chessLearnPracticePly
+            ].color
+            ===
+            chessLearnOpening.side
+        ) {
+            el.chessLearnPracticePrompt.textContent =
+                "Du bist dran.";
+        } else {
+            el.chessLearnPracticePrompt.textContent =
+                "Antwort der Variante …";
+        }
+    }
+
+
+    async function continueChessOpeningPractice() {
+        const token =
+            chessLearnPracticeToken;
+
+        if (
+            !chessLearnPracticeGame
+            ||
+            chessLearnPracticePly
+            >=
+            chessLearnCompiled.moves.length
+        ) {
+            await completeChessOpeningPractice();
+
+            return;
+        }
+
+        const expected =
+            chessLearnCompiled.moves[
+                chessLearnPracticePly
+            ];
+
+        if (
+            expected.color
+            ===
+            chessLearnOpening.side
+        ) {
+            chessLearnPracticeLocked =
+                false;
+
+            renderChessLearnPractice();
+
+            return;
+        }
+
+        chessLearnPracticeLocked =
+            true;
+
+        renderChessLearnPractice();
+
+        await new Promise(
+            resolve =>
+                window.setTimeout(
+                    resolve,
+                    420
+                )
+        );
+
+        if (
+            token
+            !==
+            chessLearnPracticeToken
+            ||
+            !chessLearnPracticeGame
+        ) {
+            return;
+        }
+
+        try {
+            const made =
+                chessLearnPracticeGame.move({
+                    from:
+                        expected.from,
+                    to:
+                        expected.to,
+                    promotion:
+                        expected.promotion
+                });
+
+            chessLearnPracticeLastMove = {
+                from:
+                    made.from,
+                to:
+                    made.to
+            };
+
+            chessLearnPracticePly +=
+                1;
+
+            chessLearnPracticeSelectedSquare =
+                null;
+
+            chessLearnPracticeLegalMoves =
+                [];
+
+            renderChessLearnPractice();
+
+            if (
+                chessLearnPracticePly
+                >=
+                chessLearnCompiled.moves.length
+            ) {
+                await completeChessOpeningPractice();
+
+                return;
+            }
+
+            chessLearnPracticeLocked =
+                false;
+
+            renderChessLearnPractice();
+
+        } catch (
+            error
+        ) {
+            console.error(
+                "Opening practice line error:",
+                error
+            );
+
+            chessLearnPracticeLocked =
+                false;
+        }
+    }
+
+
+    function handleChessLearnPracticeSquare(
+        square
+    ) {
+        if (
+            !chessLearnPracticeGame
+            ||
+            chessLearnPracticeLocked
+            ||
+            chessLearnPracticePly
+            >=
+            chessLearnCompiled.moves.length
+        ) {
+            return;
+        }
+
+        const expected =
+            chessLearnCompiled.moves[
+                chessLearnPracticePly
+            ];
+
+        if (
+            expected.color
+            !==
+            chessLearnOpening.side
+            ||
+            chessLearnPracticeGame.turn()
+            !==
+            chessLearnOpening.side
+        ) {
+            return;
+        }
+
+        const piece =
+            chessLearnPracticeGame.get(
+                square
+            );
+
+        if (
+            !chessLearnPracticeSelectedSquare
+        ) {
+            if (
+                piece
+                &&
+                piece.color
+                ===
+                chessLearnOpening.side
+            ) {
+                chessLearnPracticeSelectedSquare =
+                    square;
+
+                chessLearnPracticeLegalMoves =
+                    movesFromSquare(
+                        chessLearnPracticeGame,
+                        square
+                    );
+
+                renderChessLearnPractice();
+            }
+
+            return;
+        }
+
+        if (
+            piece
+            &&
+            piece.color
+            ===
+            chessLearnOpening.side
+        ) {
+            chessLearnPracticeSelectedSquare =
+                square;
+
+            chessLearnPracticeLegalMoves =
+                movesFromSquare(
+                    chessLearnPracticeGame,
+                    square
+                );
+
+            renderChessLearnPractice();
+
+            return;
+        }
+
+        const candidates =
+            chessLearnPracticeLegalMoves.filter(
+                move =>
+                    move.to
+                    ===
+                    square
+            );
+
+        if (
+            candidates.length === 0
+        ) {
+            chessLearnPracticeSelectedSquare =
+                null;
+
+            chessLearnPracticeLegalMoves =
+                [];
+
+            renderChessLearnPractice();
+
+            return;
+        }
+
+        const candidate =
+            candidates.find(
+                move =>
+                    uciMatchesOpeningMove(
+                        move.from,
+                        move.to,
+                        move.promotion,
+                        expected
+                    )
+            )
+            ??
+            candidates[0];
+
+        if (
+            !uciMatchesOpeningMove(
+                candidate.from,
+                candidate.to,
+                candidate.promotion,
+                expected
+            )
+        ) {
+            void failChessOpeningPractice();
+
+            return;
+        }
+
+        try {
+            const made =
+                chessLearnPracticeGame.move({
+                    from:
+                        candidate.from,
+                    to:
+                        candidate.to,
+                    promotion:
+                        candidate.promotion
+                });
+
+            chessLearnPracticeLastMove = {
+                from:
+                    made.from,
+                to:
+                    made.to
+            };
+
+            chessLearnPracticePly +=
+                1;
+
+            chessLearnPracticeSelectedSquare =
+                null;
+
+            chessLearnPracticeLegalMoves =
+                [];
+
+            renderChessLearnPractice();
+
+            void continueChessOpeningPractice();
+
+        } catch (
+            error
+        ) {
+            chessLearnPracticeSelectedSquare =
+                null;
+
+            chessLearnPracticeLegalMoves =
+                [];
+
+            renderChessLearnPractice();
+        }
+    }
+
+
+    async function failChessOpeningPractice() {
+        if (
+            chessLearnPracticeLocked
+        ) {
+            return;
+        }
+
+        chessLearnPracticeLocked =
+            true;
+
+        const expectedIndex =
+            chessLearnPracticePly;
+
+        chessLearnPracticeToken +=
+            1;
+
+        el.chessLearnPracticeResult.textContent =
+            "Falsch";
+
+        el.chessLearnPracticeResult.classList.remove(
+            "hidden"
+        );
+
+        await new Promise(
+            resolve =>
+                window.setTimeout(
+                    resolve,
+                    680
+                )
+        );
+
+        el.chessLearnPracticeResult.classList.add(
+            "hidden"
+        );
+
+        chessLearnPracticeGame =
+            null;
+
+        chessLearnPracticeLocked =
+            false;
+
+        await openChessOpeningDetail(
+            chessLearnOpening.id,
+            expectedIndex,
+            `Falsch · erwartet war ${chessLearnOpening.san[expectedIndex]}`
+        );
+    }
+
+
+    async function completeChessOpeningPractice() {
+        if (
+            chessLearnPracticeLocked
+            &&
+            el.chessLearnPracticeResult.textContent
+            ===
+            "Richtig"
+        ) {
+            return;
+        }
+
+        chessLearnPracticeLocked =
+            true;
+
+        chessLearnPracticeToken +=
+            1;
+
+        const id =
+            chessLearnOpening.id;
+
+        chessOpeningProgress[
+            id
+        ] =
+            Number(
+                chessOpeningProgress[
+                    id
+                ]
+                ??
+                0
+            )
+            +
+            1;
+
+        saveChessOpeningProgress();
+
+        el.chessLearnPracticeResult.textContent =
+            "Richtig";
+
+        el.chessLearnPracticeResult.classList.remove(
+            "hidden"
+        );
+
+        await new Promise(
+            resolve =>
+                window.setTimeout(
+                    resolve,
+                    720
+                )
+        );
+
+        el.chessLearnPracticeResult.classList.add(
+            "hidden"
+        );
+
+        chessLearnPracticeGame =
+            null;
+
+        renderChessOpeningList();
+
+        showScreen(
+            screens.chessLearnList
+        );
+
+        chessLearnPracticeLocked =
+            false;
+    }
+
+
+    el.openChessLearnButton.addEventListener(
+        "click",
+        () => {
+            void openChessLearnList();
+        }
+    );
+
+
+    el.backFromChessLearnList.addEventListener(
+        "click",
+        () => {
+            showScreen(
+                screens.chessSetup
+            );
+        }
+    );
+
+
+    el.backFromChessLearnDetail.addEventListener(
+        "click",
+        () => {
+            chessLearnEvalToken +=
+                1;
+
+            chessLearnWrongExpectedIndex =
+                null;
+
+            renderChessOpeningList();
+
+            showScreen(
+                screens.chessLearnList
+            );
+        }
+    );
+
+
+    el.chessLearnPrev.addEventListener(
+        "click",
+        () => {
+            if (
+                chessLearnVariation
+            ) {
+                return;
+            }
+
+            chessLearnWrongExpectedIndex =
+                null;
+
+            loadChessLearnPosition(
+                chessLearnIndex - 1
+            );
+
+            renderChessLearnDetail();
+
+            void updateChessLearnEvaluation();
+        }
+    );
+
+
+    el.chessLearnNext.addEventListener(
+        "click",
+        () => {
+            if (
+                chessLearnVariation
+            ) {
+                return;
+            }
+
+            chessLearnWrongExpectedIndex =
+                null;
+
+            loadChessLearnPosition(
+                chessLearnIndex + 1
+            );
+
+            renderChessLearnDetail();
+
+            void updateChessLearnEvaluation();
+        }
+    );
+
+
+    el.chessLearnReturnLine.addEventListener(
+        "click",
+        () => {
+            loadChessLearnPosition(
+                chessLearnIndex
+            );
+
+            renderChessLearnDetail();
+
+            void updateChessLearnEvaluation();
+        }
+    );
+
+
+    el.startChessLearnPractice.addEventListener(
+        "click",
+        () => {
+            chessLearnWrongExpectedIndex =
+                null;
+
+            void startChessOpeningPractice();
+        }
+    );
+
+
+    el.backFromChessLearnPractice.addEventListener(
+        "click",
+        () => {
+            chessLearnPracticeToken +=
+                1;
+
+            chessLearnPracticeGame =
+                null;
+
+            void openChessOpeningDetail(
+                chessLearnOpening.id,
+                0
+            );
+        }
+    );
 
 
     // ==================================================

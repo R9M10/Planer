@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=56">
+    <link rel="stylesheet" href="style.css?v=57">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=56" defer></script>
+    <script src="app.js?v=57" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -1841,12 +1841,122 @@ body.youtube-player-open {
             </button>
         </div>
 
+        <button id="openChessLearnButton" class="chess-learn-entry-button" type="button">
+            Lernen
+        </button>
+
         <button id="startChessGameButton" class="chess-continue-button" type="button">
             Weiter
         </button>
     </main>
 </section>
 
+
+
+<!-- ==================================================
+     SCHACH — ERÖFFNUNGEN LERNEN
+================================================== -->
+
+<section id="chessLearnListScreen" class="screen chess-learn-screen">
+    <header class="topbar chess-learn-topbar">
+        <button id="backFromChessLearnList" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <div class="chess-learn-topbar-title">Eröffnungen</div>
+        <div class="topbar-spacer"></div>
+    </header>
+
+    <main class="chess-learn-list-shell">
+        <p class="chess-learn-intro">
+            Zehn Kernvarianten für etwa 1300 Elo. Erst verstehen und analysieren, dann aus dem Gedächtnis spielen.
+        </p>
+
+        <div id="chessLearnOpeningList" class="chess-learn-opening-list"></div>
+    </main>
+</section>
+
+
+<section id="chessLearnDetailScreen" class="screen chess-learn-screen">
+    <header class="topbar chess-learn-topbar">
+        <button id="backFromChessLearnDetail" class="icon-button" type="button" aria-label="Zurück">‹</button>
+
+        <div class="chess-learn-detail-heading">
+            <strong id="chessLearnDetailTitle">Eröffnung</strong>
+            <span id="chessLearnDetailSide">Weiß</span>
+        </div>
+
+        <button id="startChessLearnPractice" class="chess-learn-next-button" type="button">
+            Weiter
+        </button>
+    </header>
+
+    <main class="chess-learn-detail-shell">
+        <div id="chessLearnDetailIdea" class="chess-learn-idea"></div>
+
+        <div class="chess-analysis-stage chess-learn-analysis-stage">
+            <div class="chess-eval-column">
+                <div id="chessLearnEvalBar" class="chess-eval-bar">
+                    <div id="chessLearnEvalWhite" class="chess-eval-white"></div>
+                    <div id="chessLearnEvalLabel" class="chess-eval-label">0.0</div>
+                </div>
+            </div>
+
+            <div id="chessLearnBoard" class="chess-board chess-analysis-board chess-learn-board" role="grid" aria-label="Eröffnungsbrett"></div>
+        </div>
+
+        <div id="chessLearnFeedback" class="chess-analysis-feedback">
+            Stellung wird analysiert …
+        </div>
+
+        <div class="chess-analysis-navigation chess-learn-navigation">
+            <button id="chessLearnPrev" type="button" aria-label="Vorheriger Zug">‹</button>
+
+            <div class="chess-analysis-position">
+                <strong id="chessLearnMoveLabel">Ausgangsstellung</strong>
+                <span id="chessLearnCounter">0 / 0</span>
+            </div>
+
+            <button id="chessLearnNext" type="button" aria-label="Nächster Zug">›</button>
+        </div>
+
+        <button id="chessLearnReturnLine" class="chess-analysis-return hidden" type="button">
+            Zur Eröffnung
+        </button>
+
+        <section class="chess-learn-line-section" aria-label="Zugfolge">
+            <div class="chess-learn-line-heading">Zugfolge</div>
+            <div id="chessLearnMoves" class="chess-learn-moves"></div>
+        </section>
+
+        <div class="chess-analysis-hint">
+            Tippe auf einen Zug, um zu dieser Stellung zu springen. Auf dem Brett kannst du Alternativen ausprobieren; die Elo-Leiste bewertet die Stellung.
+        </div>
+    </main>
+</section>
+
+
+<section id="chessLearnPracticeScreen" class="screen chess-learn-practice-screen">
+    <header class="topbar chess-learn-practice-topbar">
+        <button id="backFromChessLearnPractice" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <div class="chess-learn-practice-heading">
+            <strong id="chessLearnPracticeTitle">Eröffnung</strong>
+            <span id="chessLearnPracticeSide">Du spielst Weiß</span>
+        </div>
+        <div class="topbar-spacer"></div>
+    </header>
+
+    <main class="chess-learn-practice-shell">
+        <div id="chessLearnPracticePrompt" class="chess-learn-practice-prompt">
+            Spiele die Variante aus dem Gedächtnis.
+        </div>
+
+        <div id="chessLearnPracticeBoard" class="chess-board chess-learn-practice-board" role="grid" aria-label="Übungsbrett"></div>
+
+        <div id="chessLearnPracticeProgress" class="chess-learn-practice-progress"></div>
+    </main>
+
+    <div id="chessLearnPracticeResult" class="chess-learn-practice-result hidden" role="status" aria-live="assertive">
+        Richtig
+    </div>
+</section>
 
 <!-- ==================================================
      SCHACH — PARTIE
