@@ -33,6 +33,7 @@
         youtube: $("youtubeScreen"),
         chessSetup: $("chessSetupScreen"),
         chessLearnList: $("chessLearnListScreen"),
+        chessLearnCards: $("chessLearnCardsScreen"),
         chessLearnDetail: $("chessLearnDetailScreen"),
         chessLearnPractice: $("chessLearnPracticeScreen"),
         chessPlay: $("chessPlayScreen"),
@@ -344,7 +345,18 @@
         startChessGameButton: $("startChessGameButton"),
 
         backFromChessLearnList: $("backFromChessLearnList"),
+        openChessLearnCards: $("openChessLearnCards"),
         chessLearnOpeningList: $("chessLearnOpeningList"),
+
+        backFromChessLearnCards: $("backFromChessLearnCards"),
+        chessLearnCardsProgress: $("chessLearnCardsProgress"),
+        chessLearnCard: $("chessLearnCard"),
+        chessLearnCardMoves: $("chessLearnCardMoves"),
+        chessLearnCardAnswer: $("chessLearnCardAnswer"),
+        chessLearnCardName: $("chessLearnCardName"),
+        chessLearnCardSide: $("chessLearnCardSide"),
+        chessLearnCardHint: $("chessLearnCardHint"),
+        chessLearnCardNext: $("chessLearnCardNext"),
 
         backFromChessLearnDetail: $("backFromChessLearnDetail"),
         chessLearnDetailTitle: $("chessLearnDetailTitle"),
@@ -19373,8 +19385,20 @@
     let chessLearnPracticeLocked =
         false;
 
+    let chessLearnPracticeCompleting =
+        false;
+
     let chessLearnPracticeToken =
         0;
+
+    let chessLearnCardOrder =
+        [];
+
+    let chessLearnCardIndex =
+        0;
+
+    let chessLearnCardRevealed =
+        false;
 
 
     function loadChessOpeningProgress() {
@@ -20544,8 +20568,14 @@
             chessLearnPracticeLocked =
                 false;
 
+            chessLearnPracticeCompleting =
+                false;
+
             chessLearnPracticeToken +=
                 1;
+
+            el.chessLearnPracticeResult.textContent =
+                "";
 
             el.chessLearnPracticeResult.classList.add(
                 "hidden"
@@ -20978,6 +21008,12 @@
         chessLearnPracticeLocked =
             false;
 
+        chessLearnPracticeCompleting =
+            false;
+
+        el.chessLearnPracticeResult.textContent =
+            "";
+
         await openChessOpeningDetail(
             chessLearnOpening.id,
             expectedIndex,
@@ -20988,14 +21024,13 @@
 
     async function completeChessOpeningPractice() {
         if (
-            chessLearnPracticeLocked
-            &&
-            el.chessLearnPracticeResult.textContent
-            ===
-            "Richtig"
+            chessLearnPracticeCompleting
         ) {
             return;
         }
+
+        chessLearnPracticeCompleting =
+            true;
 
         chessLearnPracticeLocked =
             true;
@@ -21051,7 +21086,232 @@
 
         chessLearnPracticeLocked =
             false;
+
+        chessLearnPracticeCompleting =
+            false;
+
+        el.chessLearnPracticeResult.textContent =
+            "";
     }
+
+
+
+    function shuffleChessOpenings() {
+        const rows =
+            [
+                ...CHESS_OPENING_LINES
+            ];
+
+        for (
+            let index =
+                rows.length - 1;
+            index > 0;
+            index -= 1
+        ) {
+            const other =
+                Math.floor(
+                    Math.random()
+                    *
+                    (
+                        index + 1
+                    )
+                );
+
+            [
+                rows[index],
+                rows[other]
+            ] = [
+                rows[other],
+                rows[index]
+            ];
+        }
+
+        return rows;
+    }
+
+
+    function openingFullMoveText(
+        opening
+    ) {
+        const parts =
+            [];
+
+        for (
+            let index = 0;
+            index < opening.san.length;
+            index += 2
+        ) {
+            const moveNumber =
+                index / 2 + 1;
+
+            const white =
+                opening.san[
+                    index
+                ]
+                ??
+                "";
+
+            const black =
+                opening.san[
+                    index + 1
+                ]
+                ??
+                "";
+
+            parts.push(
+                `${moveNumber}. ${white}${black ? ` ${black}` : ""}`
+            );
+        }
+
+        return parts.join(
+            "   "
+        );
+    }
+
+
+    function renderChessLearnCard() {
+        const opening =
+            chessLearnCardOrder[
+                chessLearnCardIndex
+            ];
+
+        if (
+            !opening
+        ) {
+            renderChessOpeningList();
+
+            showScreen(
+                screens.chessLearnList
+            );
+
+            return;
+        }
+
+        el.chessLearnCardsProgress.textContent =
+            `${chessLearnCardIndex + 1} / ${chessLearnCardOrder.length}`;
+
+        el.chessLearnCardMoves.textContent =
+            openingFullMoveText(
+                opening
+            );
+
+        el.chessLearnCardName.textContent =
+            opening.name;
+
+        el.chessLearnCardSide.textContent =
+            `Repertoire · ${chessOpeningSideLabel(opening.side)}`;
+
+        el.chessLearnCardAnswer.classList.toggle(
+            "hidden",
+            !chessLearnCardRevealed
+        );
+
+        el.chessLearnCardHint.textContent =
+            chessLearnCardRevealed
+                ? ""
+                : "Tippen zum Aufdecken";
+
+        el.chessLearnCardNext.classList.toggle(
+            "hidden",
+            !chessLearnCardRevealed
+        );
+
+        el.chessLearnCardNext.textContent =
+            chessLearnCardIndex
+            ===
+            chessLearnCardOrder.length - 1
+                ? "Fertig"
+                : "Weiter";
+    }
+
+
+    function openChessLearnCards() {
+        chessLearnCardOrder =
+            shuffleChessOpenings();
+
+        chessLearnCardIndex =
+            0;
+
+        chessLearnCardRevealed =
+            false;
+
+        renderChessLearnCard();
+
+        showScreen(
+            screens.chessLearnCards
+        );
+    }
+
+
+    el.openChessLearnCards.addEventListener(
+        "click",
+        openChessLearnCards
+    );
+
+
+    el.backFromChessLearnCards.addEventListener(
+        "click",
+        () => {
+            renderChessOpeningList();
+
+            showScreen(
+                screens.chessLearnList
+            );
+        }
+    );
+
+
+    el.chessLearnCard.addEventListener(
+        "click",
+        () => {
+            if (
+                chessLearnCardRevealed
+            ) {
+                return;
+            }
+
+            chessLearnCardRevealed =
+                true;
+
+            renderChessLearnCard();
+        }
+    );
+
+
+    el.chessLearnCardNext.addEventListener(
+        "click",
+        event => {
+            event.stopPropagation();
+
+            if (
+                !chessLearnCardRevealed
+            ) {
+                return;
+            }
+
+            if (
+                chessLearnCardIndex
+                >=
+                chessLearnCardOrder.length - 1
+            ) {
+                renderChessOpeningList();
+
+                showScreen(
+                    screens.chessLearnList
+                );
+
+                return;
+            }
+
+            chessLearnCardIndex +=
+                1;
+
+            chessLearnCardRevealed =
+                false;
+
+            renderChessLearnCard();
+        }
+    );
 
 
     el.openChessLearnButton.addEventListener(

@@ -9819,3 +9819,159 @@ html[data-theme="dark"] .music-connect-button:hover {
     }
 }
 
+
+
+/* ==================================================
+   V58 — SCHACH: ERÖFFNUNGS-KARTEIKARTEN
+================================================== */
+
+.chess-learn-title-button {
+    align-self: end;
+    justify-self: center;
+    margin-bottom: 11px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.chess-learn-title-button:active {
+    opacity: .58;
+}
+
+.chess-learn-cards-screen {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.chess-learn-cards-shell {
+    width: min(620px, calc(100vw - 34px));
+    margin: 0 auto;
+    padding:
+        34px
+        0
+        calc(62px + env(safe-area-inset-bottom));
+}
+
+.chess-learn-cards-progress {
+    margin-bottom: 16px;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.chess-learn-card {
+    width: 100%;
+    min-height: min(58vh, 480px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 25px;
+    padding: 38px 30px;
+    border:
+        1px solid
+        color-mix(
+            in srgb,
+            var(--text) 11%,
+            transparent
+        );
+    border-radius: 22px;
+    background:
+        color-mix(
+            in srgb,
+            var(--surface) 97%,
+            var(--bg)
+        );
+    color: var(--text);
+    box-shadow:
+        0 15px 46px
+        rgba(0, 0, 0, .08);
+    cursor: pointer;
+}
+
+.chess-learn-card-moves {
+    max-width: 500px;
+    color: var(--text);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(19px, 5.2vw, 27px);
+    line-height: 1.8;
+    text-align: center;
+}
+
+.chess-learn-card-answer {
+    width: 100%;
+    padding-top: 22px;
+    border-top:
+        1px solid
+        color-mix(
+            in srgb,
+            var(--text) 9%,
+            transparent
+        );
+}
+
+.chess-learn-card-answer.hidden {
+    display: none !important;
+}
+
+.chess-learn-card-name {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(25px, 7vw, 36px);
+    line-height: 1.15;
+    text-align: center;
+}
+
+.chess-learn-card-side {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+.chess-learn-card-hint {
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: .02em;
+}
+
+.chess-learn-card-next {
+    display: block;
+    min-width: 130px;
+    min-height: 45px;
+    margin: 20px auto 0;
+    padding: 0 20px;
+    border:
+        1px solid
+        color-mix(
+            in srgb,
+            var(--text) 13%,
+            transparent
+        );
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.chess-learn-card-next.hidden {
+    display: none !important;
+}
+
+@media (max-width: 430px) {
+    .chess-learn-cards-shell {
+        width: calc(100vw - 24px);
+        padding-top: 25px;
+    }
+
+    .chess-learn-card {
+        min-height: 55vh;
+        padding: 30px 20px;
+        border-radius: 18px;
+    }
+}
+
