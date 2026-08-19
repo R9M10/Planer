@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=592">
+    <link rel="stylesheet" href="style.css?v=60">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=592" defer></script>
+    <script src="app.js?v=60" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -1165,6 +1165,134 @@ body.youtube-player-open {
 
 
 
+
+
+<!-- ==================================================
+     KARTEIKARTEN
+================================================== -->
+
+<section id="flashcardsHomeScreen" class="screen flashcards-screen">
+    <header class="topbar">
+        <button id="backFromFlashcardsHome" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Karteikarten</h1>
+        <div class="topbar-spacer"></div>
+    </header>
+    <main class="flashcards-home-shell">
+        <button id="openFlashcardsDecks" class="flashcards-home-row" type="button"><span>Meine Decks</span><span>›</span></button>
+        <button id="openFlashcardsImport" class="flashcards-home-row" type="button"><span>Importieren</span><span>›</span></button>
+    </main>
+</section>
+
+<section id="flashcardsDecksScreen" class="screen flashcards-screen">
+    <header class="topbar">
+        <button id="backFromFlashcardsDecks" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Meine Decks</h1>
+        <button id="newFlashcardsDeckButton" class="flashcards-top-plus" type="button" aria-label="Neues Deck">+</button>
+    </header>
+    <main class="flashcards-list-shell">
+        <div id="flashcardsDecksEmpty" class="empty-message compact">Noch keine Decks.</div>
+        <div id="flashcardsDeckList"></div>
+    </main>
+</section>
+
+<section id="flashcardsDeckScreen" class="screen flashcards-screen">
+    <header class="topbar">
+        <button id="backFromFlashcardsDeck" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1 id="flashcardsDeckTitle">Deck</h1>
+        <div class="topbar-spacer"></div>
+    </header>
+    <main class="flashcards-deck-shell">
+        <div id="flashcardsDeckMeta" class="flashcards-deck-meta"></div>
+        <button id="practiceFlashcardsDeck" class="flashcards-action-row" type="button"><span>Üben</span><span>›</span></button>
+        <button id="progressFlashcardsDeck" class="flashcards-action-row" type="button"><span>Fortschritt</span><span>›</span></button>
+        <button id="editFlashcardsDeck" class="flashcards-action-row" type="button"><span>Bearbeiten</span><span>›</span></button>
+    </main>
+</section>
+
+<section id="flashcardsPracticeScreen" class="screen flashcards-screen">
+    <header class="topbar">
+        <button id="backFromFlashcardsPractice" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1 id="flashcardsPracticeTitle">Üben</h1>
+        <div class="topbar-spacer"></div>
+    </header>
+    <main class="flashcards-practice-shell">
+        <button id="flashcardsPracticeCard" class="flashcards-practice-card" type="button">
+            <div id="flashcardsPracticeFront" class="flashcards-practice-front"></div>
+            <div id="flashcardsPracticeBack" class="flashcards-practice-back hidden"></div>
+            <div id="flashcardsPracticeRevealHint" class="flashcards-reveal-hint">Tippen zum Aufdecken</div>
+        </button>
+        <div id="flashcardsPracticeRatingArea" class="flashcards-rating-area hidden">
+            <div id="flashcardsLastRating" class="flashcards-last-rating"></div>
+            <div class="flashcards-rating-buttons">
+                <button type="button" data-flashcard-rating="1">1</button>
+                <button type="button" data-flashcard-rating="2">2</button>
+                <button type="button" data-flashcard-rating="3">3</button>
+                <button type="button" data-flashcard-rating="4">4</button>
+                <button type="button" data-flashcard-rating="5">5</button>
+            </div>
+        </div>
+    </main>
+</section>
+
+<section id="flashcardsProgressScreen" class="screen flashcards-screen">
+    <header class="topbar">
+        <button id="backFromFlashcardsProgress" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Fortschritt</h1>
+        <div class="topbar-spacer"></div>
+    </header>
+    <main class="flashcards-progress-shell">
+        <div class="flashcards-progress-summary">
+            <div><span>Durchschnitt</span><strong id="flashcardsProgressAverage">5.00</strong></div>
+            <div><span>Durchläufe</span><strong id="flashcardsProgressRuns">0</strong></div>
+        </div>
+        <div class="flashcards-chart-wrap"><canvas id="flashcardsProgressCanvas"></canvas></div>
+        <div class="flashcards-chart-label">Durchläufe</div>
+    </main>
+</section>
+
+<section id="flashcardsEditorScreen" class="screen flashcards-screen">
+    <header class="topbar">
+        <button id="backFromFlashcardsEditor" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1 id="flashcardsEditorTitle">Neues Deck</h1>
+        <button id="saveFlashcardsDeckButton" class="flashcards-save-button" type="button">Sichern</button>
+    </header>
+    <main class="flashcards-editor-shell">
+        <label for="flashcardsDeckNameInput">Name</label>
+        <input id="flashcardsDeckNameInput" type="text" maxlength="120" autocomplete="off">
+        <div class="flashcards-editor-section-title">Karten</div>
+        <div id="flashcardsEditorCards"></div>
+        <button id="addFlashcardsCardButton" class="flashcards-add-card-button" type="button">+ Karte hinzufügen</button>
+        <div id="flashcardsEditorError" class="form-error"></div>
+        <button id="deleteFlashcardsDeckButton" class="danger-text-button hidden" type="button">Deck löschen</button>
+    </main>
+</section>
+
+<section id="flashcardsImportScreen" class="screen flashcards-screen">
+    <header class="topbar">
+        <button id="backFromFlashcardsImport" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Importieren</h1>
+        <div class="topbar-spacer"></div>
+    </header>
+    <main class="flashcards-import-shell">
+        <p>Importiere ein Deck im Planer-Karteikartenformat. Neue Karten starten mit Bewertung 5.</p>
+        <button id="chooseFlashcardsImportButton" class="flashcards-import-button" type="button">Datei auswählen</button>
+        <input id="flashcardsImportInput" type="file" accept=".planerdeck,.json,application/json" hidden>
+        <div id="flashcardsImportStatus" class="flashcards-import-status" aria-live="polite"></div>
+        <details class="flashcards-import-format">
+            <summary>Format</summary>
+            <pre>{
+  "format": "planer-flashcards",
+  "version": 1,
+  "deck": {
+    "name": "Vorlesung 1",
+    "cards": [
+      {"front": "Frage", "back": "Antwort"}
+    ]
+  }
+}</pre>
+        </details>
+    </main>
+</section>
 
 <!-- ==================================================
      FOKUS — MINIMALER HOME-SCREEN

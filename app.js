@@ -24,6 +24,13 @@
         filmRoom: $("filmRoomScreen"),
         mapRoom: $("mapRoomScreen"),
         focus: $("focusScreen"),
+        flashcardsHome: $("flashcardsHomeScreen"),
+        flashcardsDecks: $("flashcardsDecksScreen"),
+        flashcardsDeck: $("flashcardsDeckScreen"),
+        flashcardsPractice: $("flashcardsPracticeScreen"),
+        flashcardsProgress: $("flashcardsProgressScreen"),
+        flashcardsEditor: $("flashcardsEditorScreen"),
+        flashcardsImport: $("flashcardsImportScreen"),
         wallpaperRuntime: $("wallpaperRuntimeScreen"),
         wallpaperList: $("wallpaperListScreen"),
         wallpaperCreate: $("wallpaperCreateScreen"),
@@ -34177,6 +34184,380 @@
 
 
 
+
+    // ==================================================
+    // V60 — KARTEIKARTEN
+    // ==================================================
+
+    const FLASHCARDS_KEY = "personalPlannerSuite_flashcards_v1";
+    let flashcardsState = (() => {
+        try {
+            const value = JSON.parse(localStorage.getItem(FLASHCARDS_KEY) || "");
+            if (value && Array.isArray(value.decks)) return value;
+        } catch {}
+        return { version: 1, decks: [] };
+    })();
+
+    let currentFlashcardsDeckId = null;
+    let flashcardsEditingDeckId = null;
+    let flashcardsPracticeCardId = null;
+    let flashcardsPracticeRevealed = false;
+
+    const fc = {
+        list: $("flashcardsDeckList"),
+        empty: $("flashcardsDecksEmpty"),
+        deckTitle: $("flashcardsDeckTitle"),
+        deckMeta: $("flashcardsDeckMeta"),
+        practiceTitle: $("flashcardsPracticeTitle"),
+        card: $("flashcardsPracticeCard"),
+        front: $("flashcardsPracticeFront"),
+        back: $("flashcardsPracticeBack"),
+        hint: $("flashcardsPracticeRevealHint"),
+        ratingArea: $("flashcardsPracticeRatingArea"),
+        lastRating: $("flashcardsLastRating"),
+        progressAverage: $("flashcardsProgressAverage"),
+        progressRuns: $("flashcardsProgressRuns"),
+        canvas: $("flashcardsProgressCanvas"),
+        editorTitle: $("flashcardsEditorTitle"),
+        name: $("flashcardsDeckNameInput"),
+        cards: $("flashcardsEditorCards"),
+        error: $("flashcardsEditorError"),
+        deleteDeck: $("deleteFlashcardsDeckButton"),
+        importInput: $("flashcardsImportInput"),
+        importStatus: $("flashcardsImportStatus")
+    };
+
+    function fcId(prefix) {
+        return crypto?.randomUUID
+            ? `${prefix}-${crypto.randomUUID()}`
+            : `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function saveFlashcards() {
+        localStorage.setItem(FLASHCARDS_KEY, JSON.stringify(flashcardsState));
+    }
+
+    function flashcardsDeck(id) {
+        return flashcardsState.decks.find(deck => deck.id === id) || null;
+    }
+
+    function flashcardsAverage(deck) {
+        if (!deck?.cards?.length) return 5;
+        return deck.cards.reduce((sum, card) => sum + Number(card.rating ?? 5), 0) / deck.cards.length;
+    }
+
+    function flashcardWeight(rating) {
+        const r = Math.max(1, Math.min(5, Number(rating ?? 5)));
+        return 3 - 0.5 * (r - 1); // 1→3, 2→2.5, 3→2, 4→1.5, 5→1
+    }
+
+    function chooseFlashcard(deck) {
+        if (!deck?.cards?.length) return null;
+        const rows = deck.cards.map(card => ({ card, weight: flashcardWeight(card.rating) }));
+        const total = rows.reduce((sum, row) => sum + row.weight, 0);
+        let draw = Math.random() * total;
+        for (const row of rows) {
+            draw -= row.weight;
+            if (draw <= 0) return row.card;
+        }
+        return rows.at(-1).card;
+    }
+
+    function openFlashcardsHome() {
+        showScreen(screens.flashcardsHome);
+    }
+
+    function renderFlashcardsDecks() {
+        fc.list.innerHTML = "";
+        const decks = [...flashcardsState.decks].sort((a,b) => a.name.localeCompare(b.name, "de"));
+        fc.empty.classList.toggle("hidden", decks.length > 0);
+
+        decks.forEach(deck => {
+            const row = document.createElement("button");
+            row.type = "button";
+            row.className = "flashcards-deck-row";
+
+            const copy = document.createElement("span");
+            copy.className = "flashcards-deck-row-copy";
+
+            const name = document.createElement("span");
+            name.className = "flashcards-deck-row-name";
+            name.textContent = deck.name;
+
+            const meta = document.createElement("span");
+            meta.className = "flashcards-deck-row-meta";
+            meta.textContent = `${deck.cards.length} Karte${deck.cards.length === 1 ? "" : "n"} · Ø ${flashcardsAverage(deck).toFixed(2)}`;
+
+            const arrow = document.createElement("span");
+            arrow.className = "flashcards-row-arrow";
+            arrow.textContent = "›";
+
+            copy.append(name, meta);
+            row.append(copy, arrow);
+            row.addEventListener("click", () => openFlashcardsDeck(deck.id));
+            fc.list.appendChild(row);
+        });
+    }
+
+    function openFlashcardsDecks() {
+        renderFlashcardsDecks();
+        showScreen(screens.flashcardsDecks);
+    }
+
+    function openFlashcardsDeck(id) {
+        const deck = flashcardsDeck(id);
+        if (!deck) return openFlashcardsDecks();
+        currentFlashcardsDeckId = deck.id;
+        fc.deckTitle.textContent = deck.name;
+        fc.deckMeta.textContent = `${deck.cards.length} Karte${deck.cards.length === 1 ? "" : "n"} · Durchschnitt ${flashcardsAverage(deck).toFixed(2)}`;
+        showScreen(screens.flashcardsDeck);
+    }
+
+    function renumberFlashcardRows() {
+        fc.cards.querySelectorAll(".flashcards-editor-card").forEach((row, i) => {
+            row.querySelector(".flashcards-editor-card-number").textContent = `Karte ${i + 1}`;
+        });
+    }
+
+    function addFlashcardEditorRow(card = null) {
+        const row = document.createElement("div");
+        row.className = "flashcards-editor-card";
+        row.dataset.cardId = card?.id || fcId("card");
+        row.innerHTML = `
+            <div class="flashcards-editor-card-heading">
+                <span class="flashcards-editor-card-number"></span>
+                <button class="flashcards-editor-remove" type="button">Entfernen</button>
+            </div>
+            <label>Vorderseite</label>
+            <textarea class="flashcards-editor-front" rows="3"></textarea>
+            <label>Rückseite</label>
+            <textarea class="flashcards-editor-back" rows="4"></textarea>
+        `;
+        row.querySelector(".flashcards-editor-front").value = card?.front || "";
+        row.querySelector(".flashcards-editor-back").value = card?.back || "";
+        row.querySelector(".flashcards-editor-remove").addEventListener("click", () => {
+            row.remove();
+            renumberFlashcardRows();
+        });
+        fc.cards.appendChild(row);
+        renumberFlashcardRows();
+        return row;
+    }
+
+    function openFlashcardsEditor(id = null) {
+        flashcardsEditingDeckId = id;
+        const deck = id ? flashcardsDeck(id) : null;
+        fc.editorTitle.textContent = deck ? "Bearbeiten" : "Neues Deck";
+        fc.name.value = deck?.name || "";
+        fc.cards.innerHTML = "";
+        (deck?.cards?.length ? deck.cards : [null]).forEach(addFlashcardEditorRow);
+        fc.error.textContent = "";
+        fc.deleteDeck.classList.toggle("hidden", !deck);
+        showScreen(screens.flashcardsEditor);
+        if (!deck) setTimeout(() => fc.name.focus(), 60);
+    }
+
+    function collectFlashcardEditorCards() {
+        const oldDeck = flashcardsEditingDeckId ? flashcardsDeck(flashcardsEditingDeckId) : null;
+        const old = new Map((oldDeck?.cards || []).map(card => [card.id, card]));
+        return [...fc.cards.querySelectorAll(".flashcards-editor-card")].map(row => {
+            const id = row.dataset.cardId || fcId("card");
+            return {
+                id,
+                front: row.querySelector(".flashcards-editor-front").value.trim(),
+                back: row.querySelector(".flashcards-editor-back").value.trim(),
+                rating: Number(old.get(id)?.rating ?? 5)
+            };
+        });
+    }
+
+    function saveFlashcardsEditor() {
+        const name = fc.name.value.trim();
+        const cards = collectFlashcardEditorCards();
+
+        if (!name) return void (fc.error.textContent = "Bitte gib dem Deck einen Namen.");
+        if (!cards.length) return void (fc.error.textContent = "Füge mindestens eine Karte hinzu.");
+        if (cards.some(card => !card.front || !card.back)) {
+            return void (fc.error.textContent = "Bitte fülle bei jeder Karte Vorder- und Rückseite aus.");
+        }
+
+        const now = new Date().toISOString();
+        if (flashcardsEditingDeckId) {
+            const deck = flashcardsDeck(flashcardsEditingDeckId);
+            if (!deck) return;
+            deck.name = name;
+            deck.cards = cards;
+            deck.updatedAt = now;
+            currentFlashcardsDeckId = deck.id;
+        } else {
+            const deck = {
+                id: fcId("deck"),
+                name,
+                cards,
+                history: [{ run: 0, average: 5, at: now }],
+                createdAt: now,
+                updatedAt: now
+            };
+            flashcardsState.decks.push(deck);
+            currentFlashcardsDeckId = deck.id;
+            flashcardsEditingDeckId = deck.id;
+        }
+        saveFlashcards();
+        openFlashcardsDeck(currentFlashcardsDeckId);
+    }
+
+    function startFlashcardsPractice() {
+        const deck = flashcardsDeck(currentFlashcardsDeckId);
+        if (!deck?.cards?.length) return;
+        fc.practiceTitle.textContent = deck.name;
+        flashcardsPracticeCardId = chooseFlashcard(deck)?.id || null;
+        flashcardsPracticeRevealed = false;
+        renderFlashcardsPractice();
+        showScreen(screens.flashcardsPractice);
+    }
+
+    function renderFlashcardsPractice() {
+        const deck = flashcardsDeck(currentFlashcardsDeckId);
+        const card = deck?.cards.find(item => item.id === flashcardsPracticeCardId);
+        if (!card) return;
+        fc.front.textContent = card.front;
+        fc.back.textContent = card.back;
+        fc.back.classList.toggle("hidden", !flashcardsPracticeRevealed);
+        fc.hint.classList.toggle("hidden", flashcardsPracticeRevealed);
+        fc.ratingArea.classList.toggle("hidden", !flashcardsPracticeRevealed);
+        fc.lastRating.textContent = `Zuletzt: ${Number(card.rating ?? 5)}`;
+    }
+
+    function rateFlashcard(rating) {
+        const deck = flashcardsDeck(currentFlashcardsDeckId);
+        const card = deck?.cards.find(item => item.id === flashcardsPracticeCardId);
+        if (!deck || !card) return;
+
+        card.rating = Math.max(1, Math.min(5, Number(rating)));
+        if (!Array.isArray(deck.history) || !deck.history.length) {
+            deck.history = [{ run: 0, average: 5, at: deck.createdAt || new Date().toISOString() }];
+        }
+        const run = Number(deck.history.at(-1)?.run || 0) + 1;
+        deck.history.push({ run, average: flashcardsAverage(deck), at: new Date().toISOString() });
+        deck.updatedAt = new Date().toISOString();
+        saveFlashcards();
+
+        flashcardsPracticeCardId = chooseFlashcard(deck)?.id || null; // independent draw; repeats are allowed
+        flashcardsPracticeRevealed = false;
+        renderFlashcardsPractice();
+    }
+
+    function openFlashcardsProgress() {
+        const deck = flashcardsDeck(currentFlashcardsDeckId);
+        if (!deck) return;
+        const history = Array.isArray(deck.history) ? deck.history : [];
+        fc.progressAverage.textContent = flashcardsAverage(deck).toFixed(2);
+        fc.progressRuns.textContent = String(history.at(-1)?.run || 0);
+        showScreen(screens.flashcardsProgress);
+        requestAnimationFrame(drawFlashcardsProgress);
+    }
+
+    function drawFlashcardsProgress() {
+        const deck = flashcardsDeck(currentFlashcardsDeckId);
+        if (!deck || !fc.canvas) return;
+        const points = deck.history?.length ? deck.history : [{run:0, average:flashcardsAverage(deck)}];
+        const rect = fc.canvas.getBoundingClientRect();
+        if (rect.width < 20 || rect.height < 20) return;
+
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        fc.canvas.width = Math.round(rect.width * dpr);
+        fc.canvas.height = Math.round(rect.height * dpr);
+        const ctx = fc.canvas.getContext("2d");
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        ctx.clearRect(0,0,rect.width,rect.height);
+
+        const root = getComputedStyle(document.documentElement);
+        const text = root.getPropertyValue("--text").trim() || "#111";
+        const muted = root.getPropertyValue("--muted").trim() || "#777";
+        const line = root.getPropertyValue("--line").trim() || "#ddd";
+        const pad={l:38,r:12,t:16,b:28}, w=rect.width-pad.l-pad.r, h=rect.height-pad.t-pad.b;
+        const maxRun=Math.max(1,Number(points.at(-1)?.run||0));
+        const x=run=>pad.l+w*Number(run||0)/maxRun;
+        const y=avg=>pad.t+h*(1-(Math.max(1,Math.min(5,Number(avg)))-1)/4);
+
+        ctx.font="11px -apple-system,BlinkMacSystemFont,sans-serif";
+        ctx.textAlign="right"; ctx.textBaseline="middle";
+        for (let v=1; v<=5; v++) {
+            const yy=y(v);
+            ctx.strokeStyle=line; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(pad.l+w,yy); ctx.stroke();
+            ctx.fillStyle=muted; ctx.fillText(String(v),pad.l-9,yy);
+        }
+        ctx.strokeStyle=text; ctx.lineWidth=1.7; ctx.lineJoin="round"; ctx.lineCap="round"; ctx.beginPath();
+        points.forEach((point,i)=>{ const xx=x(point.run??i), yy=y(point.average); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); });
+        ctx.stroke();
+        const last=points.at(-1); ctx.fillStyle=text; ctx.beginPath(); ctx.arc(x(last.run),y(last.average),3,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=muted; ctx.textBaseline="top"; ctx.textAlign="left"; ctx.fillText("0",pad.l,pad.t+h+8);
+        ctx.textAlign="right"; ctx.fillText(String(maxRun),pad.l+w,pad.t+h+8);
+    }
+
+    function importedFlashcardsDeck(raw) {
+        if (!raw || typeof raw !== "object") return null;
+        const name = String(raw.name || "").trim();
+        const cards = (Array.isArray(raw.cards) ? raw.cards : []).map(card => {
+            const front = String(card?.front ?? card?.question ?? "").trim();
+            const back = String(card?.back ?? card?.answer ?? "").trim();
+            return front && back ? { id: fcId("card"), front, back, rating: 5 } : null;
+        }).filter(Boolean);
+        if (!name || !cards.length) return null;
+        const now = new Date().toISOString();
+        return { id:fcId("deck"), name, cards, history:[{run:0,average:5,at:now}], createdAt:now, updatedAt:now };
+    }
+
+    async function importFlashcards(file) {
+        if (!file) return;
+        fc.importStatus.textContent = "Importiere …";
+        try {
+            const parsed = JSON.parse(await file.text());
+            const rawDecks = Array.isArray(parsed?.decks) ? parsed.decks : parsed?.deck ? [parsed.deck] : parsed?.cards ? [parsed] : [];
+            const decks = rawDecks.map(importedFlashcardsDeck).filter(Boolean);
+            if (!decks.length) throw new Error("Die Datei enthält kein gültiges Deck.");
+            flashcardsState.decks.push(...decks);
+            saveFlashcards();
+            fc.importStatus.textContent = decks.length === 1 ? `„${decks[0].name}“ wurde importiert.` : `${decks.length} Decks wurden importiert.`;
+        } catch (error) {
+            fc.importStatus.textContent = error?.message || "Die Datei konnte nicht importiert werden.";
+        }
+    }
+
+    $("backFromFlashcardsHome").addEventListener("click", () => showScreen(screens.textsHub));
+    $("openFlashcardsDecks").addEventListener("click", openFlashcardsDecks);
+    $("openFlashcardsImport").addEventListener("click", () => { fc.importStatus.textContent=""; showScreen(screens.flashcardsImport); });
+    $("backFromFlashcardsDecks").addEventListener("click", openFlashcardsHome);
+    $("newFlashcardsDeckButton").addEventListener("click", () => openFlashcardsEditor());
+    $("backFromFlashcardsDeck").addEventListener("click", openFlashcardsDecks);
+    $("practiceFlashcardsDeck").addEventListener("click", startFlashcardsPractice);
+    $("progressFlashcardsDeck").addEventListener("click", openFlashcardsProgress);
+    $("editFlashcardsDeck").addEventListener("click", () => openFlashcardsEditor(currentFlashcardsDeckId));
+    $("backFromFlashcardsPractice").addEventListener("click", () => openFlashcardsDeck(currentFlashcardsDeckId));
+    fc.card.addEventListener("click", () => { if (!flashcardsPracticeRevealed) { flashcardsPracticeRevealed=true; renderFlashcardsPractice(); } });
+    document.querySelectorAll("[data-flashcard-rating]").forEach(button => button.addEventListener("click", () => rateFlashcard(button.dataset.flashcardRating)));
+    $("backFromFlashcardsProgress").addEventListener("click", () => openFlashcardsDeck(currentFlashcardsDeckId));
+    $("backFromFlashcardsEditor").addEventListener("click", () => flashcardsEditingDeckId ? openFlashcardsDeck(flashcardsEditingDeckId) : openFlashcardsDecks());
+    $("saveFlashcardsDeckButton").addEventListener("click", saveFlashcardsEditor);
+    $("addFlashcardsCardButton").addEventListener("click", () => {
+        const row=addFlashcardEditorRow();
+        row.querySelector(".flashcards-editor-front")?.focus();
+        row.scrollIntoView({behavior:"smooth",block:"center"});
+    });
+    fc.deleteDeck.addEventListener("click", () => {
+        const deck=flashcardsDeck(flashcardsEditingDeckId);
+        if (!deck || !confirm(`„${deck.name}“ wirklich löschen?`)) return;
+        flashcardsState.decks=flashcardsState.decks.filter(item=>item.id!==deck.id);
+        saveFlashcards(); currentFlashcardsDeckId=null; flashcardsEditingDeckId=null; openFlashcardsDecks();
+    });
+    $("backFromFlashcardsImport").addEventListener("click", openFlashcardsHome);
+    $("chooseFlashcardsImportButton").addEventListener("click", () => fc.importInput.click());
+    fc.importInput.addEventListener("change", event => { void importFlashcards(event.target.files?.[0]); event.target.value=""; });
+    window.addEventListener("resize", () => {
+        if (screens.flashcardsProgress.classList.contains("active")) requestAnimationFrame(drawFlashcardsProgress);
+    });
+
+
     // ==================================================
     // V59 — FOKUSMODUS
     // ==================================================
@@ -34306,6 +34687,16 @@
             aliases: [
                 "schach", "chess", "elo", "brett", "eröffnung", "eröffnungen",
                 "opening", "openings", "stockfish", "taktik", "partie"
+            ]
+        },
+        {
+            id: "flashcards",
+            name: "Karteikarten",
+            hint: "Decks",
+            aliases: [
+                "karteikarten", "karte", "karten", "flashcards", "flashcard",
+                "lernkarten", "lernkarte", "deck", "decks", "anki",
+                "wiederholen", "wiederholung", "abfragen"
             ]
         },
         {
@@ -34791,6 +35182,9 @@
                 break;
             case "chess":
                 openChessSetup();
+                break;
+            case "flashcards":
+                openFlashcardsHome();
                 break;
             case "wallpapers":
                 void openWallpaperManager();

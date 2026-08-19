@@ -10205,3 +10205,384 @@ html[data-theme="dark"] .focus-menu-panel {
         height: 48px !important;
     }
 }
+
+
+/* ==================================================
+   V60 — RELIABLE BOTTOM PLUS
+================================================== */
+
+.bottom-add-button {
+    transform: translate3d(-50%, 0, 0) !important;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.bottom-add-button:active {
+    transform: translate3d(-50%, 0, 0) scale(.985) !important;
+}
+
+
+/* ==================================================
+   V60 — KARTEIKARTEN
+================================================== */
+
+.flashcards-screen {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.flashcards-home-shell,
+.flashcards-list-shell,
+.flashcards-deck-shell,
+.flashcards-progress-shell,
+.flashcards-editor-shell,
+.flashcards-import-shell {
+    width: min(650px, calc(100vw - 36px));
+    margin: 0 auto;
+    padding: 34px 0 calc(72px + env(safe-area-inset-bottom));
+}
+
+.flashcards-home-shell {
+    padding-top: 48px;
+}
+
+.flashcards-home-row,
+.flashcards-action-row,
+.flashcards-deck-row {
+    width: 100%;
+    min-height: 66px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 3px;
+    border: 0;
+    border-bottom: 1px solid var(--soft-line);
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.flashcards-home-row:first-child,
+.flashcards-deck-row:first-child {
+    border-top: 1px solid var(--soft-line);
+}
+
+.flashcards-home-row {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 20px;
+}
+
+.flashcards-row-arrow,
+.flashcards-home-row > span:last-child {
+    flex: none;
+    color: var(--muted);
+    font-size: 24px;
+    font-weight: 250;
+}
+
+.flashcards-top-plus {
+    align-self: end;
+    justify-self: end;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 29px;
+    font-weight: 260;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.flashcards-deck-row {
+    min-height: 76px;
+}
+
+.flashcards-deck-row-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.flashcards-deck-row-name {
+    overflow: hidden;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 19px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.flashcards-deck-row-meta,
+.flashcards-deck-meta {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.flashcards-deck-meta {
+    margin: 2px 2px 28px;
+    text-align: center;
+}
+
+.flashcards-action-row {
+    min-height: 62px;
+    font-size: 16px;
+}
+
+.flashcards-action-row span:last-child {
+    color: var(--muted);
+    font-size: 22px;
+}
+
+.flashcards-practice-shell {
+    width: min(620px, calc(100vw - 26px));
+    min-height: calc(100dvh - 76px - env(safe-area-inset-top));
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 0 calc(40px + env(safe-area-inset-bottom));
+}
+
+.flashcards-practice-card {
+    width: min(560px, 100%);
+    min-height: min(52dvh, 440px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 38px 34px;
+    border: 1px solid var(--soft-line);
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--surface) 96%, var(--bg));
+    color: var(--text);
+    box-shadow: 0 12px 38px var(--shadow);
+    cursor: pointer;
+}
+
+.flashcards-practice-front {
+    width: 100%;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(22px, 6vw, 32px);
+    line-height: 1.35;
+    text-align: center;
+    white-space: pre-wrap;
+}
+
+.flashcards-practice-back {
+    width: 100%;
+    padding-top: 23px;
+    border-top: 1px solid var(--soft-line);
+    font-size: clamp(16px, 4.4vw, 21px);
+    line-height: 1.55;
+    text-align: center;
+    white-space: pre-wrap;
+}
+
+.flashcards-reveal-hint,
+.flashcards-last-rating {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.flashcards-rating-area {
+    width: min(430px, 90%);
+    margin-top: 20px;
+}
+
+.flashcards-last-rating {
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.flashcards-rating-buttons {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+}
+
+.flashcards-rating-buttons button {
+    min-height: 42px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.flashcards-progress-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.flashcards-progress-summary > div {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--soft-line);
+    text-align: center;
+}
+
+.flashcards-progress-summary span {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+.flashcards-progress-summary strong {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 24px;
+    font-weight: 400;
+}
+
+.flashcards-chart-wrap {
+    width: 100%;
+    height: min(48vh, 380px);
+}
+
+#flashcardsProgressCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.flashcards-chart-label {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: center;
+}
+
+.flashcards-save-button {
+    align-self: end;
+    justify-self: end;
+    min-width: 52px;
+    height: 48px;
+    margin-bottom: 1px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.flashcards-editor-section-title {
+    margin: 38px 0 12px;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+}
+
+.flashcards-editor-card {
+    margin-bottom: 26px;
+    padding: 16px 0 22px;
+    border-top: 1px solid var(--soft-line);
+    border-bottom: 1px solid var(--soft-line);
+}
+
+.flashcards-editor-card-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.flashcards-editor-card-number {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.flashcards-editor-remove {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.flashcards-editor-card textarea {
+    min-height: 92px;
+}
+
+.flashcards-editor-back {
+    min-height: 118px !important;
+}
+
+.flashcards-add-card-button,
+.flashcards-import-button {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.flashcards-import-shell p {
+    margin: 2px 0 26px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.flashcards-import-status {
+    min-height: 25px;
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.flashcards-import-format {
+    margin-top: 28px;
+    border-top: 1px solid var(--soft-line);
+    padding-top: 15px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.flashcards-import-format summary {
+    cursor: pointer;
+}
+
+.flashcards-import-format pre {
+    overflow-x: auto;
+    margin: 13px 0 0;
+    padding: 14px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface) 90%, var(--bg));
+    color: var(--text);
+    font-size: 10px;
+    line-height: 1.55;
+    white-space: pre;
+}
+
+@media (max-width: 480px) {
+    .flashcards-home-shell,
+    .flashcards-list-shell,
+    .flashcards-deck-shell,
+    .flashcards-progress-shell,
+    .flashcards-editor-shell,
+    .flashcards-import-shell {
+        width: calc(100vw - 28px);
+    }
+
+    .flashcards-practice-card {
+        min-height: 48dvh;
+        padding: 30px 22px;
+        border-radius: 17px;
+    }
+}
