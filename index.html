@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=58">
+    <link rel="stylesheet" href="style.css?v=59">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=58" defer></script>
+    <script src="app.js?v=59" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -1130,6 +1130,7 @@ body.youtube-player-open {
 
         <div class="texts-study-menu-content">
             <button id="timelineButton" class="menu-link" type="button">Zeitstrahl</button>
+            <button id="focusModeButton" class="menu-link" type="button">Fokus</button>
             <button id="openWallpaperManagerButton" class="menu-link" type="button">Tapetenwechsel</button>
             <button id="backupButton" class="menu-link" type="button">Backup</button>
             <button id="restoreButton" class="menu-link" type="button">Wiederherstellen</button>
@@ -1164,6 +1165,31 @@ body.youtube-player-open {
 
 
 
+
+<!-- ==================================================
+     FOKUS — MINIMALER HOME-SCREEN
+================================================== -->
+
+<section id="focusScreen" class="screen focus-screen">
+    <main class="focus-shell">
+        <div class="focus-search-wrap">
+            <input id="focusSearchInput" class="focus-search-input" type="search" autocomplete="off" autocapitalize="sentences" spellcheck="false" aria-label="Anwendung suchen">
+            <div id="focusSuggestions" class="focus-suggestions hidden" role="listbox" aria-label="Vorschläge"></div>
+        </div>
+    </main>
+</section>
+
+<div id="focusMenuPanel" class="focus-menu-panel hidden" role="dialog" aria-modal="true" aria-label="Menü">
+    <button id="focusMenuClose" class="focus-menu-close" type="button" aria-label="Menü schließen">‹</button>
+    <div class="focus-menu-content">
+        <button id="focusDisableButton" class="menu-link focus-disable-button" type="button">Fokus beenden</button>
+        <button id="focusMenuTimeline" class="menu-link" type="button">Zeitstrahl</button>
+        <button id="focusMenuWallpapers" class="menu-link" type="button">Tapetenwechsel</button>
+        <button id="focusMenuBackup" class="menu-link" type="button">Backup</button>
+        <button id="focusMenuRestore" class="menu-link" type="button">Wiederherstellen</button>
+        <button id="focusMenuTheme" class="menu-link" type="button">Tag / Nacht</button>
+    </div>
+</div>
 
 <!-- ==================================================
      TAPETENWECHSEL — VISUELLER HOME-SCREEN-EDITOR
@@ -1286,6 +1312,7 @@ body.youtube-player-open {
     <button id="closeCustomWallpaperMenu" class="custom-wallpaper-menu-close" type="button" aria-label="Menü schließen">‹</button>
     <div class="custom-wallpaper-menu-content">
         <button id="customWallpaperTimeline" class="menu-link" type="button">Zeitstrahl</button>
+        <button id="customWallpaperFocus" class="menu-link" type="button">Fokus</button>
         <button id="customWallpaperManage" class="menu-link" type="button">Tapetenwechsel</button>
         <button id="customWallpaperBackup" class="menu-link" type="button">Backup</button>
         <button id="customWallpaperRestore" class="menu-link" type="button">Wiederherstellen</button>
