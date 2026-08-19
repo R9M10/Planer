@@ -34590,20 +34590,8 @@
                 name.textContent =
                     app.name;
 
-                const hint =
-                    document.createElement(
-                        "span"
-                    );
-
-                hint.className =
-                    "focus-suggestion-hint";
-
-                hint.textContent =
-                    app.hint ?? "";
-
-                button.append(
-                    name,
-                    hint
+                button.appendChild(
+                    name
                 );
 
                 button.addEventListener(
