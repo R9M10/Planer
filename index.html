@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f6f6f2">
     <title>Planer</title>
-    <link rel="stylesheet" href="style.css?v=60">
+    <link rel="stylesheet" href="style.css?v=61">
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/katex@0.18.0/dist/katex.min.css"
@@ -22,7 +22,7 @@
         defer
         src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"
     ></script>
-    <script src="app.js?v=60" defer></script>
+    <script src="app.js?v=61" defer></script>
     <style id="v37-library-style">
 /* ==================================================
    V37 — SMOOTHER ROOM TURN + BIBLIOTHEK
@@ -1293,6 +1293,87 @@ body.youtube-player-open {
         </details>
     </main>
 </section>
+
+
+<!-- ==================================================
+     RECHNER
+================================================== -->
+
+<section id="calculatorScreen" class="screen calculator-screen">
+    <header class="topbar">
+        <button id="backFromCalculator" class="icon-button" type="button" aria-label="Zurück">‹</button>
+        <h1>Rechner</h1>
+        <button id="calculatorWolframSettingsButton" class="calculator-wa-top-button" type="button" aria-label="Wolfram Alpha Einstellungen">Wα</button>
+    </header>
+
+    <main class="calculator-shell">
+        <form id="calculatorForm" class="calculator-form">
+            <input
+                id="calculatorInput"
+                class="calculator-input"
+                type="text"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="Ausdruck"
+            >
+            <div class="calculator-actions">
+                <button id="calculatorEvaluateButton" class="calculator-evaluate-button" type="submit">=</button>
+                <button id="calculatorWolframButton" class="calculator-wolfram-button" type="button">Wolfram</button>
+            </div>
+        </form>
+
+        <section id="calculatorLocalResult" class="calculator-result hidden" aria-live="polite">
+            <div class="calculator-result-label">Ergebnis</div>
+            <div id="calculatorResultValue" class="calculator-result-value"></div>
+            <div id="calculatorResultExact" class="calculator-result-exact"></div>
+        </section>
+
+        <div id="calculatorStatus" class="calculator-status" aria-live="polite"></div>
+
+        <section class="calculator-tools">
+            <div class="calculator-section-title">Funktionen</div>
+            <div class="calculator-function-grid">
+                <button type="button" data-calculator-insert="sin(">sin</button>
+                <button type="button" data-calculator-insert="cos(">cos</button>
+                <button type="button" data-calculator-insert="tan(">tan</button>
+                <button type="button" data-calculator-insert="log(">ln</button>
+                <button type="button" data-calculator-insert="sqrt(">√</button>
+                <button type="button" data-calculator-insert="pi">π</button>
+                <button type="button" data-calculator-insert="^">xʸ</button>
+                <button type="button" data-calculator-insert="(">(</button>
+                <button type="button" data-calculator-insert=")">)</button>
+            </div>
+        </section>
+
+        <section class="calculator-constants-section">
+            <div class="calculator-section-title">Naturkonstanten · SI</div>
+            <div id="calculatorConstants" class="calculator-constants"></div>
+        </section>
+
+        <section id="calculatorWolframResult" class="calculator-wolfram-result hidden">
+            <div class="calculator-section-title">Wolfram|Alpha</div>
+            <div id="calculatorWolframLoading" class="calculator-wa-loading hidden">Berechne …</div>
+            <img id="calculatorWolframImage" class="calculator-wa-image hidden" alt="Wolfram Alpha Ergebnis">
+            <div id="calculatorWolframError" class="calculator-wa-error"></div>
+        </section>
+    </main>
+</section>
+
+<div id="calculatorWolframSettings" class="calculator-wa-sheet hidden" role="dialog" aria-modal="true" aria-label="Wolfram Alpha verbinden">
+    <div class="calculator-wa-sheet-card">
+        <div class="calculator-wa-sheet-title">Wolfram|Alpha</div>
+        <p>
+            Der AppID wird nur lokal auf diesem Gerät gespeichert und nicht in das GitHub-Repository geschrieben.
+        </p>
+        <input id="calculatorWolframAppIdInput" type="password" autocomplete="off" placeholder="AppID">
+        <div class="calculator-wa-sheet-actions">
+            <button id="calculatorWolframCancel" type="button">Abbrechen</button>
+            <button id="calculatorWolframForget" type="button">Entfernen</button>
+            <button id="calculatorWolframSave" type="button">Sichern</button>
+        </div>
+    </div>
+</div>
 
 <!-- ==================================================
      FOKUS — MINIMALER HOME-SCREEN

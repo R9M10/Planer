@@ -31,6 +31,7 @@
         flashcardsProgress: $("flashcardsProgressScreen"),
         flashcardsEditor: $("flashcardsEditorScreen"),
         flashcardsImport: $("flashcardsImportScreen"),
+        calculator: $("calculatorScreen"),
         wallpaperRuntime: $("wallpaperRuntimeScreen"),
         wallpaperList: $("wallpaperListScreen"),
         wallpaperCreate: $("wallpaperCreateScreen"),
@@ -34185,6 +34186,806 @@
 
 
 
+
+    // ==================================================
+    // V61 — RECHNER
+    // ==================================================
+
+    const WOLFRAM_APP_ID_KEY =
+        "personalPlannerSuite_wolfram_appid_v1";
+
+    const CALCULATOR_CONSTANTS = [
+        { token: "c",      label: "c",    name: "Lichtgeschwindigkeit",       value: 299792458,          display: "299 792 458 m/s" },
+        { token: "h",      label: "h",    name: "Planck-Konstante",           value: 6.62607015e-34,     display: "6.62607015×10⁻³⁴ J s" },
+        { token: "hbar",   label: "ħ",    name: "Reduzierte Planck-Konst.",   value: 1.0545718176461565e-34, display: "1.0545718176×10⁻³⁴ J s" },
+        { token: "G",      label: "G",    name: "Gravitationskonstante",      value: 6.67430e-11,        display: "6.67430×10⁻¹¹ m³ kg⁻¹ s⁻²" },
+        { token: "kB",     label: "kB",   name: "Boltzmann-Konstante",        value: 1.380649e-23,       display: "1.380649×10⁻²³ J/K" },
+        { token: "qe",     label: "e",    name: "Elementarladung",            value: 1.602176634e-19,    display: "1.602176634×10⁻¹⁹ C" },
+        { token: "eps0",   label: "ε₀",   name: "Elektrische Feldkonstante",  value: 8.8541878188e-12,   display: "8.8541878188×10⁻¹² F/m" },
+        { token: "mu0",    label: "μ₀",   name: "Magnetische Feldkonstante",  value: 1.25663706127e-6,   display: "1.25663706127×10⁻⁶ N/A²" },
+        { token: "me",     label: "mₑ",   name: "Elektronenmasse",            value: 9.1093837139e-31,   display: "9.1093837139×10⁻³¹ kg" },
+        { token: "mp",     label: "mₚ",   name: "Protonenmasse",              value: 1.67262192595e-27,  display: "1.67262192595×10⁻²⁷ kg" },
+        { token: "mn",     label: "mₙ",   name: "Neutronenmasse",             value: 1.67492750056e-27,  display: "1.67492750056×10⁻²⁷ kg" },
+        { token: "NA",     label: "Nₐ",   name: "Avogadro-Konstante",         value: 6.02214076e23,      display: "6.02214076×10²³ mol⁻¹" },
+        { token: "alpha",  label: "α",    name: "Feinstrukturkonstante",      value: 7.2973525643e-3,    display: "7.2973525643×10⁻³" },
+        { token: "R",      label: "R",    name: "Molare Gaskonstante",        value: 8.31446261815324,   display: "8.314462618 J mol⁻¹ K⁻¹" },
+        { token: "sigmaSB",label: "σ",    name: "Stefan-Boltzmann-Konst.",    value: 5.670374419e-8,     display: "5.670374419×10⁻⁸ W m⁻² K⁻⁴" },
+        { token: "a0",     label: "a₀",   name: "Bohr-Radius",                value: 5.29177210544e-11,  display: "5.29177210544×10⁻¹¹ m" },
+        { token: "muB",    label: "μB",   name: "Bohrsches Magneton",         value: 9.2740100657e-24,   display: "9.2740100657×10⁻²⁴ J/T" },
+        { token: "muN",    label: "μN",   name: "Kernmagneton",               value: 5.0507837393e-27,   display: "5.0507837393×10⁻²⁷ J/T" },
+        { token: "Rinf",   label: "R∞",   name: "Rydberg-Konstante",          value: 10973731.568157,    display: "10 973 731.568157 m⁻¹" },
+        { token: "eV",     label: "eV",   name: "Elektronenvolt in Joule",    value: 1.602176634e-19,    display: "1.602176634×10⁻¹⁹ J" },
+        { token: "F",      label: "F",    name: "Faraday-Konstante",          value: 96485.33212331002,  display: "96 485.332123 C/mol" }
+    ];
+
+    const calculatorInput =
+        $("calculatorInput");
+
+    const calculatorLocalResult =
+        $("calculatorLocalResult");
+
+    const calculatorResultValue =
+        $("calculatorResultValue");
+
+    const calculatorResultExact =
+        $("calculatorResultExact");
+
+    const calculatorStatus =
+        $("calculatorStatus");
+
+    const calculatorConstants =
+        $("calculatorConstants");
+
+    const calculatorWolframResult =
+        $("calculatorWolframResult");
+
+    const calculatorWolframImage =
+        $("calculatorWolframImage");
+
+    const calculatorWolframLoading =
+        $("calculatorWolframLoading");
+
+    const calculatorWolframError =
+        $("calculatorWolframError");
+
+    const calculatorWolframSettings =
+        $("calculatorWolframSettings");
+
+    const calculatorWolframAppIdInput =
+        $("calculatorWolframAppIdInput");
+
+
+    function openCalculator() {
+        calculatorStatus.textContent =
+            "";
+
+        showScreen(
+            screens.calculator
+        );
+
+        requestAnimationFrame(
+            () => calculatorInput.focus()
+        );
+    }
+
+
+    function insertCalculatorText(
+        text
+    ) {
+        const start =
+            calculatorInput.selectionStart
+            ??
+            calculatorInput.value.length;
+
+        const end =
+            calculatorInput.selectionEnd
+            ??
+            start;
+
+        calculatorInput.setRangeText(
+            text,
+            start,
+            end,
+            "end"
+        );
+
+        calculatorInput.focus();
+    }
+
+
+    function replaceStandalone(
+        expression,
+        token,
+        replacement
+    ) {
+        const escaped =
+            token.replace(
+                /[.*+?^${}()|[\]\\]/g,
+                "\\$&"
+            );
+
+        const regex =
+            new RegExp(
+                `(^|[^A-Za-z0-9_])${escaped}(?=$|[^A-Za-z0-9_])`,
+                "g"
+            );
+
+        return expression.replace(
+            regex,
+            (
+                match,
+                prefix
+            ) =>
+                `${prefix}(${replacement})`
+        );
+    }
+
+
+    function calculatorPreparedExpression(
+        raw
+    ) {
+        let expression =
+            String(
+                raw
+                ??
+                ""
+            )
+            .replace(
+                /×/g,
+                "*"
+            )
+            .replace(
+                /÷/g,
+                "/"
+            )
+            .replace(
+                /−/g,
+                "-"
+            )
+            .replace(
+                /π/g,
+                "pi"
+            )
+            .replace(
+                /√/g,
+                "sqrt"
+            )
+            .replace(
+                /ħ/g,
+                "hbar"
+            )
+            .replace(
+                /ε₀|ε0/g,
+                "eps0"
+            )
+            .replace(
+                /μ₀|μ0/g,
+                "mu0"
+            )
+            .replace(
+                /mₑ/g,
+                "me"
+            )
+            .replace(
+                /mₚ/g,
+                "mp"
+            )
+            .replace(
+                /mₙ/g,
+                "mn"
+            )
+            .replace(
+                /Nₐ/g,
+                "NA"
+            )
+            .replace(
+                /R∞/g,
+                "Rinf"
+            );
+
+        const aliases = [
+            ["epsilon0", "eps0"],
+            ["epsilon_0", "eps0"],
+            ["mu_0", "mu0"],
+            ["k_B", "kB"],
+            ["kb", "kB"],
+            ["q_e", "qe"],
+            ["e_charge", "qe"],
+            ["elementary_charge", "qe"],
+            ["fine_structure", "alpha"],
+            ["sigma_SB", "sigmaSB"],
+            ["mu_B", "muB"],
+            ["mu_N", "muN"],
+            ["N_A", "NA"],
+            ["R_inf", "Rinf"]
+        ];
+
+        aliases.forEach(
+            (
+                [
+                    alias,
+                    canonical
+                ]
+            ) => {
+                expression =
+                    replaceStandalone(
+                        expression,
+                        alias,
+                        canonical
+                    );
+            }
+        );
+
+        /*
+           Standalone "e" means elementary charge in this physics-oriented
+           calculator. Scientific notation such as 1e-3 is deliberately left
+           untouched because the preceding character is numeric.
+        */
+        expression =
+            expression.replace(
+                /(^|[^A-Za-z0-9_])e(?=$|[^A-Za-z0-9_])/g,
+                "$1(qe)"
+            );
+
+        const sorted =
+            [
+                ...CALCULATOR_CONSTANTS
+            ]
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    b.token.length
+                    -
+                    a.token.length
+            );
+
+        sorted.forEach(
+            constant => {
+                expression =
+                    replaceStandalone(
+                        expression,
+                        constant.token,
+                        String(
+                            constant.value
+                        )
+                    );
+            }
+        );
+
+        return expression;
+    }
+
+
+    function calculatorExactConstant(
+        raw
+    ) {
+        const normalized =
+            String(
+                raw
+                ??
+                ""
+            )
+            .trim()
+            .replace(
+                /ħ/g,
+                "hbar"
+            )
+            .replace(
+                /ε₀|ε0/g,
+                "eps0"
+            )
+            .replace(
+                /μ₀|μ0/g,
+                "mu0"
+            )
+            .replace(
+                /mₑ/g,
+                "me"
+            )
+            .replace(
+                /mₚ/g,
+                "mp"
+            )
+            .replace(
+                /mₙ/g,
+                "mn"
+            )
+            .replace(
+                /Nₐ/g,
+                "NA"
+            )
+            .replace(
+                /R∞/g,
+                "Rinf"
+            );
+
+        if (
+            normalized
+            ===
+            "e"
+        ) {
+            return CALCULATOR_CONSTANTS.find(
+                item =>
+                    item.token
+                    ===
+                    "qe"
+            );
+        }
+
+        return CALCULATOR_CONSTANTS.find(
+            item =>
+                item.token
+                ===
+                normalized
+        )
+        ??
+        null;
+    }
+
+
+    function formatCalculatorNumber(
+        value
+    ) {
+        const number =
+            Number(
+                value
+            );
+
+        if (
+            !Number.isFinite(
+                number
+            )
+        ) {
+            return String(
+                value
+            );
+        }
+
+        if (
+            number === 0
+        ) {
+            return "0";
+        }
+
+        const magnitude =
+            Math.abs(
+                number
+            );
+
+        if (
+            magnitude >= 1e7
+            ||
+            magnitude < 1e-6
+        ) {
+            return number.toExponential(
+                10
+            )
+            .replace(
+                /e\+/,
+                "e"
+            );
+        }
+
+        return Number(
+            number.toPrecision(
+                12
+            )
+        )
+        .toString();
+    }
+
+
+    function evaluateCalculatorLocal() {
+        const raw =
+            calculatorInput.value.trim();
+
+        if (
+            !raw
+        ) {
+            return;
+        }
+
+        calculatorStatus.textContent =
+            "";
+
+        calculatorWolframResult.classList.add(
+            "hidden"
+        );
+
+        const directConstant =
+            calculatorExactConstant(
+                raw
+            );
+
+        if (
+            directConstant
+        ) {
+            calculatorResultValue.textContent =
+                directConstant.display;
+
+            calculatorResultExact.textContent =
+                directConstant.name;
+
+            calculatorLocalResult.classList.remove(
+                "hidden"
+            );
+
+            return;
+        }
+
+        if (
+            typeof nerdamer
+            !==
+            "function"
+        ) {
+            calculatorStatus.textContent =
+                "Der lokale Rechenkern ist noch nicht geladen.";
+
+            return;
+        }
+
+        try {
+            const expression =
+                calculatorPreparedExpression(
+                    raw
+                );
+
+            let symbolic;
+
+            if (
+                /^solve\s+/i.test(
+                    expression
+                )
+            ) {
+                const equation =
+                    expression.replace(
+                        /^solve\s+/i,
+                        ""
+                    );
+
+                symbolic =
+                    nerdamer(
+                        `solve(${equation})`
+                    );
+            } else {
+                symbolic =
+                    nerdamer(
+                        expression
+                    );
+            }
+
+            const numeric =
+                symbolic.evaluate();
+
+            const numericText =
+                numeric.text();
+
+            const symbolicText =
+                symbolic.text();
+
+            calculatorResultValue.textContent =
+                formatCalculatorNumber(
+                    numericText
+                );
+
+            calculatorResultExact.textContent =
+                symbolicText !== numericText
+                    ? symbolicText
+                    : "";
+
+            calculatorLocalResult.classList.remove(
+                "hidden"
+            );
+        } catch (
+            error
+        ) {
+            calculatorLocalResult.classList.add(
+                "hidden"
+            );
+
+            calculatorStatus.textContent =
+                "Lokal nicht eindeutig berechenbar – versuche Wolfram.";
+        }
+    }
+
+
+    function renderCalculatorConstants() {
+        calculatorConstants.innerHTML =
+            "";
+
+        CALCULATOR_CONSTANTS.forEach(
+            constant => {
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "calculator-constant-chip";
+
+                const symbol =
+                    document.createElement(
+                        "span"
+                    );
+
+                symbol.className =
+                    "calculator-constant-symbol";
+
+                symbol.textContent =
+                    constant.label;
+
+                const name =
+                    document.createElement(
+                        "span"
+                    );
+
+                name.className =
+                    "calculator-constant-name";
+
+                name.textContent =
+                    constant.name;
+
+                button.append(
+                    symbol,
+                    name
+                );
+
+                button.title =
+                    constant.display;
+
+                button.addEventListener(
+                    "click",
+                    () => insertCalculatorText(
+                        constant.token
+                    )
+                );
+
+                calculatorConstants.appendChild(
+                    button
+                );
+            }
+        );
+    }
+
+
+    function openWolframSettings() {
+        calculatorWolframAppIdInput.value =
+            localStorage.getItem(
+                WOLFRAM_APP_ID_KEY
+            )
+            ??
+            "";
+
+        calculatorWolframSettings.classList.remove(
+            "hidden"
+        );
+
+        requestAnimationFrame(
+            () => calculatorWolframAppIdInput.focus()
+        );
+    }
+
+
+    function closeWolframSettings() {
+        calculatorWolframSettings.classList.add(
+            "hidden"
+        );
+    }
+
+
+    function runWolframCalculator() {
+        const query =
+            calculatorInput.value.trim();
+
+        if (
+            !query
+        ) {
+            return;
+        }
+
+        const appId =
+            localStorage.getItem(
+                WOLFRAM_APP_ID_KEY
+            );
+
+        if (
+            !appId
+        ) {
+            calculatorStatus.textContent =
+                "Wolfram AppID einmalig lokal hinterlegen.";
+
+            openWolframSettings();
+            return;
+        }
+
+        calculatorStatus.textContent =
+            "";
+
+        calculatorWolframResult.classList.remove(
+            "hidden"
+        );
+
+        calculatorWolframImage.classList.add(
+            "hidden"
+        );
+
+        calculatorWolframLoading.classList.remove(
+            "hidden"
+        );
+
+        calculatorWolframError.textContent =
+            "";
+
+        const dark =
+            document.documentElement.dataset.theme
+            ===
+            "dark";
+
+        const params =
+            new URLSearchParams({
+                appid:
+                    appId,
+                i:
+                    query,
+                units:
+                    "metric",
+                width:
+                    "700",
+                fontsize:
+                    "16",
+                background:
+                    dark
+                        ? "11120F"
+                        : "F6F6F2",
+                foreground:
+                    dark
+                        ? "white"
+                        : "black"
+            });
+
+        calculatorWolframImage.onload =
+            () => {
+                calculatorWolframLoading.classList.add(
+                    "hidden"
+                );
+
+                calculatorWolframImage.classList.remove(
+                    "hidden"
+                );
+            };
+
+        calculatorWolframImage.onerror =
+            () => {
+                calculatorWolframLoading.classList.add(
+                    "hidden"
+                );
+
+                calculatorWolframImage.classList.add(
+                    "hidden"
+                );
+
+                calculatorWolframError.textContent =
+                    "Wolfram|Alpha konnte diese Anfrage nicht laden. Prüfe AppID oder Anfrage.";
+            };
+
+        calculatorWolframImage.src =
+            `https://api.wolframalpha.com/v1/simple?${params.toString()}`;
+    }
+
+
+    renderCalculatorConstants();
+
+
+    $("calculatorForm").addEventListener(
+        "submit",
+        event => {
+            event.preventDefault();
+            evaluateCalculatorLocal();
+        }
+    );
+
+
+    document.querySelectorAll(
+        "[data-calculator-insert]"
+    )
+    .forEach(
+        button => {
+            button.addEventListener(
+                "click",
+                () => insertCalculatorText(
+                    button.dataset.calculatorInsert
+                )
+            );
+        }
+    );
+
+
+    $("calculatorWolframButton").addEventListener(
+        "click",
+        runWolframCalculator
+    );
+
+
+    $("calculatorWolframSettingsButton").addEventListener(
+        "click",
+        openWolframSettings
+    );
+
+
+    $("calculatorWolframCancel").addEventListener(
+        "click",
+        closeWolframSettings
+    );
+
+
+    $("calculatorWolframSave").addEventListener(
+        "click",
+        () => {
+            const value =
+                calculatorWolframAppIdInput.value.trim();
+
+            if (
+                value
+            ) {
+                localStorage.setItem(
+                    WOLFRAM_APP_ID_KEY,
+                    value
+                );
+            }
+
+            closeWolframSettings();
+
+            calculatorStatus.textContent =
+                value
+                    ? "Wolfram|Alpha ist verbunden."
+                    : "";
+        }
+    );
+
+
+    $("calculatorWolframForget").addEventListener(
+        "click",
+        () => {
+            localStorage.removeItem(
+                WOLFRAM_APP_ID_KEY
+            );
+
+            calculatorWolframAppIdInput.value =
+                "";
+
+            closeWolframSettings();
+
+            calculatorStatus.textContent =
+                "Wolfram AppID entfernt.";
+        }
+    );
+
+
+    $("backFromCalculator").addEventListener(
+        "click",
+        () => {
+            if (
+                typeof returnToFocusIfEnabled
+                ===
+                "function"
+                &&
+                returnToFocusIfEnabled()
+            ) {
+                return;
+            }
+
+            showScreen(
+                screens.textsHub
+            );
+        }
+    );
+
+
     // ==================================================
     // V60 — KARTEIKARTEN
     // ==================================================
@@ -34700,6 +35501,16 @@
             ]
         },
         {
+            id: "calculator",
+            name: "Rechner",
+            hint: "Mathematik · Physik",
+            aliases: [
+                "rechner", "calculator", "calc", "rechnen", "berechnen",
+                "mathe", "mathematik", "physik rechnen", "wolfram", "wolfram alpha",
+                "konstanten", "naturkonstanten", "gleichung", "funktion"
+            ]
+        },
+        {
             id: "wallpapers",
             name: "Tapetenwechsel",
             hint: "Design",
@@ -35185,6 +35996,9 @@
                 break;
             case "flashcards":
                 openFlashcardsHome();
+                break;
+            case "calculator":
+                openCalculator();
                 break;
             case "wallpapers":
                 void openWallpaperManager();
