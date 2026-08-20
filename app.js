@@ -36069,7 +36069,17 @@
             hint: "Planen",
             aliases: [
                 "planer", "plan", "planung", "planen", "aufgabe", "aufgaben",
-                "todo", "to do", "kalender", "zeit", "session", "lernen", "arbeit"
+                "todo", "to do", "zeit", "session", "lernen", "arbeit"
+            ]
+        },
+        {
+            id: "calendar",
+            name: "Kalender",
+            hint: "Termine · Studium",
+            aliases: [
+                "kalender", "calendar", "termin", "termine", "agenda", "woche", "monat",
+                "wochenplan", "deadline", "deadlines", "prüfung", "prüfungen",
+                "vorlesung", "vorlesungen"
             ]
         },
         {
@@ -36637,6 +36647,9 @@
         switch (id) {
             case "planner":
                 showScreen(screens.plannerHub);
+                break;
+            case "calendar":
+                window.location.href = "calendar.html";
                 break;
             case "books":
                 el.openBooksButton.click();
