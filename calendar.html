@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#f6f6f2">
+    <title>Kalender · Planer</title>
+    <link rel="stylesheet" href="style.css?v=62">
+    <link rel="stylesheet" href="calendar.css?v=63">
+    <script src="calendar.js?v=63" defer></script>
+</head>
+<body>
+    <main id="calendarApp" class="calendar-app" aria-label="Kalender">
+        <header class="calendar-topbar">
+            <button id="calendarBack" class="calendar-icon-button" type="button" aria-label="Zurück">‹</button>
+            <h1>Kalender</h1>
+            <div class="calendar-top-actions">
+                <button id="calendarSearchButton" class="calendar-icon-button calendar-icon-small" type="button" aria-label="Kalender durchsuchen">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m15.5 15.5 4.2 4.2"></path></svg>
+                </button>
+                <button id="calendarMoreButton" class="calendar-icon-button calendar-icon-small" type="button" aria-label="Mehr Optionen">•••</button>
+            </div>
+        </header>
+
+        <section class="calendar-shell">
+            <div class="calendar-heading-row">
+                <div>
+                    <div id="calendarEyebrow" class="calendar-eyebrow">Diese Woche</div>
+                    <h2 id="calendarPeriodTitle" class="calendar-period-title"></h2>
+                </div>
+                <button id="calendarNewEvent" class="calendar-add-button" type="button" aria-label="Neuer Termin">+</button>
+            </div>
+
+            <div class="calendar-toolbar">
+                <div class="calendar-nav-group" aria-label="Zeitraum wechseln">
+                    <button id="calendarPrevious" class="calendar-toolbar-button" type="button" aria-label="Zurück">‹</button>
+                    <button id="calendarToday" class="calendar-toolbar-button calendar-today-button" type="button">Heute</button>
+                    <button id="calendarNext" class="calendar-toolbar-button" type="button" aria-label="Weiter">›</button>
+                </div>
+
+                <div class="calendar-view-switch" role="tablist" aria-label="Kalenderansicht">
+                    <button class="calendar-view-button active" type="button" data-view="month" role="tab" aria-selected="true">Monat</button>
+                    <button class="calendar-view-button" type="button" data-view="week" role="tab" aria-selected="false">Woche</button>
+                    <button class="calendar-view-button" type="button" data-view="day" role="tab" aria-selected="false">Tag</button>
+                </div>
+            </div>
+
+            <section id="calendarSummary" class="calendar-summary" aria-live="polite"></section>
+
+            <div id="calendarFilters" class="calendar-filters" aria-label="Kalender filtern"></div>
+
+            <section id="calendarSearchPanel" class="calendar-search-panel hidden" aria-label="Kalendersuche">
+                <div class="calendar-search-row">
+                    <input id="calendarSearchInput" type="search" autocomplete="off" placeholder="Termine, Notizen, Pläne …">
+                    <button id="calendarSearchClose" type="button">Schließen</button>
+                </div>
+                <div id="calendarSearchResults" class="calendar-search-results"></div>
+            </section>
+
+            <section id="monthView" class="calendar-view active" aria-label="Monatsansicht">
+                <div class="month-weekdays" aria-hidden="true">
+                    <span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span>
+                </div>
+                <div id="monthGrid" class="month-grid"></div>
+                <section class="calendar-agenda-card">
+                    <div class="calendar-section-heading">
+                        <div>
+                            <div class="calendar-section-kicker">Ausgewählter Tag</div>
+                            <h3 id="agendaTitle"></h3>
+                        </div>
+                        <button id="agendaAdd" class="calendar-text-button" type="button">+ Eintragen</button>
+                    </div>
+                    <div id="agendaList" class="agenda-list"></div>
+                </section>
+            </section>
+
+            <section id="weekView" class="calendar-view" aria-label="Wochenansicht">
+                <div id="weekAllDay" class="week-all-day"></div>
+                <div id="weekTimeline" class="week-timeline"></div>
+            </section>
+
+            <section id="dayView" class="calendar-view" aria-label="Tagesansicht">
+                <div id="dayHeader" class="day-header"></div>
+                <div id="dayAllDay" class="day-all-day"></div>
+                <div id="dayTimeline" class="day-timeline"></div>
+            </section>
+        </section>
+    </main>
+
+    <div id="eventSheet" class="calendar-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="eventSheetTitle">
+        <button id="eventSheetBackdrop" class="calendar-sheet-backdrop" type="button" aria-label="Schließen"></button>
+        <div class="calendar-sheet-panel">
+            <div class="calendar-sheet-handle" aria-hidden="true"></div>
+            <div class="calendar-sheet-header">
+                <button id="eventCancel" class="calendar-sheet-action" type="button">Abbrechen</button>
+                <h2 id="eventSheetTitle">Neuer Eintrag</h2>
+                <button id="eventSave" class="calendar-sheet-action strong" type="button">Sichern</button>
+            </div>
+
+            <form id="eventForm" class="calendar-event-form" autocomplete="off">
+                <input id="eventId" type="hidden">
+                <label class="calendar-field calendar-title-field">
+                    <span>Titel</span>
+                    <input id="eventTitle" type="text" maxlength="120" placeholder="Was steht an?" required>
+                </label>
+
+                <div class="calendar-kind-grid" role="group" aria-label="Art des Eintrags">
+                    <button type="button" data-kind="study">Studium</button>
+                    <button type="button" data-kind="appointment">Termin</button>
+                    <button type="button" data-kind="deadline">Deadline</button>
+                    <button type="button" data-kind="personal">Privat</button>
+                    <button type="button" data-kind="plan">Plan</button>
+                </div>
+
+                <label class="calendar-field calendar-plan-field hidden" id="eventPlanField">
+                    <span>Plan aus deinem Planer</span>
+                    <select id="eventPlan"></select>
+                    <small id="eventPlanDuration"></small>
+                </label>
+
+                <div class="calendar-form-grid calendar-date-grid">
+                    <label class="calendar-field">
+                        <span>Datum</span>
+                        <input id="eventDate" type="date" required>
+                    </label>
+                    <label class="calendar-switch-field">
+                        <span>Ganztägig</span>
+                        <input id="eventAllDay" type="checkbox">
+                        <i aria-hidden="true"></i>
+                    </label>
+                </div>
+
+                <div id="eventTimeFields" class="calendar-form-grid">
+                    <label class="calendar-field">
+                        <span>Beginn</span>
+                        <input id="eventStart" type="time" step="300">
+                    </label>
+                    <label class="calendar-field">
+                        <span>Ende</span>
+                        <input id="eventEnd" type="time" step="300">
+                    </label>
+                </div>
+
+                <div class="calendar-form-grid">
+                    <label class="calendar-field">
+                        <span>Wiederholen</span>
+                        <select id="eventRepeat">
+                            <option value="none">Nie</option>
+                            <option value="daily">Täglich</option>
+                            <option value="weekly">Wöchentlich</option>
+                        </select>
+                    </label>
+                    <label id="eventRepeatUntilField" class="calendar-field hidden">
+                        <span>Bis</span>
+                        <input id="eventRepeatUntil" type="date">
+                    </label>
+                </div>
+
+                <label class="calendar-field">
+                    <span>Ort</span>
+                    <input id="eventLocation" type="text" maxlength="120" placeholder="Optional">
+                </label>
+
+                <label class="calendar-field">
+                    <span>Notiz</span>
+                    <textarea id="eventNote" rows="3" maxlength="1000" placeholder="Optional"></textarea>
+                </label>
+
+                <label class="calendar-check-field" id="eventDoneField">
+                    <input id="eventDone" type="checkbox">
+                    <span>Erledigt</span>
+                </label>
+
+                <div id="eventMeta" class="calendar-event-meta"></div>
+                <button id="eventDuplicate" class="calendar-secondary-button hidden" type="button">Eintrag duplizieren</button>
+                <button id="eventDelete" class="calendar-danger-button hidden" type="button">Eintrag löschen</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="calendarMenu" class="calendar-popover hidden" role="dialog" aria-label="Kalenderoptionen">
+        <button id="calendarMenuBackdrop" class="calendar-popover-backdrop" type="button" aria-label="Schließen"></button>
+        <div class="calendar-popover-card">
+            <button id="calendarImport" type="button">Kalender importieren (.ics)</button>
+            <button id="calendarExport" type="button">Kalender exportieren (.ics)</button>
+            <button id="calendarJumpNextDeadline" type="button">Nächste Deadline anzeigen</button>
+            <button id="calendarClear" class="danger" type="button">Kalenderdaten löschen</button>
+        </div>
+    </div>
+
+    <input id="calendarImportFile" class="hidden" type="file" accept=".ics,text/calendar">
+    <div id="calendarToast" class="calendar-toast hidden" role="status" aria-live="polite"></div>
+</body>
+</html>
