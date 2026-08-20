@@ -121,6 +121,18 @@
         spotifyPreviousButton: $("spotifyPreviousButton"),
         spotifyPlayPauseButton: $("spotifyPlayPauseButton"),
         spotifyNextButton: $("spotifyNextButton"),
+        spotifyNowPlaying: $("spotifyNowPlaying"),
+        spotifyNowPlayingClose: $("spotifyNowPlayingClose"),
+        spotifyNowPlayingAdd: $("spotifyNowPlayingAdd"),
+        spotifyNowPlayingArtwork: $("spotifyNowPlayingArtwork"),
+        spotifyNowPlayingTitle: $("spotifyNowPlayingTitle"),
+        spotifyNowPlayingArtist: $("spotifyNowPlayingArtist"),
+        spotifySeek: $("spotifySeek"),
+        spotifySeekCurrent: $("spotifySeekCurrent"),
+        spotifySeekDuration: $("spotifySeekDuration"),
+        spotifyNowPlayingPrevious: $("spotifyNowPlayingPrevious"),
+        spotifyNowPlayingPlayPause: $("spotifyNowPlayingPlayPause"),
+        spotifyNowPlayingNext: $("spotifyNowPlayingNext"),
         spotifyPlaylistPicker: $("spotifyPlaylistPicker"),
         spotifyPlaylistPickerList: $("spotifyPlaylistPickerList"),
         spotifyPickerNewPlaylist: $("spotifyPickerNewPlaylist"),
@@ -532,9 +544,11 @@
     const ANCIENT_APP_KEY = "personalPlannerSuite_v1";
     const LEGACY_PLANS_KEY = "plans";
     const ACTIVE_SESSION_KEY = "personalPlannerSuite_activeSession_v1";
+    const ACTIVE_PLAN_ID_KEY = "personalPlannerSuite_activePlanId_v1";
     const V20_THEME_DEFAULT_KEY = "personalPlannerSuite_v20ThemeInitialized";
 
     let state = loadState();
+    restorePersistedActivePlan(state);
 
     let draftPlan = null;
     let editingPlanId = null;
@@ -2741,6 +2755,122 @@
     }
 
 
+
+    function persistedActivePlanId() {
+        try {
+            return String(
+                localStorage.getItem(
+                    ACTIVE_PLAN_ID_KEY
+                )
+                ??
+                ""
+            );
+        } catch {
+            return "";
+        }
+    }
+
+
+    function restorePersistedActivePlan(
+        targetState
+    ) {
+        if (
+            !targetState
+            ||
+            !Array.isArray(
+                targetState.plans
+            )
+        ) {
+            return;
+        }
+
+        const persistedId =
+            persistedActivePlanId();
+
+        const persistedExists =
+            persistedId
+            &&
+            targetState.plans.some(
+                plan =>
+                    String(
+                        plan.id
+                    )
+                    ===
+                    persistedId
+            );
+
+        if (
+            persistedExists
+        ) {
+            targetState.plans.forEach(
+                plan => {
+                    plan.active =
+                        String(
+                            plan.id
+                        )
+                        ===
+                        persistedId;
+                }
+            );
+
+            return;
+        }
+
+        const active =
+            targetState.plans.find(
+                plan =>
+                    plan.active
+            );
+
+        try {
+            if (
+                active
+            ) {
+                localStorage.setItem(
+                    ACTIVE_PLAN_ID_KEY,
+                    String(
+                        active.id
+                    )
+                );
+            } else {
+                localStorage.removeItem(
+                    ACTIVE_PLAN_ID_KEY
+                );
+            }
+        } catch {
+            // Main state remains usable even when this extra key cannot be written.
+        }
+    }
+
+
+    function persistActivePlanId() {
+        try {
+            const active =
+                state?.plans?.find(
+                    plan =>
+                        plan.active
+                );
+
+            if (
+                active
+            ) {
+                localStorage.setItem(
+                    ACTIVE_PLAN_ID_KEY,
+                    String(
+                        active.id
+                    )
+                );
+            } else {
+                localStorage.removeItem(
+                    ACTIVE_PLAN_ID_KEY
+                );
+            }
+        } catch {
+            // Main state persistence is handled separately.
+        }
+    }
+
+
     function loadState() {
         try {
             const current =
@@ -2845,6 +2975,8 @@
                 )
             );
 
+            persistActivePlanId();
+
             return true;
 
         } catch (error) {
@@ -2856,6 +2988,35 @@
             return false;
         }
     }
+
+
+
+    /*
+       iOS can suspend a Home-Screen web app without a conventional unload.
+       Persist again whenever the document is backgrounded and on pagehide.
+    */
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+            if (
+                document.visibilityState
+                ===
+                "hidden"
+            ) {
+                saveState();
+                persistSessionRuntime();
+            }
+        }
+    );
+
+
+    window.addEventListener(
+        "pagehide",
+        () => {
+            saveState();
+            persistSessionRuntime();
+        }
+    );
 
 
     // ==================================================
@@ -13090,6 +13251,15 @@
     let spotifyPlayerState =
         null;
 
+    let spotifyPlayerStateReceivedAt =
+        0;
+
+    let spotifySeekDragging =
+        false;
+
+    let spotifyNowPlayingTimer =
+        null;
+
 
     function spotifySetText(
         element,
@@ -15292,6 +15462,9 @@
                 spotifyPlayerState =
                     state;
 
+                spotifyPlayerStateReceivedAt =
+                    Date.now();
+
                 renderSpotifyPlayerState(
                     state
                 );
@@ -15498,6 +15671,22 @@
             "aria-label",
             "Wiedergabe pausieren"
         );
+
+        renderSpotifyNowPlayingTrack(
+            track,
+            {
+                paused:
+                    false,
+                position:
+                    0,
+                duration:
+                    Number(
+                        track?.duration_ms
+                        ??
+                        0
+                    )
+            }
+        );
     }
 
 
@@ -15559,6 +15748,329 @@
                 ? "Wiedergabe fortsetzen"
                 : "Wiedergabe pausieren"
         );
+
+        renderSpotifyNowPlayingTrack(
+            track,
+            state
+        );
+    }
+
+
+    function spotifyFormatTime(
+        milliseconds
+    ) {
+        const seconds =
+            Math.max(
+                0,
+                Math.floor(
+                    Number(
+                        milliseconds
+                        ??
+                        0
+                    )
+                    /
+                    1000
+                )
+            );
+
+        const minutes =
+            Math.floor(
+                seconds
+                /
+                60
+            );
+
+        return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+    }
+
+
+    function spotifyCurrentPosition() {
+        if (
+            !spotifyPlayerState
+        ) {
+            return 0;
+        }
+
+        const base =
+            Number(
+                spotifyPlayerState.position
+                ??
+                0
+            );
+
+        const duration =
+            Number(
+                spotifyPlayerState.duration
+                ??
+                spotifyPlayerState.track_window?.current_track?.duration_ms
+                ??
+                0
+            );
+
+        if (
+            spotifyPlayerState.paused
+        ) {
+            return Math.min(
+                duration
+                ||
+                base,
+                base
+            );
+        }
+
+        const elapsed =
+            Math.max(
+                0,
+                Date.now()
+                -
+                spotifyPlayerStateReceivedAt
+            );
+
+        return Math.min(
+            duration
+            ||
+            base
+            +
+            elapsed,
+            base
+            +
+            elapsed
+        );
+    }
+
+
+    function spotifyCurrentTrack() {
+        return spotifyPlayerState?.track_window?.current_track
+            ??
+            null;
+    }
+
+
+    function renderSpotifyNowPlayingTrack(
+        track,
+        state = null
+    ) {
+        if (
+            !track
+        ) {
+            return;
+        }
+
+        const artwork =
+            spotifyImageUrl(
+                track.album?.images
+            );
+
+        if (
+            artwork
+        ) {
+            el.spotifyNowPlayingArtwork.src =
+                artwork;
+
+            el.spotifyNowPlayingArtwork.classList.remove(
+                "hidden"
+            );
+        } else {
+            el.spotifyNowPlayingArtwork.removeAttribute(
+                "src"
+            );
+
+            el.spotifyNowPlayingArtwork.classList.add(
+                "hidden"
+            );
+        }
+
+        spotifySetText(
+            el.spotifyNowPlayingTitle,
+            track.name
+            ??
+            "Spotify"
+        );
+
+        spotifySetText(
+            el.spotifyNowPlayingArtist,
+            spotifyArtistsText(
+                track.artists
+            )
+        );
+
+        const paused =
+            Boolean(
+                state?.paused
+            );
+
+        el.spotifyNowPlayingPlayPause.textContent =
+            paused
+                ? "▶"
+                : "Ⅱ";
+
+        el.spotifyNowPlayingPlayPause.setAttribute(
+            "aria-label",
+            paused
+                ? "Wiedergabe fortsetzen"
+                : "Wiedergabe pausieren"
+        );
+
+        renderSpotifySeek();
+    }
+
+
+    function renderSpotifySeek() {
+        if (
+            spotifySeekDragging
+        ) {
+            return;
+        }
+
+        const track =
+            spotifyCurrentTrack();
+
+        const duration =
+            Number(
+                spotifyPlayerState?.duration
+                ??
+                track?.duration_ms
+                ??
+                0
+            );
+
+        const position =
+            Math.max(
+                0,
+                Math.min(
+                    duration
+                    ||
+                    Infinity,
+                    spotifyCurrentPosition()
+                )
+            );
+
+        el.spotifySeek.max =
+            String(
+                Math.max(
+                    1,
+                    duration
+                )
+            );
+
+        el.spotifySeek.value =
+            String(
+                Math.min(
+                    duration
+                    ||
+                    position,
+                    position
+                )
+            );
+
+        spotifySetText(
+            el.spotifySeekCurrent,
+            spotifyFormatTime(
+                position
+            )
+        );
+
+        spotifySetText(
+            el.spotifySeekDuration,
+            spotifyFormatTime(
+                duration
+            )
+        );
+    }
+
+
+    function startSpotifyNowPlayingTicker() {
+        stopSpotifyNowPlayingTicker();
+
+        spotifyNowPlayingTimer =
+            window.setInterval(
+                renderSpotifySeek,
+                500
+            );
+    }
+
+
+    function stopSpotifyNowPlayingTicker() {
+        if (
+            spotifyNowPlayingTimer
+            !==
+            null
+        ) {
+            window.clearInterval(
+                spotifyNowPlayingTimer
+            );
+
+            spotifyNowPlayingTimer =
+                null;
+        }
+    }
+
+
+    function openSpotifyNowPlaying() {
+        const track =
+            spotifyCurrentTrack();
+
+        if (
+            track
+        ) {
+            renderSpotifyNowPlayingTrack(
+                track,
+                spotifyPlayerState
+            );
+        }
+
+        el.spotifyNowPlaying.classList.remove(
+            "hidden"
+        );
+
+        startSpotifyNowPlayingTicker();
+    }
+
+
+    function closeSpotifyNowPlaying() {
+        el.spotifyNowPlaying.classList.add(
+            "hidden"
+        );
+
+        stopSpotifyNowPlayingTicker();
+    }
+
+
+    async function spotifySeekTo(
+        milliseconds
+    ) {
+        const player =
+            await spotifyActivatePlayer();
+
+        await player.seek(
+            Math.max(
+                0,
+                Number(
+                    milliseconds
+                    ??
+                    0
+                )
+            )
+        );
+
+        if (
+            spotifyPlayerState
+        ) {
+            spotifyPlayerState.position =
+                Math.max(
+                    0,
+                    Number(
+                        milliseconds
+                        ??
+                        0
+                    )
+                );
+
+            spotifyPlayerStateReceivedAt =
+                Date.now();
+        }
+
+        renderSpotifySeek();
     }
 
 
@@ -15721,6 +16233,15 @@
             hideSpotifyAccountMenu();
 
             if (
+                !el.spotifyNowPlaying.classList.contains(
+                    "hidden"
+                )
+            ) {
+                closeSpotifyNowPlaying();
+                return;
+            }
+
+            if (
                 !el.spotifyPlaylistComposer.classList.contains(
                     "hidden"
                 )
@@ -15790,6 +16311,8 @@
                     // already disconnected
                 }
             }
+
+            closeSpotifyNowPlaying();
 
             spotifyPlayer =
                 null;
@@ -16017,6 +16540,160 @@
                     )
             );
         }
+    );
+
+
+
+    el.spotifyPlayerBar.addEventListener(
+        "click",
+        event => {
+            if (
+                event.target.closest(
+                    ".spotify-player-controls"
+                )
+            ) {
+                return;
+            }
+
+            openSpotifyNowPlaying();
+        }
+    );
+
+
+    el.spotifyNowPlayingClose.addEventListener(
+        "click",
+        closeSpotifyNowPlaying
+    );
+
+
+    el.spotifyNowPlayingAdd.addEventListener(
+        "click",
+        () => {
+            const track =
+                spotifyCurrentTrack();
+
+            if (
+                track?.uri
+            ) {
+                openSpotifyPlaylistPicker(
+                    track
+                );
+            }
+        }
+    );
+
+
+    el.spotifySeek.addEventListener(
+        "input",
+        () => {
+            spotifySeekDragging =
+                true;
+
+            spotifySetText(
+                el.spotifySeekCurrent,
+                spotifyFormatTime(
+                    Number(
+                        el.spotifySeek.value
+                    )
+                )
+            );
+        }
+    );
+
+
+    el.spotifySeek.addEventListener(
+        "change",
+        () => {
+            const position =
+                Number(
+                    el.spotifySeek.value
+                );
+
+            void spotifySeekTo(
+                position
+            )
+            .catch(
+                error =>
+                    spotifySetText(
+                        el.spotifySearchStatus,
+                        error.message
+                    )
+            )
+            .finally(
+                () => {
+                    spotifySeekDragging =
+                        false;
+
+                    renderSpotifySeek();
+                }
+            );
+        }
+    );
+
+
+    function spotifyTogglePlayFromNowPlaying() {
+        void spotifyActivatePlayer()
+            .then(
+                player =>
+                    player.togglePlay()
+            )
+            .catch(
+                error =>
+                    spotifySetText(
+                        el.spotifySearchStatus,
+                        error.message
+                    )
+            );
+    }
+
+
+    function spotifyPreviousFromNowPlaying() {
+        void spotifyActivatePlayer()
+            .then(
+                player =>
+                    player.previousTrack()
+            )
+            .catch(
+                error =>
+                    spotifySetText(
+                        el.spotifySearchStatus,
+                        error.message
+                    )
+            );
+    }
+
+
+    function spotifyNextFromNowPlaying() {
+        void spotifyActivatePlayer()
+            .then(
+                player =>
+                    player.nextTrack()
+            )
+            .catch(
+                error =>
+                    spotifySetText(
+                        el.spotifySearchStatus,
+                        error.message
+                    )
+            );
+    }
+
+
+    el.spotifyNowPlayingPlayPause.addEventListener(
+        "click",
+        spotifyTogglePlayFromNowPlaying
+    );
+
+
+    el.spotifyNowPlayingPrevious.addEventListener(
+        "click",
+        spotifyPreviousFromNowPlaying
+    );
+
+
+    el.spotifyNowPlayingNext.addEventListener(
+        "click",
+        spotifyNextFromNowPlaying
     );
 
 
