@@ -1,0 +1,19 @@
+name: ChatGPT artifact test
+on:
+  push:
+    branches:
+      - calendar-focus-v64
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package index
+        run: zip -j test-index.zip index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chatgpt-test-index
+          path: test-index.zip
+          retention-days: 1
