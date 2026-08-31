@@ -4,13 +4,16 @@
     const $ = id => document.getElementById(id);
 
     // ==================================================
-    // V67 — SESSION FLIP RESTORE
+    // V68 — SESSION FLIP RESTORE
     // Front remains the quiet clock from v65.
-    // A tap on that front is forwarded to the original
+    // A tap on the front is forwarded to the original
     // universe canvas click handler, which owns the native
-    // "show back" state. Stopping propagation is essential:
-    // otherwise sessionCard's native handler would close
-    // the back again during the same click.
+    // sessionBackVisible state and class toggles.
+    //
+    // IMPORTANT: the synthetic canvas click bubbles through
+    // sessionFront as well. Let that event pass untouched,
+    // otherwise this capture handler would stop it before the
+    // original canvas listener can run.
     // ==================================================
 
     const sessionFront = $("sessionFront");
@@ -20,6 +23,11 @@
         sessionFront.addEventListener(
             "click",
             event => {
+                // This is the forwarded click itself. Do not intercept it.
+                if (event.target === universeCanvas) {
+                    return;
+                }
+
                 if (!document.documentElement.classList.contains("v65-focus-mode")) {
                     return;
                 }
@@ -32,6 +40,8 @@
                 event.stopPropagation();
                 event.stopImmediatePropagation();
 
+                // Re-use the original app.js canvas listener so its private
+                // sessionBackVisible state stays perfectly in sync.
                 universeCanvas.click();
             },
             true
