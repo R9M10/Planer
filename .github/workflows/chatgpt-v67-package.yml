@@ -1,0 +1,49 @@
+name: Build Planer v67 package
+on:
+  push:
+    branches:
+      - v66-input-freeze-fix
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create v67 files and patch index
+        shell: bash
+        env:
+          V67_JS_GZ_B64: H4sIAAihlWoC/91WzW7bOBC+5ymmQtHKgK320hbYwFskWXthNGiKyN2eaXFsE6FIlaSspoWBfYh9nN72TfZJdkhJjqS4BYpmL8tDIg/njzPfN2Qcj2D6K3w5AVpRaRGsMyJz0elJEGVaWQePYQqCe0WuszJH5ZINuplE/3l+u+Cx4KPG4tkzmP7wai3/ePkK/vnzL0hnabq4egvzy8U7uJ6ly6vrWaszN1o5MJgzoSy4LcLHUqCDTOrsBtZG57B7+SJp1c/AsQK0Ik3m/DYZCwtrbSpmOHJwOjjRRmyEYrK1K5XYoaGCZEztmCX3gtxvmeISzRiqrci2oKsmBcUcqbe2kd3qClYsu4monsxhAqnTRSHUBgqjC7YhdUqJ8kBrqYaCyV9aY03+TCV8K2iT1C4oz6e2CdFmAJUuJfeHtoewPhEfFMi/UMBL4wN6qWU51idIfqJJHUQ0qdW9mMLjOOpKIgLDnW5byYu6kEG7L4ta8Ig1xD3XT54MzEcNVv3qaiaM89mOSnkprEOFJj6oBWiHw0fjnhC9/h38u8sn8ugA9vajQXySSWatD5TQCZ3HYRwR5iZr0rOTXHOMRqMjXv0y6EqjTu/t7U+OJhFyTBwzRLgkdNu610kcrUrntHqQMHWIwoT/v+GaldLFo9Nv6FkC8rs7DH9fcZHnyAURYGBxz6Tf5CR0a+h63++eMyUeBI3q/gFn0Pz95SV8uF4sF29/h/nVxfu01Vj6cUHkW5dSThx+IjpkBlERNzlENe2nwIXNiLlAfD3MhTkaJzZ+17IdTYUPwtEQUfKW/iDshBUr2XDYI8toOW5tgzAvPffIFFZIEwybNhPNH4jX/kgzLpw2aX2kwFYvXdI5uzt9jt/Znfs8gxUNzgzlvGd73sD2uO1cKGG3Tczw/SPWZwbZsXy9vDdhBsnSjBmm0GVVXzux6M4c3ZFEQIwjZgSbSLZCGY0hSgukWwGNIjxz+Fyav78SFrp4Hzj7D4bWsIOvj04rlvnL5H8zPob9e4ABIq5Sf/VTJSgTYhpRXEsJhbYi3N2ac6JttUUVbtgbvF1pT3ddoLIHNr5BLMI+FbxkEipD1nQp29KsWYZATwJVv0GEo5eELiaSji+bgZIcgaxH83F4+p37iIrCpUTo7L70uoj5ecAY/FhSlc6UyEOL5oaeG3EdrxKK6yqpq7fU8fMxPB8N+3L4tT+0YT+i7v0L16buRp4KAAA=
+          V67_CSS_GZ_B64: H4sIAAihlWoC/9VYzW4bNxC++ylYGQGkxJTln8SpggBNAicQajhp5LRAgxy4u7NaRlxyw+VKcooAfYgee+xj5OY36ZN0yF3J+uHqx8mlOtjameFwOPzmm1kd3idPd/7sEUJ+fXRG/v3zL/LLu975Femf9/u915fkAXlx8Qy/viC/ve1d9S5f7e3undw/3Ns7vE/ozh8b11GbXLAiBhmBJm8Eky5YpfExB26gS2ShybtEt63i7c3XcFjJxxzsmpESIjc3/8iID6yM8JRIZvgIpPMHuHL30NyhEpOK9ujRQxqrsMhpqiIg+znkOVeyH2rAHaaPz1k4nD1c8RQD+8MGTCKeZ4Jdd0kgFJr8wNNMacOkebL3ZacdXmolTeU0LHSudJdkiksD+okTGlWECWWhQeMuSZnkWSGYfdp2K6euRDS2+9HQRV3uWuSgUS0gNHgrSkK5Lx1DMOSGetRfvgEYx23SDxMNPDDXmRpoFnNwECgSPgB9QIaCYaR5mNiHCAojeJiQqJBDgdkvZEQCTAjTxpo79Lzr0cM+ymIQFjmBQOd47ADGRZ4bwiXhuCEqeI5OcZl0IfDY3BlC+3EhxBVMzHnEjdLPNLCDvXasdEpDzC/glRrUMo+cy6ww7/Hw8LRhbRof0OKjKrRkgoJzN792SeNdrWHEYVyZULvbvAeP1uslQvPUE8GC3LdyH/HVz/B4TF6yFBYFyqDgfXV464Th/eBaXUDjQ4XA2EIyZikX110nsJ9GT42ZJK9FRPrmWkDj4Fb1htkKkIpc4B8bzLzyuVJD8kwa/qlgc/LpmlvJK1B6wNmtAJHO44VankU3Bj5IsABOO50Vg1AJW7UjppuU2qS0VkymxeR85alSJuFy0CVowJngLIeoqnZcTrWjTWegMsNT/hkuYMADLri5duW3G/7q0bUeOTWIuNP15niILjl6nE1WkiO4BJpUCT5qY0dbsQBjLAtlLHRZ6SwT7u4ltm0hbS6VLUrCk4izpUSUnPpaEpMAZgRzYb9hNSHlD4GwwiRKQ+SugSCFFZg0cY2bD2kgsEs5JuxJEjE9JK4LzONRQ8q4zPE/i+wNtS2L/ZTiCRhpZhpibMvU4Zha5k0xQhdDq4rcizerqMPcqs6XJmdVi06fttbLWiTXWdR6q0H+qq7OwwonLgtd4VjhhuKZI5j9I/x0Vgnqyzc15JM2zmVCILlEtOrMCJ8it7pLnNF+L7SdztrkZ0DIkZu/A8RK2T6xWaOMNF6C7caN6vEtS1KQDo/VWpJnwG1DN+Tma2CHu0dn7Y+5BbVKkZTR3ffqxOXI07bj0mhadpnKeTk9xXyCJbScPywMMMukYhWfKUcinnTJj52Oh/fHPDIJlnKnc29FN6OzTicaJSvqlEu6wUSNQMdCjbsk4VGEM8uyQYBVP9AKJ6Jp7wkGrWVO8aaHtI3KAqa3zA8a+7IjIPZmTZfHWpPOk9p0hUyEzYe2STwgIEfNnMVAbe1Rd0kUQ2m11mZzdds1o7o7PYsi11Tq9kOXq04D9yrj227uWmYFbDsc0xSn3YhjqTdnijK96M1gJRwsiG+vtHOvTnN2vKQqKTzlkyYWYq4HwcGiH2I0k9hGccJAbrfInS1vec44oXnCIotBO/hvh60l6RU3wo6ENbZc4lD+ckH3vMBkyOX3rB0CCJkMQaxxegt4FuRKFAb8mHdorIXFA3KaTVo1ZeGbc2b4P62jklPfsimyvcqU4QgrfTic4fqO4J2Hyl1G3rlh5+TUE/nCWH3iodfFsXBLYrNSF9C0z9u5Z/trr20F67g+ZRNa6VdQ+n16wZ1ueW0D2bZ87aT3HdLnqIR/dpGW6KMo+t9l+XYi28AMZx2khpk1ht48xho4KNc1cf/RmFCkb2tGDslxq7XZddkkrPfHj3f1vgsFlNdjW1WRe3Flf5KR4G39UBa894KmeKTI5nbyu8NAs7ErlQnUmK2KocJCWwJ7YZ9q38pnkeWhxlHYodT97LZbnXTdT3BVtcyy5I1xU2udvprNgf70xF2n931sY+3OgZiWDer4yMPJ82bVGFdrt+mt3vdmf+x9d/kPjmT8cf0WAAA=
+        run: |
+          printf '%s' "$V67_JS_GZ_B64" | base64 -d | gzip -d > v67.js
+          printf '%s' "$V67_CSS_GZ_B64" | base64 -d | gzip -d > v67.css
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = '<script src="v65.js?v=66" defer></script>'
+          addition = marker + '\n    <link rel="stylesheet" href="v67.css?v=67">\n    <script src="v67.js?v=67" defer></script>'
+          if 'v67.js?v=67' not in text:
+              if marker not in text:
+                  raise SystemExit('v65.js?v=66 marker not found')
+              text = text.replace(marker, addition, 1)
+          p.write_text(text, encoding='utf-8')
+          PY
+      - name: Validate v67
+        shell: bash
+        run: |
+          node --check v67.js
+          grep -q 'v67.js?v=67' index.html
+          grep -q 'v67.css?v=67' index.html
+          grep -q 'universeCanvas.click()' v67.js
+          grep -q 'fullEditorFinish.click()' v67.js
+          grep -q '#sessionBack #sessionTimer' v67.css
+          grep -q '#fullTextEditorScreen #finishFullTextEditorButton' v67.css
+      - name: Package changed files
+        run: zip -j Planer_v67_changed_files.zip index.html v67.js v67.css
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Planer-v67-changed-files
+          path: Planer_v67_changed_files.zip
+          retention-days: 1
