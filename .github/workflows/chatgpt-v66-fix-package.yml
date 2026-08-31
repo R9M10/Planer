@@ -1,0 +1,75 @@
+name: Build Planer v66 input fix
+on:
+  push:
+    branches:
+      - v66-input-freeze-fix
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch focus search loop
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          js_path = Path('v65.js')
+          index_path = Path('index.html')
+          js = js_path.read_text(encoding='utf-8')
+          index = index_path.read_text(encoding='utf-8')
+
+          old = '''    if (focusSuggestions) {
+              new MutationObserver(() => {
+                  if (!augmentingFocus) queueMicrotask(augmentFocus);
+              }).observe(focusSuggestions, { childList: true });
+          }
+
+          focusInput?.addEventListener("input", () => setTimeout(augmentFocus, 0));
+          focusInput?.addEventListener("focus", () => setTimeout(augmentFocus, 0));
+          '''
+
+          new = '''    // Do not observe focusSuggestions itself here. augmentFocus mutates that
+          // element, so observing it creates a self-triggering microtask loop on iOS.
+          // app.js renders native results synchronously before these listeners run,
+          // therefore input/focus plus a deferred keyboard refresh is sufficient.
+          focusInput?.addEventListener("input", () => setTimeout(augmentFocus, 0));
+          focusInput?.addEventListener("focus", () => setTimeout(augmentFocus, 0));
+          focusInput?.addEventListener("keydown", event => {
+              if (["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+                  setTimeout(augmentFocus, 0);
+              }
+          });
+          '''
+
+          if old not in js:
+              raise SystemExit('Expected focus observer block not found; refusing unsafe patch')
+          js = js.replace(old, new, 1)
+
+          if 'v65.js?v=65' not in index:
+              raise SystemExit('Expected v65 script cache key not found')
+          index = index.replace('v65.js?v=65', 'v65.js?v=66', 1)
+
+          js_path.write_text(js, encoding='utf-8')
+          index_path.write_text(index, encoding='utf-8')
+          PY
+      - name: Validate fix
+        shell: bash
+        run: |
+          node --check v65.js
+          ! grep -q 'observe(focusSuggestions' v65.js
+          grep -q 'v65.js?v=66' index.html
+          grep -q 'focusInput?.addEventListener("input"' v65.js
+          grep -q 'ArrowDown' v65.js
+          grep -q 'id="focusSearchInput"' index.html
+          grep -q 'id="openFilmsButton"' index.html
+          grep -q 'v65.css?v=65' index.html
+      - name: Package only changed files
+        run: zip -j Planer_v66_input_fix.zip index.html v65.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Planer-v66-input-fix
+          path: Planer_v66_input_fix.zip
+          retention-days: 1
