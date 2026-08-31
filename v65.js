@@ -752,14 +752,16 @@
         return null;
     }
 
-    if (focusSuggestions) {
-        new MutationObserver(() => {
-            if (!augmentingFocus) queueMicrotask(augmentFocus);
-        }).observe(focusSuggestions, { childList: true });
+// Do not observe focusSuggestions itself here. augmentFocus mutates that
+// element, so observing it creates a self-triggering microtask loop on iOS.
+// The native search renders synchronously before these listeners run.
+focusInput?.addEventListener("input", () => setTimeout(augmentFocus, 0));
+focusInput?.addEventListener("focus", () => setTimeout(augmentFocus, 0));
+focusInput?.addEventListener("keydown", event => {
+    if (["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+        setTimeout(augmentFocus, 0);
     }
-
-    focusInput?.addEventListener("input", () => setTimeout(augmentFocus, 0));
-    focusInput?.addEventListener("focus", () => setTimeout(augmentFocus, 0));
+});
 
     document.addEventListener("click", event => {
         const suggestion = event.target.closest?.(".focus-suggestion");
