@@ -15,38 +15,39 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           js_path = Path('v65.js')
           index_path = Path('index.html')
           js = js_path.read_text(encoding='utf-8')
           index = index_path.read_text(encoding='utf-8')
 
-          old = '''    if (focusSuggestions) {
-              new MutationObserver(() => {
-                  if (!augmentingFocus) queueMicrotask(augmentFocus);
-              }).observe(focusSuggestions, { childList: true });
-          }
+          pattern = re.compile(
+              r'\n\s*if \(focusSuggestions\) \{\s*'
+              r'new MutationObserver\(\(\) => \{\s*'
+              r'if \(!augmentingFocus\) queueMicrotask\(augmentFocus\);\s*'
+              r'\}\)\.observe\(focusSuggestions, \{ childList: true \}\);\s*'
+              r'\}\s*\n\s*'
+              r'focusInput\?\.addEventListener\("input", \(\) => setTimeout\(augmentFocus, 0\)\);\s*\n\s*'
+              r'focusInput\?\.addEventListener\("focus", \(\) => setTimeout\(augmentFocus, 0\)\);'
+          )
 
-          focusInput?.addEventListener("input", () => setTimeout(augmentFocus, 0));
-          focusInput?.addEventListener("focus", () => setTimeout(augmentFocus, 0));
-          '''
+          replacement = '''
 
-          new = '''    // Do not observe focusSuggestions itself here. augmentFocus mutates that
+          // Do not observe focusSuggestions itself here. augmentFocus mutates that
           // element, so observing it creates a self-triggering microtask loop on iOS.
-          // app.js renders native results synchronously before these listeners run,
-          // therefore input/focus plus a deferred keyboard refresh is sufficient.
+          // The native search renders synchronously before these listeners run.
           focusInput?.addEventListener("input", () => setTimeout(augmentFocus, 0));
           focusInput?.addEventListener("focus", () => setTimeout(augmentFocus, 0));
           focusInput?.addEventListener("keydown", event => {
               if (["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
                   setTimeout(augmentFocus, 0);
               }
-          });
-          '''
+          });'''
 
-          if old not in js:
-              raise SystemExit('Expected focus observer block not found; refusing unsafe patch')
-          js = js.replace(old, new, 1)
+          js, count = pattern.subn(replacement, js, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one focus observer block, found {count}')
 
           if 'v65.js?v=65' not in index:
               raise SystemExit('Expected v65 script cache key not found')
@@ -60,6 +61,7 @@ jobs:
         run: |
           node --check v65.js
           ! grep -q 'observe(focusSuggestions' v65.js
+          ! grep -q 'queueMicrotask(augmentFocus)' v65.js
           grep -q 'v65.js?v=66' index.html
           grep -q 'focusInput?.addEventListener("input"' v65.js
           grep -q 'ArrowDown' v65.js
