@@ -1,0 +1,39 @@
+name: Build Planer v68 session flip fix
+on:
+  push:
+    branches:
+      - v68-session-flip-fix
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump cache key
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          old = 'v67.js?v=67'
+          if old not in text:
+              raise SystemExit('Expected v67 script marker not found')
+          p.write_text(text.replace(old, 'v67.js?v=68', 1), encoding='utf-8')
+          PY
+      - name: Validate flip fix
+        shell: bash
+        run: |
+          node --check v67.js
+          grep -q 'event.target === universeCanvas' v67.js
+          grep -q 'universeCanvas.click()' v67.js
+          grep -q 'v67.js?v=68' index.html
+          ! grep -q 'v67.js?v=67' index.html
+      - name: Package changed files
+        run: zip -j Planer_v68_session_flip_fix.zip index.html v67.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Planer-v68-session-flip-fix
+          path: Planer_v68_session_flip_fix.zip
+          retention-days: 1
